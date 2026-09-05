@@ -1,0 +1,448 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CXCStudy — Learn. Practice. Succeed.</title>
+
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+
+<body>
+
+<header class="navbar">
+    <div class="container nav-container">
+
+        <a href="/" class="logo">
+            CXC<span>Study</span>
+        </a>
+
+        <nav class="nav-links">
+            <a href="#subjects">Subjects</a>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+        </nav>
+
+        <div class="nav-actions">
+            <a href="{% url 'login' %}" class="login">
+                Log In
+            </a>
+
+            <a href="{% url 'signup' %}" class="btn btn-primary">
+                Get Started
+            </a>
+        </div>
+
+    </div>
+</header>
+
+
+<main>
+
+    <!-- HERO -->
+
+    <section class="hero">
+
+        <div class="container hero-grid">
+
+            <div class="hero-content">
+
+                <div class="eyebrow">
+                    BUILT FOR CXC STUDENTS
+                </div>
+
+                <h1>
+                    Learn smarter.
+                    <span>Pass with confidence.</span>
+                </h1>
+
+                <p class="hero-text">
+                    A complete learning platform for CXC students.
+                    Study lessons, practice exam-style questions,
+                    take quizzes and track your progress — all in one place.
+                </p>
+
+                <div class="hero-actions">
+
+                    <a href="{% url 'signup' %}"
+                       class="btn btn-primary btn-large">
+                        Start Learning Free
+                    </a>
+
+                    <a href="#subjects"
+                       class="btn btn-secondary btn-large">
+                        Explore Subjects
+                    </a>
+
+                </div>
+
+                <div class="hero-note">
+                    ✓ Free account &nbsp;&nbsp;
+                    ✓ Learn at your own pace
+                </div>
+
+            </div>
+
+
+            <!-- Dashboard mockup -->
+
+            <div class="dashboard-wrapper">
+
+                <div class="dashboard-card">
+
+                    <div class="dashboard-header">
+                        <div>
+                            <small>WELCOME BACK</small>
+                            <h3>Your Learning Progress</h3>
+                        </div>
+
+                        <div class="avatar">
+                            C
+                        </div>
+                    </div>
+
+                    <div class="progress-card">
+
+                        <div class="progress-title">
+                            <span>Overall Progress</span>
+                            <strong>72%</strong>
+                        </div>
+
+                        <div class="progress-bar">
+                            <div style="width:72%"></div>
+                        </div>
+
+                    </div>
+
+                    <div class="subject-progress">
+
+                        <div class="subject-row">
+                            <span>Information Technology</span>
+                            <strong>82%</strong>
+                        </div>
+
+                        <div class="mini-progress">
+                            <div style="width:82%"></div>
+                        </div>
+
+
+                        <div class="subject-row">
+                            <span>Mathematics</span>
+                            <strong>64%</strong>
+                        </div>
+
+                        <div class="mini-progress">
+                            <div style="width:64%"></div>
+                        </div>
+
+
+                        <div class="subject-row">
+                            <span>Computer Science</span>
+                            <strong>76%</strong>
+                        </div>
+
+                        <div class="mini-progress">
+                            <div style="width:76%"></div>
+                        </div>
+
+                    </div>
+
+                    <button class="dashboard-button">
+                        Continue Learning →
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- FEATURES -->
+
+    <section class="features" id="features">
+
+        <div class="container">
+
+            <div class="section-heading">
+
+                <div class="eyebrow">
+                    EVERYTHING YOU NEED
+                </div>
+
+                <h2>
+                    One platform for your entire CXC journey.
+                </h2>
+
+                <p>
+                    Stop jumping between notes, websites and practice papers.
+                    Keep your learning organized in one place.
+                </p>
+
+            </div>
+
+
+            <div class="feature-grid">
+
+                <article class="feature-card">
+
+                    <div class="feature-icon">📚</div>
+
+                    <h3>Structured Lessons</h3>
+
+                    <p>
+                        Break every subject into clear topics and lessons
+                        so you always know what to study next.
+                    </p>
+
+                </article>
+
+
+                <article class="feature-card">
+
+                    <div class="feature-icon">📝</div>
+
+                    <h3>Practice Questions</h3>
+
+                    <p>
+                        Reinforce your knowledge with questions designed
+                        around the types of concepts tested in CXC exams.
+                    </p>
+
+                </article>
+
+
+                <article class="feature-card">
+
+                    <div class="feature-icon">🧠</div>
+
+                    <h3>Interactive Quizzes</h3>
+
+                    <p>
+                        Test yourself immediately and identify the areas
+                        where you need more practice.
+                    </p>
+
+                </article>
+
+
+                <article class="feature-card">
+
+                    <div class="feature-icon">📈</div>
+
+                    <h3>Track Your Progress</h3>
+
+                    <p>
+                        See lessons completed, quiz scores and subject
+                        progress from your personal dashboard.
+                    </p>
+
+                </article>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- SUBJECTS -->
+
+    <section class="subjects" id="subjects">
+
+        <div class="container">
+
+            <div class="section-heading">
+
+                <div class="eyebrow">
+                    CXC SUBJECTS
+                </div>
+
+                <h2>
+                    Learn the subjects that matter.
+                </h2>
+
+                <p>
+                    Start with a subject and work through the curriculum
+                    at your own pace.
+                </p>
+
+            </div>
+
+
+            <div class="subject-grid">
+
+                {% for subject in subjects %}
+
+                <a href="#" class="subject-card">
+
+                    <div class="subject-code">
+                        {{ subject.code }}
+                    </div>
+
+                    <div>
+                        <h3>{{ subject.name }}</h3>
+
+                        <p>
+                            {{ subject.description }}
+                        </p>
+                    </div>
+
+                    <span class="arrow">
+                        →
+                    </span>
+
+                </a>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- HOW IT WORKS -->
+
+    <section class="how-it-works" id="how-it-works">
+
+        <div class="container">
+
+            <div class="section-heading">
+
+                <div class="eyebrow">
+                    HOW IT WORKS
+                </div>
+
+                <h2>
+                    Study at your own pace.
+                </h2>
+
+            </div>
+
+
+            <div class="steps">
+
+                <div class="step">
+
+                    <div class="step-number">1</div>
+
+                    <h3>Choose a Subject</h3>
+
+                    <p>
+                        Select the CXC subject you want to study.
+                    </p>
+
+                </div>
+
+
+                <div class="step">
+
+                    <div class="step-number">2</div>
+
+                    <h3>Learn the Material</h3>
+
+                    <p>
+                        Work through structured lessons and topics.
+                    </p>
+
+                </div>
+
+
+                <div class="step">
+
+                    <div class="step-number">3</div>
+
+                    <h3>Practice</h3>
+
+                    <p>
+                        Test your knowledge with questions and quizzes.
+                    </p>
+
+                </div>
+
+
+                <div class="step">
+
+                    <div class="step-number">4</div>
+
+                    <h3>Track Your Progress</h3>
+
+                    <p>
+                        Identify weak areas and keep improving.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- CTA -->
+
+    <section class="cta">
+
+        <div class="container cta-content">
+
+            <h2>
+                Your CXC success starts here.
+            </h2>
+
+            <p>
+                Build better study habits, practice consistently
+                and walk into your exams prepared.
+            </p>
+
+            <a href="{% url 'signup' %}"
+               class="btn btn-primary btn-large">
+                Create Your Free Account
+            </a>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer>
+
+    <div class="container footer-content">
+
+        <div>
+            <a href="/" class="logo">
+                CXC<span>Study</span>
+            </a>
+
+            <p>
+                Helping Caribbean students learn smarter.
+            </p>
+        </div>
+
+        <div class="footer-links">
+
+            <a href="#subjects">Subjects</a>
+            <a href="#features">Features</a>
+            <a href="#">About</a>
+            <a href="#">Contact</a>
+
+        </div>
+
+    </div>
+
+</footer>
+
+</body>
+</html>

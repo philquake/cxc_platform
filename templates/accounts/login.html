@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log in | CXCStudy</title>
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body>
+    <main class="auth-shell">
+        <section class="auth-panel" aria-labelledby="login-title">
+            <a href="{% url 'home' %}" class="logo">CXC<span>Study</span></a>
+            <p class="eyebrow">WELCOME BACK</p>
+            <h1 id="login-title">Log in to your account</h1>
+            <p class="intro">Pick up where you left off and keep your CXC preparation moving.</p>
+
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+                {% for field in form %}
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {{ field.errors }}
+                {% endfor %}
+                <button type="submit">Log in</button>
+            </form>
+
+            <p class="switch-link">New to CXCStudy? <a href="{% url 'signup' %}">Create an account</a></p>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,15 @@
+.hero {
+  background: radial-gradient(120% 100% at 75% 30%, #241a3a 0%, var(--color-bg-hero-top) 40%, var(--color-bg-hero-bottom) 100%);
+  padding: 45px 48px;
+  overflow: hidden;
+  position: relative;
+}
+
+.hero-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: center;
+  gap: 40px;
+}

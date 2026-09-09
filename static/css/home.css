@@ -1,15 +1,307 @@
-.hero {
-  background: radial-gradient(120% 100% at 75% 30%, #241a3a 0%, var(--color-bg-hero-top) 40%, var(--color-bg-hero-bottom) 100%);
-  padding: 45px 48px;
-  overflow: hidden;
-  position: relative;
+.home-column {
+    width: min(100% - 40px, 1100px);
+    margin: 0 auto;
 }
 
-.hero-inner {
-  max-width: 1440px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  align-items: center;
-  gap: 40px;
+.hero {
+    width: 100%;
+    min-height: 60.67vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.hero-container {
+    width: 100%;
+    max-width: none;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+}
+
+.hero-content {
+    width: 100%;
+    max-width: none;
+    text-align: center;
+
+    /* the "boxy" card look */
+    border: 1px solid ;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    padding: 60px 40px;
+    box-sizing: border-box;
+}
+
+.eyebrow {
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.hero h1 {
+    margin: 0 0 20px;
+}
+
+.hero-text {
+    margin: 0 auto 30px;
+    max-width: 850px;
+}
+
+.hero-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.hero-note {
+    text-align: center;
+}
+
+.features,
+.subjects {
+    width: 100%;
+    padding: 72px 0;
+}
+
+.features .container,
+.subjects .container {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+}
+
+.section-heading {
+    max-width: 720px;
+    margin: 0 auto 40px;
+    text-align: center;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.feature-card {
+    min-width: 0;
+    padding: 28px 24px;
+    text-align: center;
+    color: var(--color-text);
+    background: var(--color-panel);
+    border: 1px solid var(--color-panel-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
+    transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.feature-card:hover {
+    background: var(--color-panel-hover);
+    border-color: var(--color-accent-dim);
+    transform: translateY(-2px);
+}
+
+.feature-card h3 {
+    color: var(--color-white);
+}
+
+.feature-card p {
+    color: var(--color-text-muted);
+}
+
+.feature-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 20px;
+    place-items: center;
+    background: var(--color-bg-header);
+    border: 1px solid var(--color-panel-border);
+    border-radius: 50%;
+}
+
+.subject-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.subject-card {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 190px;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 26px 24px 22px;
+    color: var(--color-text);
+    text-decoration: none;
+    background: var(--color-panel);
+    border: 1px solid var(--color-panel-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
+    transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.subject-card:hover {
+    color: var(--color-text);
+    background: var(--color-panel-hover);
+    border-color: var(--color-accent-dim);
+    transform: translateY(-2px);
+}
+
+.subject-code {
+    align-self: flex-start;
+    margin-bottom: 24px;
+    padding: 5px 10px;
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    background: var(--color-bg-header);
+    border: 1px solid var(--color-panel-border);
+    border-radius: var(--radius-sm);
+}
+
+.subject-card h3 {
+    margin-bottom: 10px;
+    color: var(--color-white);
+}
+
+.subject-card p {
+    margin-bottom: 0;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+.subject-card .arrow {
+    align-self: flex-end;
+    margin-top: 18px;
+    color: var(--color-accent);
+    font-size: 22px;
+    line-height: 1;
+    transition: transform var(--transition-fast);
+}
+
+.subject-card:hover .arrow {
+    transform: translateX(4px);
+}
+
+.how-it-works,
+.cta {
+    width: 100%;
+    padding: 72px 0;
+}
+
+.how-it-works .container,
+.cta .container {
+    width: 100%;
+    max-width: none;
+    padding: 25px;
+}
+
+.steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.step {
+    position: relative;
+    min-width: 0;
+    padding: 28px 22px;
+    text-align: center;
+    background: var(--color-panel);
+    border: 1px solid var(--color-panel-border);
+    border-radius: var(--radius-md);
+}
+
+.step-number {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    margin: 0 auto 20px;
+    place-items: center;
+    color: var(--color-bg-header);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    background: var(--color-accent);
+    border-radius: 50%;
+}
+
+.step h3 {
+    margin-bottom: 10px;
+    color: var(--color-white);
+    font-size: 17px;
+}
+
+.step p {
+    margin: 0;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+.cta-content {
+    padding: 84px 32px;
+    text-align: center;
+    background: var(--color-panel);
+    border: 1px solid var(--color-white);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+}
+
+.cta h2 {
+    margin-bottom: 14px;
+    color: var(--color-white);
+}
+
+.cta p {
+    max-width: 560px;
+    margin: 0 auto 28px;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+    .feature-grid,
+    .subject-grid,
+    .steps {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .home-column {
+        width: min(100% - 24px, 1100px);
+    }
+
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .subject-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .steps {
+        grid-template-columns: 1fr;
+    }
+
+    .how-it-works,
+    .cta {
+        padding: 48px 0;
+    }
+}
+
+.btn {
+  font: var(--font-body);
+  font-weight: 500;
+  background: var(--color-accent);
+  color: var(--color-text);
+  border-color: var(--color-accent);
+  border-image-slice: 1;
+  border-width: 1px;
 }

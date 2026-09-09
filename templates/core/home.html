@@ -3,17 +3,19 @@
 
 {% block title %}CXCStudy — Learn. Practice. Succeed.{% endblock %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
 {% block content %}
 
 <main>
-    <!-- HERO -->
+    <div class="home-column">
+        <!-- HERO -->
 
-    <section class="hero">
-
-        <div class="container hero-grid">
-
-            <div class="hero-content">
-
+        <section class="hero">
+            <div class="hero-container">
+                <div class="hero-content">
                 <div class="eyebrow">
                     BUILT FOR CXC STUDENTS
                 </div>
@@ -30,106 +32,30 @@
                 </p>
 
                 <div class="hero-actions">
-
                     <a href="{% url 'signup' %}"
-                       class="btn btn-primary btn-large">
+                        class="btn btn-primary btn-large">
                         Start Learning Free
                     </a>
 
                     <a href="#subjects"
-                       class="btn btn-secondary btn-large">
+                        class="btn btn-secondary btn-large">
                         Explore Subjects
                     </a>
-
                 </div>
 
                 <div class="hero-note">
                     ✓ Free account &nbsp;&nbsp;
                     ✓ Learn at your own pace
                 </div>
-
-            </div>
-
-
-            <!-- Dashboard mockup -->
-{% comment %} 
-            <div class="dashboard-wrapper">
-
-                <div class="dashboard-card">
-
-                    <div class="dashboard-header">
-                        <div>
-                            <small>WELCOME BACK</small>
-                            <h3>Your Learning Progress</h3>
-                        </div>
-
-                        <div class="avatar">
-                            C
-                        </div>
-                    </div>
-
-                    <div class="progress-card">
-
-                        <div class="progress-title">
-                            <span>Overall Progress</span>
-                            <strong>72%</strong>
-                        </div>
-
-                        <div class="progress-bar">
-                            <div style="width:72%"></div>
-                        </div>
-
-                    </div>
-
-                    <div class="subject-progress">
-
-                        <div class="subject-row">
-                            <span>Information Technology</span>
-                            <strong>82%</strong>
-                        </div>
-
-                        <div class="mini-progress">
-                            <div style="width:82%"></div>
-                        </div>
-
-
-                        <div class="subject-row">
-                            <span>Mathematics</span>
-                            <strong>64%</strong>
-                        </div>
-
-                        <div class="mini-progress">
-                            <div style="width:64%"></div>
-                        </div>
-
-
-                        <div class="subject-row">
-                            <span>Computer Science</span>
-                            <strong>76%</strong>
-                        </div>
-
-                        <div class="mini-progress">
-                            <div style="width:76%"></div>
-                        </div>
-
-                    </div>
-
-                    <button class="dashboard-button">
-                        Continue Learning →
-                    </button>
-
                 </div>
+            </div>
+        </section>
 
-            </div> {% endcomment %}
+            
 
-        </div>
+        <!-- FEATURES -->
 
-    </section>
-
-{% comment %} 
-    <!-- FEATURES -->
-
-    <section class="features" id="features">
+        <section class="features" id="features">
 
         <div class="container">
 
@@ -212,12 +138,12 @@
 
         </div>
 
-    </section>
+        </section>
 
 
     <!-- SUBJECTS -->
 
-    <section class="subjects" id="subjects">
+        <section class="subjects" id="subjects">
 
         <div class="container">
 
@@ -243,7 +169,7 @@
 
                 {% for subject in subjects %}
 
-                <a href="#" class="subject-card">
+                <a href="{% url 'subjects:detail' subject.name|slugify %}" class="subject-card">
 
                     <div class="subject-code">
                         {{ subject.code }}
@@ -269,8 +195,7 @@
 
         </div>
 
-    </section>
-
+        </section>
 
     <!-- HOW IT WORKS -->
 
@@ -367,13 +292,15 @@
             </p>
 
             <a href="{% url 'signup' %}"
-               class="btn btn-primary btn-large">
+                class="btn btn-primary btn-large">
                 Create Your Free Account
             </a>
 
         </div>
 
-    </section> {% endcomment %}
+    </section>  
+
+    </div>
 
 </main>
 

@@ -47,7 +47,11 @@ body {
 
 /* ---------- NAVBAR ---------- */
 .navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   background: var(--color-bg-header);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   border-bottom: 1px solid var(--color-panel-border);
   padding: 0 32px;
   display: flex;
@@ -63,8 +67,9 @@ body {
 }
 
 .logo {
+  text-decoration: none;
   font-family: var(--font-mono);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--color-white);
   display: flex;
@@ -102,7 +107,7 @@ body {
 
 .nav-links a {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 15px;
   color: var(--color-text-muted);
   text-decoration: none;
   transition: color var(--transition-fast);
@@ -128,48 +133,53 @@ body {
   gap: 14px;
 }
 
-.btn-ghost {
+.btn-ghost,
+.btn-accent {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 16px;
   font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--color-text-muted);
-  background: transparent;
-  border: 1px solid var(--color-panel-border);
-  padding: 7px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  text-decoration: none;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn-ghost {
+  color: var(--color-text-muted);
+  background: transparent;
+  border-color: var(--color-panel-border);
 }
 
 .btn-ghost:hover {
   color: var(--color-white);
+  background: var(--color-panel);
   border-color: var(--color-text-faint);
 }
 
 .btn-accent {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 500;
-  color: #06130c;
+  color: var(--color-bg-header);
   background: var(--color-accent);
-  border: none;
-  padding: 8px 18px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background var(--transition-fast);
+  border-color: var(--color-accent);
 }
 
 .btn-accent:hover {
+  color: var(--color-bg-header);
   background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  transform: translateY(-1px);
 }
 
-/* ---------- PAGE FILLER (so footer isn't glued to navbar) ---------- */
-.filler {
-  padding: 90px 32px;
-  text-align: center;
-  color: var(--color-text-faint);
-  font-family: var(--font-mono);
-  font-size: 13px;
+.btn-ghost:focus-visible,
+.btn-accent:focus-visible {
+  outline: 2px solid var(--color-white);
+  outline-offset: 3px;
 }
+
 
 /* ---------- FOOTER ---------- */
 .footer {

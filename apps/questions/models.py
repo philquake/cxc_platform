@@ -1,10 +1,10 @@
 from django.db import models
-from apps.lessons.models import Topic
+from apps.lessons.models import Lesson
 
 
 class Question(models.Model):
-    topic = models.ForeignKey(
-        Topic,
+    lesson = models.ForeignKey(
+        Lesson,
         on_delete=models.CASCADE,
         related_name="questions",
     )

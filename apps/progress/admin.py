@@ -18,7 +18,7 @@ class LessonProgressAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "completed",
-        "lesson__topic__subject",
+        "lesson__subject",
     )
     search_fields = (
         "user__username",

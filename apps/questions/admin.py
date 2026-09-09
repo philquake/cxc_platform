@@ -15,13 +15,13 @@ class AnswerInline(admin.TabularInline):
 class QuestionAdmin(admin.ModelAdmin):
     list_display = (
         "text",
-        "topic",
+        "lesson",
         "difficulty",
         "is_active",
     )
     list_filter = (
-        "topic__subject",
-        "topic",
+        "lesson__subject",
+        "lesson",
         "difficulty",
         "is_active",
     )

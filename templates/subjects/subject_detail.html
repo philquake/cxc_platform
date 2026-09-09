@@ -1,35 +1,32 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/subjects.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-    <a href="{% url 'subjects:list' %}" class="text-decoration-none">&larr; All subjects</a>
+<div class="content-column">
+    <a href="{% url 'subjects:list' %}" class="content-back">&larr; All subjects</a>
 
     <header class="mt-4 mb-5">
-        <p class="text-muted mb-1">{{ subject.code }}</p>
         <h1>{{ subject.name }}</h1>
         {% if subject.description %}
             <p class="lead">{{ subject.description }}</p>
         {% endif %}
     </header>
 
-    <h2 class="h4 mb-4">Topics</h2>
-    <div class="row g-4">
-        {% for topic in subject.topics.all %}
-            {% if topic.is_active %}
-                <div class="col-md-6 col-lg-4">
-                    <article class="card h-100">
-                        <div class="card-body">
-                            <h3 class="h5">{{ topic.name }}</h3>
-                            {% if topic.description %}
-                                <p class="card-text">{{ topic.description }}</p>
-                            {% endif %}
-                            <p class="text-muted mb-0">{{ topic.lessons.count }} lesson{{ topic.lessons.count|pluralize }}</p>
-                        </div>
-                    </article>
-                </div>
-            {% endif %}
+    <h2 class="h4 mb-4">Lessons</h2>
+    <div class="content-grid">
+        {% for lesson in subject.active_lessons %}
+            <a class="content-card" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
+                <span class="content-card-label">Lesson {{ forloop.counter }}</span>
+                <h3>{{ lesson.title }}</h3>
+                <p>Continue learning with this {{ subject.name }} lesson.</p>
+                <span class="content-card-meta">Open lesson <span aria-hidden="true">→</span></span>
+            </a>
         {% empty %}
-            <p>No topics available for this subject yet.</p>
+            <p>No lessons available for this subject yet.</p>
         {% endfor %}
     </div>
 </div>

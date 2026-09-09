@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/subjects.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-column lesson-page">
+    <a href="{% url 'subjects:detail' subject.name|slugify %}" class="content-back">&larr; {{ subject.name }} lessons</a>
+
+    <article class="lesson-content">
+        <span class="content-card-label">{{ subject.code }} / Lesson {{ lesson.order|add:1 }}</span>
+        <h1>{{ lesson.title }}</h1>
+        {% if lesson.section %}
+            <section class="lesson-section">
+                <h2>{{ lesson.section }}</h2>
+                <div class="lesson-body">{{ lesson.content|safe }}</div>
+            </section>
+        {% else %}
+            <div class="lesson-body">{{ lesson.content|safe }}</div>
+        {% endif %}
+    </article>
+</div>
+{% endblock %}

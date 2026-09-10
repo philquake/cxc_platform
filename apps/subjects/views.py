@@ -19,7 +19,13 @@ def subject_list(request):
 
 def subject_detail(request, slug):
     subjects = Subject.objects.filter(is_active=True).prefetch_related(
-        Prefetch("lessons", queryset=Lesson.objects.filter(is_active=True), to_attr="active_lessons")
+        Prefetch(
+            "lessons",
+            queryset=Lesson.objects.filter(is_active=True).order_by(
+                "section_number", "lesson_number", "title"
+            ),
+            to_attr="active_lessons",
+        )
     )
     subject = next(
         (item for item in subjects if slug in {slugify(item.name), slugify(item.code)}),

@@ -10,11 +10,13 @@
     <a href="{% url 'subjects:detail' subject.name|slugify %}" class="content-back">&larr; {{ subject.name }} lessons</a>
 
     <article class="lesson-content">
-        <span class="content-card-label">{{ subject.code }} / Lesson {{ lesson.order|add:1 }}</span>
+        <span class="content-card-label">
+            {{ subject.code }} / Lesson {{ lesson.lesson_number }} / Section {{ lesson.section_number }}
+        </span>
         <h1>{{ lesson.title }}</h1>
-        {% if lesson.section %}
+        {% if lesson.section_title %}
             <section class="lesson-section">
-                <h2>{{ lesson.section }}</h2>
+                <h2>{{ lesson.section_title }}</h2>
                 <div class="lesson-body">{{ lesson.content|safe }}</div>
             </section>
         {% else %}

@@ -16,18 +16,25 @@
         {% endif %}
     </header>
 
-    <h2 class="h4 mb-4">Lessons</h2>
-    <div class="content-grid">
-        {% for lesson in subject.active_lessons %}
-            <a class="content-card" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
-                <span class="content-card-label">Lesson {{ forloop.counter }}</span>
-                <h3>{{ lesson.title }}</h3>
-                <p>Continue learning with this {{ subject.name }} lesson.</p>
-                <span class="content-card-meta">Open lesson <span aria-hidden="true">→</span></span>
-            </a>
-        {% empty %}
-            <p>No lessons available for this subject yet.</p>
-        {% endfor %}
-    </div>
+    {% regroup subject.active_lessons by section_number as lesson_sections %}
+    {% for section in lesson_sections %}
+        <section class="lesson-section-group">
+            <header class="lesson-section-heading">
+                {% if section.list.0.section_title %}
+                    <h3>{{ section.list.0.section_title }}</h3>
+                {% endif %}
+            </header>
+            <div class="content-grid">
+                {% for lesson in section.list %}
+                    <a class="content-card" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
+                        <h3>{{ lesson.title }}</h3>
+                        <span class="content-card-meta">Open lesson <span aria-hidden="true">→</span></span>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% empty %}
+        <p>No lessons available for this subject yet.</p>
+    {% endfor %}
 </div>
 {% endblock %}

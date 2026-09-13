@@ -3,6 +3,7 @@
 {% block extra_css %}
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/subjects.css' %}">
+<link rel="stylesheet" href="{% static 'css/quizzes.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -23,5 +24,27 @@
             <div class="lesson-body">{{ lesson.content|safe }}</div>
         {% endif %}
     </article>
+
+    {% for quiz in quizzes %}
+        <section class="lesson-quiz" aria-labelledby="quiz-{{ quiz.id }}-title">
+            <span class="content-card-label">Multiple-choice quiz</span>
+            <h2 id="quiz-{{ quiz.id }}-title">{{ quiz.title }}</h2>
+            {% if quiz.description %}
+                <p>{{ quiz.description }}</p>
+            {% endif %}
+
+            {% for quiz_question in quiz.quiz_questions.all %}
+                <fieldset class="quiz-question">
+                    <legend>{{ forloop.counter }}. {{ quiz_question.question.text }}</legend>
+                    {% for answer in quiz_question.question.answers.all %}
+                        <label>
+                            <input type="radio" name="quiz-{{ quiz.id }}-question-{{ quiz_question.question.id }}" value="{{ answer.id }}">
+                            {{ answer.text }}
+                        </label>
+                    {% endfor %}
+                </fieldset>
+            {% endfor %}
+        </section>
+    {% endfor %}
 </div>
 {% endblock %}

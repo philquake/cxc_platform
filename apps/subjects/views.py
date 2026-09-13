@@ -4,6 +4,7 @@ from django.utils.text import slugify
 from django.db.models import Prefetch
 
 from apps.lessons.models import Lesson
+from apps.quizzes.models import Quiz
 from .models import Subject
 
 
@@ -50,8 +51,15 @@ def lesson_detail(request, subject_slug, lesson_slug):
         is_active=True,
     )
 
+    quizzes = Quiz.objects.filter(
+        lesson=lesson,
+        is_active=True,
+    ).prefetch_related(
+        "quiz_questions__question__answers"
+    )
+
     return render(
         request,
         "subjects/lesson_detail.html",
-        {"subject": subject, "lesson": lesson},
+        {"subject": subject, "lesson": lesson, "quizzes": quizzes},
     )

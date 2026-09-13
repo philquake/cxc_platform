@@ -12,10 +12,11 @@ class QuizQuestionInline(admin.TabularInline):
 class QuizAdmin(admin.ModelAdmin):
     list_display = (
         "title",
+        "lesson",
         "is_active",
         "created_at",
         "updated_at",
     )
-    list_filter = ("is_active",)
+    list_filter = ("lesson__subject", "lesson", "is_active")
     search_fields = ("title", "description")
     inlines = [QuizQuestionInline]

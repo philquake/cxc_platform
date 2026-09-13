@@ -25,6 +25,7 @@ urlpatterns = [
     path('accounts/', include('apps.accounts.urls')),
     path('', include('apps.core.urls')),
     path('subjects/', include('apps.subjects.urls')),
+    path('quizzes/', include('apps.quizzes.urls')),
 ]
 
 if settings.DEBUG:

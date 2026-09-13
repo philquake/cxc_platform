@@ -9,6 +9,10 @@ from .models import Question, Answer
 class AnswerInline(admin.TabularInline):
     model = Answer
     extra = 4
+    min_num = 4
+    max_num = 4
+    validate_min = True
+    validate_max = True
 
 
 @admin.register(Question)

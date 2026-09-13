@@ -19,7 +19,7 @@
       <li><a href="{% url 'home' %}" class="active">Dashboard</a></li>
       <li><a href="{% url 'subjects:list' %}">Subjects</a></li>
       <li><a href="{% url 'subjects:list' %}">Lessons</a></li>
-      <li><a href="{% url 'home' %}#features">Practice</a></li>
+      <li><a href="{% url 'quizzes:list' %}">Quiz</a></li>
       <li><a href="{% url 'home' %}#how-it-works">Progress</a></li>
     </ul>
   </div>
@@ -50,7 +50,7 @@
         <div class="footer-col">
           <h4>Platform</h4>
           <ul>
-            <li><a href="{% url 'home' %}#features">Practice quizzes</a></li>
+            <li><a href="{% url 'quizzes:list' %}">Practice quizzes</a></li>
             <li><a href="{% url 'subjects:list' %}">Notes library</a></li>
             <li><a href="{% url 'home' %}#features">Mock exams</a></li>
             <li><a href="{% url 'login' %}">Bookmarks</a></li>

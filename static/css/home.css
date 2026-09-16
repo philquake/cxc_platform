@@ -390,4 +390,36 @@
         .hero-actions .btn {
                 width: 100%;
         }
+
+        .features,
+        .subjects {
+            padding: 52px 0;
+        }
+
+        .section-heading {
+            margin-bottom: 28px;
+        }
+
+        .hero-note {
+            line-height: 2;
+        }
+
+        .feature-card,
+        .subject-card,
+        .step {
+            padding: 22px 18px;
+        }
+
+        .how-it-works .container,
+        .cta .container {
+            padding: 12px;
+        }
+
+        .cta-content {
+            padding: 52px 20px;
+        }
+
+        .cta .btn {
+            width: 100%;
+        }
 }

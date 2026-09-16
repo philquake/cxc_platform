@@ -10,12 +10,57 @@
 
 {% block content %}
 <div class="content-column">
+    {% if result_attempt %}
+        <dialog id="quiz-result-dialog" class="quiz-result-dialog" aria-labelledby="quiz-result-title" oncancel="event.preventDefault()">
+            <div class="quiz-result-dialog-content">
+                <button type="button" class="quiz-result-close" onclick="this.closest('dialog').close()" aria-label="Close result dialog">&times;</button>
+                <p class="content-card-label">QUIZ COMPLETE</p>
+                <h2 id="quiz-result-title">{{ result_attempt.score }}/{{ result_attempt.total_questions }} correct</h2>
+                <p class="quiz-result-score">{{ result_attempt.percentage }}%</p>
+                {% if result_attempt.percentage >= 70 %}
+                    <p>You passed. Keep your momentum going.</p>
+                    <div class="quiz-result-actions">
+                        {% if medium_quiz %}
+                            <a class="btn btn-primary" href="{% url 'quizzes:detail' medium_quiz.id %}">Try the medium quiz</a>
+                        {% endif %}
+                        {% if next_lesson %}
+                            <a class="btn btn-secondary" href="{% url 'subjects:lesson-detail' next_lesson.subject.name|slugify next_lesson.slug %}">Move to next lesson</a>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p>Review the lesson once more, then try the quiz again.</p>
+                    <div class="quiz-result-actions">
+                        <a class="btn btn-secondary" href="{% url 'subjects:lesson-detail' result_attempt.quiz.lesson.subject.name|slugify result_attempt.quiz.lesson.slug %}">Review the lesson</a>
+                        <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Try again</button>
+                    </div>
+                {% endif %}
+            </div>
+        </dialog>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const resultDialog = document.getElementById("quiz-result-dialog");
+                if (resultDialog && !resultDialog.open) {
+                    resultDialog.showModal();
+                }
+            });
+        </script>
+    {% endif %}
     {% if subject %}
         <a href="{% url 'quizzes:list' %}" class="content-back">&larr; All quizzes</a>
         <header class="content-header">
-            <span class="content-card-label">{{ subject.code }} QUIZZES</span>
-            <h1>{{ subject.name }} quizzes</h1>
+            <span class="content-card-label">{{ subject.code }}{% if topic %} / {{ topic.name }}{% endif %} QUIZZES</span>
+            <h1>{% if topic %}{{ topic.name }} quizzes{% else %}{{ subject.name }} quizzes{% endif %}</h1>
             {% if subject.description %}<p>{{ subject.description }}</p>{% endif %}
+            {% if topic.description %}<p>{{ topic.description }}</p>{% endif %}
+            {% if not topic %}
+                <nav class="topic-links" aria-label="Quiz topics">
+                    {% for subject_topic in subject.topics.all %}
+                        {% if subject_topic.is_active %}
+                            <a href="{% url 'quizzes:topic-list' subject.name|slugify subject_topic.slug %}">{{ subject_topic.name }}</a>
+                        {% endif %}
+                    {% endfor %}
+                </nav>
+            {% endif %}
         </header>
     {% else %}
         <header class="content-header">
@@ -33,7 +78,7 @@
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <div class="quiz-card-heading">
                     <div>
-                        <span class="content-card-label">{{ quiz.lesson.subject.code }}</span>
+                        <span class="content-card-label">{{ quiz.subject.code }} / {{ quiz.topic.name }}</span>
                         <h2>{{ quiz.title }}</h2>
                     </div>
                     <span class="quiz-card-meta">
@@ -56,7 +101,10 @@
                     <p class="quiz-empty">Questions will be added soon.</p>
                 {% endfor %}
                 {% if user.is_authenticated and quiz.quiz_questions.all %}
-                    <button type="submit" class="quiz-submit">Save quiz result</button>
+                    <div class="quiz-actions">
+                        <button type="reset" class="quiz-reset">Reset quiz</button>
+                        <button type="submit" class="quiz-submit">Save quiz result</button>
+                    </div>
                 {% elif not user.is_authenticated %}
                     <a class="progress-action-link" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Sign in to save quiz result</a>
                 {% endif %}

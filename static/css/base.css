@@ -385,4 +385,58 @@ p {
     grid-template-columns: repeat(2, 1fr);
     gap: 32px 20px;
   }
+
+  main {
+    min-height: calc(100vh - 142px);
+  }
+}
+
+@media (max-width: 420px) {
+  .navbar {
+    padding: 12px;
+  }
+
+  .navbar-left {
+    display: block;
+  }
+
+  .logo {
+    margin-bottom: 14px;
+  }
+
+  .nav-links {
+    justify-content: flex-start;
+    margin: 0 -12px;
+    padding: 0 12px 4px;
+  }
+
+  .navbar-right {
+    justify-content: stretch;
+  }
+
+  .navbar-right form,
+  .navbar-right > a {
+    flex: 1;
+  }
+
+  .navbar-right .btn-ghost,
+  .navbar-right .btn-accent {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .footer-bottom {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-top: 28px;
+  }
+
+  .footer-copy {
+    line-height: 1.5;
+  }
 }

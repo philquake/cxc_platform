@@ -140,7 +140,25 @@ h1 {
 }
 
 @media (max-width: 480px) {
+    .auth-shell {
+        align-items: start;
+        padding: 20px 12px;
+    }
+
     .auth-panel {
-        padding: 30px 22px;
+        padding: 28px 18px;
+    }
+
+    .eyebrow {
+        margin-top: 32px;
+    }
+
+    .auth-form input,
+    .auth-form button {
+        min-height: 46px;
+    }
+
+    .switch-link {
+        line-height: 1.6;
     }
 }

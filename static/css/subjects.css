@@ -239,6 +239,66 @@
     font-size: 12px;
 }
 
+.related-quiz-actions {
+    max-width: 820px;
+    margin-top: 28px;
+    padding: 30px 32px;
+    background: linear-gradient(135deg, var(--color-panel), #10261a);
+    border: 1px solid var(--color-accent-dim);
+    border-radius: var(--radius-md);
+}
+
+.related-quiz-actions h2 {
+    margin: 14px 0 8px;
+    color: var(--color-white);
+}
+
+.related-quiz-actions p {
+    margin: 0;
+    color: var(--color-text-muted);
+}
+
+.related-quiz-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.quiz-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px;
+    color: var(--color-text);
+    background: var(--color-bg-header);
+    border: 1px solid var(--color-panel-border);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+}
+
+.quiz-link:hover {
+    color: var(--color-text);
+    border-color: var(--color-accent-dim);
+    background: var(--color-panel-hover);
+}
+
+.quiz-link strong,
+.quiz-link small {
+    display: block;
+}
+
+.quiz-link strong {
+    color: var(--color-white);
+}
+
+.quiz-link small {
+    margin-top: 5px;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+}
+
 .lesson-sections {
     display: grid;
     gap: 32px;
@@ -273,6 +333,59 @@
 
     .lesson-content {
         padding: 28px 22px;
+    }
+
+    .content-header h1,
+    .lesson-content h1 {
+        font-size: 34px;
+        overflow-wrap: anywhere;
+    }
+
+    .content-card-label {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+
+    .content-back {
+        margin-bottom: 24px;
+    }
+
+    .lesson-body {
+        font-size: 15px;
+        overflow-wrap: anywhere;
+    }
+
+    .lesson-body img,
+    .lesson-body iframe,
+    .lesson-body table,
+    .lesson-body figure.table {
+        max-width: 100%;
+    }
+
+    .lesson-body figure.table {
+        display: block;
+        overflow-x: auto;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .lesson-body figure.table table {
+        min-width: 560px;
+        width: max-content;
+    }
+
+    .lesson-body p,
+    .lesson-body li,
+    .lesson-body span {
+        overflow-wrap: anywhere;
+    }
+
+    .related-quiz-actions {
+        padding: 24px 18px;
+    }
+
+    .quiz-link {
+        padding: 14px;
     }
 
     .content-card,

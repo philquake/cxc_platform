@@ -36,38 +36,23 @@
         {% endif %}
     </article>
 
-    {% for quiz in quizzes %}
-        <section class="lesson-quiz" aria-labelledby="quiz-{{ quiz.id }}-title">
-            <form method="post" action="{% url 'progress:submit-quiz' quiz.id %}">
-                {% csrf_token %}
-                <input type="hidden" name="next" value="{{ request.path }}">
-            <span class="content-card-label">Multiple-choice quiz</span>
-            <h2 id="quiz-{{ quiz.id }}-title">{{ quiz.title }}</h2>
-            {% if quiz.description %}
-                <p>{{ quiz.description }}</p>
-            {% endif %}
-
-            {% for quiz_question in quiz.quiz_questions.all %}
-                <fieldset class="quiz-question">
-                    <legend>{{ forloop.counter }}. {{ quiz_question.question.text }}</legend>
-                    {% for answer in quiz_question.question.answers.all %}
-                        <label>
-                            <input type="radio" name="question-{{ quiz_question.question.id }}" value="{{ answer.id }}">
-                            {{ answer.text }}
-                        </label>
-                    {% endfor %}
-                </fieldset>
-            {% endfor %}
-                {% if user.is_authenticated %}
-                    <button type="submit" class="quiz-submit">Save quiz result</button>
-                {% else %}
-                    <a class="progress-action-link" href="{% url 'login' %}?next={{ request.path|urlencode }}">Sign in to save quiz result</a>
-                {% endif %}
-                {% if quiz.latest_attempt %}
-                    <p class="quiz-result">Latest result: {{ quiz.latest_attempt.score }}/{{ quiz.latest_attempt.total_questions }} ({{ quiz.latest_attempt.percentage }}%)</p>
-                {% endif %}
-            </form>
+    {% if quizzes %}
+        <section class="related-quiz-actions" aria-labelledby="related-quizzes-title">
+            <span class="content-card-label">NEXT STEP</span>
+            <h2 id="related-quizzes-title">Test what you learned</h2>
+            <p>Take the quiz related to this lesson.</p>
+            <div class="related-quiz-list">
+                {% for quiz in quizzes %}
+                    <a class="quiz-link" href="{% url 'quizzes:detail' quiz.id %}">
+                        <span>
+                            <strong>{{ quiz.title }}</strong>
+                            <small>{{ quiz.topic.name }} · {{ quiz.quiz_questions.count }} questions</small>
+                        </span>
+                        <span class="lesson-arrow" aria-hidden="true">→</span>
+                    </a>
+                {% endfor %}
+            </div>
         </section>
-    {% endfor %}
+    {% endif %}
 </div>
 {% endblock %}

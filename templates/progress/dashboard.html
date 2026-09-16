@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Progress | Compile{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/progress.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="progress-page">
+    <header class="progress-header">
+        <span class="content-card-label">YOUR LEARNING PATH</span>
+        <h1>Progress</h1>
+        <p>See how far you have moved through each subject and lesson.</p>
+    </header>
+
+    <div class="progress-subjects">
+        {% for subject in subjects %}
+            <details class="progress-subject" {% if forloop.first %}open{% endif %}>
+                <summary class="progress-subject-heading" aria-labelledby="subject-{{ subject.id }}">
+                    <div>
+                        <span class="content-card-label">{{ subject.code }}</span>
+                        <h2 id="subject-{{ subject.id }}">{{ subject.name }}</h2>
+                    </div>
+                    <span class="progress-subject-summary">
+                        <strong class="progress-percent">{{ subject.progress_percentage }}%</strong>
+                        <span class="progress-chevron" aria-hidden="true">⌄</span>
+                    </span>
+                </summary>
+                <div class="progress-track" role="progressbar" aria-valuenow="{{ subject.progress_percentage }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ subject.name }} progress">
+                    <span style="width: {{ subject.progress_percentage }}%"></span>
+                </div>
+                <p class="progress-summary">{{ subject.completed_count }} of {{ subject.lesson_count }} lessons complete</p>
+
+                <div class="progress-lessons">
+                    {% for lesson in subject.progress_lessons %}
+                        <a class="progress-lesson {% if lesson.is_completed %}is-complete{% endif %}" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
+                            <span class="progress-lesson-status" aria-hidden="true">{% if lesson.is_completed %}✓{% else %}○{% endif %}</span>
+                            <span class="progress-lesson-copy">
+                                <strong>Lesson {{ lesson.lesson_number }}: {{ lesson.title }}</strong>
+                                <small>{% if lesson.is_completed %}Completed{% else %}Not started{% endif %}{% if lesson.latest_quiz_attempt %} · Quiz {{ lesson.latest_quiz_attempt.percentage }}%{% endif %}</small>
+                            </span>
+                            <span class="progress-lesson-arrow" aria-hidden="true">→</span>
+                        </a>
+                    {% empty %}
+                        <p class="progress-empty">No active lessons in this subject yet.</p>
+                    {% endfor %}
+                </div>
+            </details>
+        {% empty %}
+            <p class="progress-empty">No subjects are available yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

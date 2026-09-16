@@ -4,7 +4,29 @@ from .models import (
     LessonProgress,
     QuizAttempt,
     QuizAnswer,
+    UserProgress,
+    XPTransaction,
 )
+
+
+@admin.register(UserProgress)
+class UserProgressAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "total_xp",
+        "current_streak",
+        "longest_streak",
+        "last_activity_date",
+    )
+    ordering = ("-total_xp",)
+    search_fields = ("user__username",)
+
+
+@admin.register(XPTransaction)
+class XPTransactionAdmin(admin.ModelAdmin):
+    list_display = ("user", "topic", "amount", "reason", "created_at")
+    list_filter = ("topic", "reason")
+    search_fields = ("user__username", "topic__name", "reason")
 
 
 @admin.register(LessonProgress)

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ topic.name }} leaderboard | Compile{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/progress.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="progress-page leaderboard-page">
+    <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
+    <header class="progress-header">
+        <span class="content-card-label">{{ subject.code }} / {{ topic.name }}</span>
+        <h1>Topic leaderboard</h1>
+        <p>Ranked by XP earned from lessons and quizzes in {{ topic.name }}.</p>
+    </header>
+
+    {% if current_user_row %}
+        <div class="leaderboard-you">Your rank: <strong>#{{ current_user_row.rank }}</strong> with <strong>{{ current_user_row.xp }} XP</strong></div>
+    {% endif %}
+
+    <div class="leaderboard-list">
+        {% for row in leaderboard %}
+            <div class="leaderboard-row {% if row.user_id == user.id %}is-you{% endif %}">
+                <strong class="leaderboard-rank">#{{ row.rank }}</strong>
+                <span class="leaderboard-user">{{ row.user__username }}{% if row.user_id == user.id %} <small>(you)</small>{% endif %}</span>
+                <strong class="leaderboard-xp">{{ row.xp }} XP</strong>
+            </div>
+        {% empty %}
+            <p class="progress-empty">No XP has been earned in this topic yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

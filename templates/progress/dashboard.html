@@ -15,6 +15,25 @@
         <p>See how far you have moved through each subject and lesson.</p>
     </header>
 
+    <section class="progress-stats" aria-label="Your progression stats">
+        <div class="progress-stat progress-stat-level">
+            <span class="progress-stat-label">LEVEL</span>
+            <strong>{{ user_progress.level }}</strong>
+            <div class="progress-track"><span style="width: {{ user_progress.level_progress }}%"></span></div>
+            <small>{{ user_progress.level_xp }} / {{ user_progress.level_xp_required }} XP to next level</small>
+        </div>
+        <div class="progress-stat">
+            <span class="progress-stat-label">TOTAL XP</span>
+            <strong>{{ user_progress.total_xp }}</strong>
+            <small>earned across lessons and quizzes</small>
+        </div>
+        <div class="progress-stat">
+            <span class="progress-stat-label">CURRENT STREAK</span>
+            <strong>{{ user_progress.current_streak }} days</strong>
+            <small>longest: {{ user_progress.longest_streak }} days</small>
+        </div>
+    </section>
+
     <div class="progress-subjects">
         {% for subject in subjects %}
             <details class="progress-subject" {% if forloop.first %}open{% endif %}>
@@ -32,6 +51,14 @@
                     <span style="width: {{ subject.progress_percentage }}%"></span>
                 </div>
                 <p class="progress-summary">{{ subject.completed_count }} of {{ subject.lesson_count }} lessons complete</p>
+                {% if subject.active_topics %}
+                    <div class="progress-topic-links">
+                        <span class="progress-topic-label">TOPIC LEADERBOARDS</span>
+                        {% for topic in subject.active_topics %}
+                            <a href="{% url 'progress:leaderboard' subject.name|slugify topic.slug %}">{{ topic.name }}</a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
                 <div class="progress-lessons">
                     {% for lesson in subject.progress_lessons %}

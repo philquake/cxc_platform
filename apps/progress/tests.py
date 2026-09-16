@@ -8,7 +8,13 @@ from apps.questions.models import Answer, Question
 from apps.quizzes.models import Quiz, QuizQuestion
 from apps.subjects.models import Subject, Topic
 
-from apps.progress.models import LessonProgress, QuizAnswer, QuizAttempt
+from apps.progress.models import (
+	LessonProgress,
+	QuizAnswer,
+	QuizAttempt,
+	UserProgress,
+	XPTransaction,
+)
 
 
 class ProgressFlowTests(TestCase):
@@ -87,6 +93,14 @@ class ProgressFlowTests(TestCase):
 		self.assertTrue(
 			LessonProgress.objects.get(user=self.user, lesson=self.lesson).completed
 		)
+		progress = UserProgress.objects.get(user=self.user)
+		self.assertEqual(progress.total_xp, 50)
+		self.assertEqual(progress.current_streak, 1)
+
+		self.client.post(
+			reverse("progress:complete-lesson", args=[self.lesson.id]),
+		)
+		self.assertEqual(XPTransaction.objects.filter(user=self.user).count(), 1)
 
 	def test_anonymous_user_is_sent_to_login_for_lesson_progress(self):
 		response = self.client.post(
@@ -108,11 +122,41 @@ class ProgressFlowTests(TestCase):
 
 		self.assertEqual(response.status_code, 302)
 		self.assertIn("/quizzes/?attempt=", response["Location"])
+		result_response = self.client.get(response["Location"])
+		self.assertContains(result_response, "+45 XP earned")
 		attempt = QuizAttempt.objects.get(user=self.user, quiz=self.quiz)
 		self.assertEqual(attempt.score, 1)
 		self.assertEqual(attempt.total_questions, 1)
 		self.assertEqual(attempt.answers.count(), 1)
 		self.assertTrue(attempt.answers.get().is_correct)
+		self.assertEqual(UserProgress.objects.get(user=self.user).total_xp, 45)
+
+	def test_topic_leaderboard_is_scoped_to_topic(self):
+		other_user = get_user_model().objects.create_user(username="other")
+		XPTransaction.objects.create(
+			user=self.user,
+			topic=self.quiz.topic,
+			amount=50,
+			reason="Completed lesson",
+		)
+		XPTransaction.objects.create(
+			user=other_user,
+			topic=self.quiz.topic,
+			amount=100,
+			reason="Completed quiz",
+		)
+		self.client.force_login(self.user)
+
+		response = self.client.get(
+			reverse(
+				"progress:leaderboard",
+				args=["mathematics", "algebra"],
+			)
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "other")
+		self.assertContains(response, "100 XP")
 
 	def test_quiz_submission_ignores_answer_from_another_question(self):
 		other_question = Question.objects.create(

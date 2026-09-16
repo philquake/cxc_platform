@@ -35,6 +35,170 @@
     gap: 24px;
 }
 
+.progress-stats {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.progress-stat {
+    min-width: 0;
+    padding: 22px;
+    background: var(--color-panel);
+    border: 1px solid var(--color-panel-border);
+    border-radius: var(--radius-md);
+}
+
+.progress-stat-level {
+    border-color: var(--color-accent-dim);
+}
+
+.progress-stat-label,
+.progress-topic-label {
+    display: block;
+    color: var(--color-text-faint);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.6px;
+}
+
+.progress-stat strong {
+    display: block;
+    margin-top: 10px;
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 26px;
+}
+
+.progress-stat small {
+    display: block;
+    margin-top: 10px;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+.progress-topic-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 22px;
+}
+
+.progress-topic-links .progress-topic-label {
+    flex-basis: 100%;
+    margin-bottom: 2px;
+}
+
+.progress-topic-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 8px 13px;
+    color: var(--color-accent);
+    background: linear-gradient(135deg, var(--color-bg-header), #10261a);
+    border: 1px solid var(--color-accent-dim);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.progress-topic-links a:hover {
+    color: var(--color-bg-header);
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    transform: translateY(-1px);
+}
+
+.progress-topic-links a::after {
+    margin-left: 9px;
+    color: currentColor;
+    content: "→";
+    font-size: 15px;
+}
+
+.leaderboard-you {
+    margin-bottom: 18px;
+    padding: 16px 18px;
+    color: var(--color-text-muted);
+    background: var(--color-correct-bg);
+    border: 1px solid var(--color-accent-dim);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+
+.leaderboard-page > .content-back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    margin-bottom: 28px;
+    padding: 9px 14px;
+    color: var(--color-accent);
+    background: linear-gradient(135deg, var(--color-bg-header), #10261a);
+    border: 1px solid var(--color-accent-dim);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.leaderboard-page > .content-back:hover {
+    color: var(--color-bg-header);
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+}
+
+.leaderboard-page .progress-header {
+    margin-bottom: 28px;
+}
+
+.leaderboard-you strong {
+    color: var(--color-accent);
+}
+
+.leaderboard-list {
+    display: grid;
+    gap: 8px;
+    max-width: 760px;
+}
+
+.leaderboard-row {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 16px 18px;
+    color: var(--color-text);
+    background: var(--color-panel);
+    border: 1px solid var(--color-panel-border);
+    border-radius: var(--radius-sm);
+}
+
+.leaderboard-row.is-you {
+    border-color: var(--color-accent-dim);
+    background: var(--color-correct-bg);
+}
+
+.leaderboard-rank,
+.leaderboard-xp {
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+}
+
+.leaderboard-user {
+    color: var(--color-white);
+}
+
+.leaderboard-user small {
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+}
+
 .progress-subject {
     padding: 28px;
     background: var(--color-panel);
@@ -188,6 +352,14 @@
         padding: 22px 18px;
     }
 
+    .progress-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .progress-stat {
+        padding: 18px;
+    }
+
     .progress-subject-heading {
         align-items: center;
         gap: 12px;
@@ -213,5 +385,15 @@
     .progress-lesson-copy strong {
         font-size: 14px;
         overflow-wrap: anywhere;
+    }
+
+    .leaderboard-row {
+        grid-template-columns: 36px 1fr auto;
+        gap: 8px;
+        padding: 14px 12px;
+    }
+
+    .leaderboard-xp {
+        font-size: 12px;
     }
 }

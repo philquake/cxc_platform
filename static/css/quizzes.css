@@ -271,6 +271,18 @@
     font-size: 18px;
 }
 
+.quiz-result-xp {
+    display: inline-block;
+    margin: 16px 0 0;
+    padding: 8px 10px;
+    color: var(--color-bg-header);
+    background: var(--color-accent);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+}
+
 .quiz-result-actions {
     display: flex;
     flex-wrap: wrap;

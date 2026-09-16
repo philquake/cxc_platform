@@ -17,6 +17,9 @@
                 <p class="content-card-label">QUIZ COMPLETE</p>
                 <h2 id="quiz-result-title">{{ result_attempt.score }}/{{ result_attempt.total_questions }} correct</h2>
                 <p class="quiz-result-score">{{ result_attempt.percentage }}%</p>
+                {% if result_attempt.xp_transaction %}
+                    <p class="quiz-result-xp">+{{ result_attempt.xp_transaction.amount }} XP earned</p>
+                {% endif %}
                 {% if result_attempt.percentage >= 70 %}
                     <p>You passed. Keep your momentum going.</p>
                     <div class="quiz-result-actions">

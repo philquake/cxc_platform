@@ -5,6 +5,7 @@ from django.db.models import Prefetch
 
 from apps.lessons.models import Lesson
 from apps.quizzes.models import Quiz
+from apps.progress.models import LessonProgress, QuizAttempt
 from .models import Subject
 
 
@@ -57,9 +58,32 @@ def lesson_detail(request, subject_slug, lesson_slug):
     ).prefetch_related(
         "quiz_questions__question__answers"
     )
+    lesson_progress = None
+    latest_attempts = {}
+    if request.user.is_authenticated:
+        lesson_progress = LessonProgress.objects.filter(
+            user=request.user,
+            lesson=lesson,
+            completed=True,
+        ).first()
+        latest_attempts = {
+            quiz.id: QuizAttempt.objects.filter(
+                user=request.user,
+                quiz=quiz,
+                completed_at__isnull=False,
+            ).order_by("-completed_at").first()
+            for quiz in quizzes
+        }
+        for quiz in quizzes:
+            quiz.latest_attempt = latest_attempts[quiz.id]
 
     return render(
         request,
         "subjects/lesson_detail.html",
-        {"subject": subject, "lesson": lesson, "quizzes": quizzes},
+        {
+            "subject": subject,
+            "lesson": lesson,
+            "quizzes": quizzes,
+            "lesson_progress": lesson_progress,
+        },
     )

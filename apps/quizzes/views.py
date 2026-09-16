@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.utils.text import slugify
 
 from apps.subjects.models import Subject
+from apps.progress.models import QuizAttempt
 
 from .models import Quiz
 
@@ -20,6 +21,7 @@ def quiz_queryset():
 
 def quiz_index(request):
     quizzes = quiz_queryset()
+    _add_latest_attempts(request, quizzes)
     return render(
         request,
         "quizzes/quiz_list.html",
@@ -40,8 +42,23 @@ def subject_quizzes(request, subject_slug):
         raise Http404("Subject not found")
 
     quizzes = quiz_queryset().filter(lesson__subject=subject)
+    _add_latest_attempts(request, quizzes)
     return render(
         request,
         "quizzes/quiz_list.html",
         {"subject": subject, "quizzes": quizzes},
     )
+
+
+def _add_latest_attempts(request, quizzes):
+    if not request.user.is_authenticated:
+        return
+    latest_attempts = {}
+    for quiz in quizzes:
+        latest_attempts[quiz.id] = QuizAttempt.objects.filter(
+            user=request.user,
+            quiz=quiz,
+            completed_at__isnull=False,
+        ).order_by("-completed_at").first()
+    for quiz in quizzes:
+        quiz.latest_attempt = latest_attempts.get(quiz.id)

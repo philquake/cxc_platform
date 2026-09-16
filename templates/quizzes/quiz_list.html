@@ -28,6 +28,9 @@
     <div class="quiz-list">
         {% for quiz in quizzes %}
             <article class="quiz-card">
+                <form method="post" action="{% url 'progress:submit-quiz' quiz.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <div class="quiz-card-heading">
                     <div>
                         <span class="content-card-label">{{ quiz.lesson.subject.code }}</span>
@@ -44,7 +47,7 @@
                         <legend>{{ forloop.counter }}. {{ quiz_question.question.text }}</legend>
                         {% for answer in quiz_question.question.answers.all %}
                             <label>
-                                <input type="radio" name="quiz-{{ quiz.id }}-question-{{ quiz_question.question.id }}" value="{{ answer.id }}">
+                                <input type="radio" name="question-{{ quiz_question.question.id }}" value="{{ answer.id }}">
                                 {{ answer.text }}
                             </label>
                         {% endfor %}
@@ -52,6 +55,15 @@
                 {% empty %}
                     <p class="quiz-empty">Questions will be added soon.</p>
                 {% endfor %}
+                {% if user.is_authenticated and quiz.quiz_questions.all %}
+                    <button type="submit" class="quiz-submit">Save quiz result</button>
+                {% elif not user.is_authenticated %}
+                    <a class="progress-action-link" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Sign in to save quiz result</a>
+                {% endif %}
+                {% if quiz.latest_attempt %}
+                    <p class="quiz-result">Latest result: {{ quiz.latest_attempt.score }}/{{ quiz.latest_attempt.total_questions }} ({{ quiz.latest_attempt.percentage }}%)</p>
+                {% endif %}
+                </form>
             </article>
         {% empty %}
             <p>No quizzes are available{% if subject %} for {{ subject.name }}{% endif %} yet.</p>

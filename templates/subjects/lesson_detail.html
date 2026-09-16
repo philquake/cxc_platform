@@ -23,10 +23,24 @@
         {% else %}
             <div class="lesson-body">{{ lesson.content|safe }}</div>
         {% endif %}
+        {% if user.is_authenticated %}
+            <form method="post" action="{% url 'progress:complete-lesson' lesson.id %}" class="progress-action">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="{% if lesson_progress %}is-complete{% endif %}">
+                    {% if lesson_progress %}Completed{% else %}Mark lesson complete{% endif %}
+                </button>
+            </form>
+        {% else %}
+            <a class="progress-action-link" href="{% url 'login' %}?next={{ request.path|urlencode }}">Sign in to save progress</a>
+        {% endif %}
     </article>
 
     {% for quiz in quizzes %}
         <section class="lesson-quiz" aria-labelledby="quiz-{{ quiz.id }}-title">
+            <form method="post" action="{% url 'progress:submit-quiz' quiz.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
             <span class="content-card-label">Multiple-choice quiz</span>
             <h2 id="quiz-{{ quiz.id }}-title">{{ quiz.title }}</h2>
             {% if quiz.description %}
@@ -38,12 +52,21 @@
                     <legend>{{ forloop.counter }}. {{ quiz_question.question.text }}</legend>
                     {% for answer in quiz_question.question.answers.all %}
                         <label>
-                            <input type="radio" name="quiz-{{ quiz.id }}-question-{{ quiz_question.question.id }}" value="{{ answer.id }}">
+                            <input type="radio" name="question-{{ quiz_question.question.id }}" value="{{ answer.id }}">
                             {{ answer.text }}
                         </label>
                     {% endfor %}
                 </fieldset>
             {% endfor %}
+                {% if user.is_authenticated %}
+                    <button type="submit" class="quiz-submit">Save quiz result</button>
+                {% else %}
+                    <a class="progress-action-link" href="{% url 'login' %}?next={{ request.path|urlencode }}">Sign in to save quiz result</a>
+                {% endif %}
+                {% if quiz.latest_attempt %}
+                    <p class="quiz-result">Latest result: {{ quiz.latest_attempt.score }}/{{ quiz.latest_attempt.total_questions }} ({{ quiz.latest_attempt.percentage }}%)</p>
+                {% endif %}
+            </form>
         </section>
     {% endfor %}
 </div>

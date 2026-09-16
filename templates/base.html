@@ -11,28 +11,36 @@
     {% block extra_css %}{% endblock %}
     <title>{% block title %}{% endblock %}</title>
 </head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <a href="{% url 'home' %}" class="logo" aria-label="Compile home"><span>compile</span><span class="slash">/</span><span class="cursor"></span></a>
+      <ul class="nav-links">
+        <li><a href="{% url 'home' %}" class="active">Dashboard</a></li>
+        <li><a href="{% url 'subjects:list' %}">Subjects</a></li>
+        <li><a href="{% url 'subjects:list' %}">Lessons</a></li>
+        <li><a href="{% url 'quizzes:list' %}">Quiz</a></li>
+        <li><a href="{% url 'home' %}#how-it-works">Progress</a></li>
+      </ul>
+    </div>
+    <div class="navbar-right">
+      {% if user.is_authenticated %}
+        <span class="nav-user">Hi, {{ user.get_username }}</span>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn-ghost">Sign in</a>
+        <a href="{% url 'signup' %}" class="btn-accent">Get started</a>
+      {% endif %}
+    </div>
+  </nav>
 
-<nav class="navbar">
-  <div class="navbar-left">
-    <a href="{% url 'home' %}" class="logo" aria-label="Compile home"><span>compile</span><span class="slash">/</span><span class="cursor"></span></a>
-    <ul class="nav-links">
-      <li><a href="{% url 'home' %}" class="active">Dashboard</a></li>
-      <li><a href="{% url 'subjects:list' %}">Subjects</a></li>
-      <li><a href="{% url 'subjects:list' %}">Lessons</a></li>
-      <li><a href="{% url 'quizzes:list' %}">Quiz</a></li>
-      <li><a href="{% url 'home' %}#how-it-works">Progress</a></li>
-    </ul>
-  </div>
-  <div class="navbar-right">
-    <a href="{% url 'login' %}" class="btn-ghost">Sign in</a>
-    <a href="{% url 'signup' %}" class="btn-accent">Get started</a>
-  </div>
-</nav>
-
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-    <footer class="footer">
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">
       <div class="footer-grid">
         <div class="footer-brand">
           <a href="{% url 'home' %}" class="logo" aria-label="Compile home"><span>compile</span><span class="slash">/</span></a>
@@ -77,8 +85,8 @@
           <a href="https://github.com/philquake/cxc_platform" target="_blank" rel="noopener" aria-label="GitHub">GH</a>
         </div>
       </div>
-    </footer>
-    {% bootstrap_javascript %}
+  </footer>
+  {% bootstrap_javascript %}
 </body>
 
 </html>

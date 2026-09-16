@@ -1,11 +1,15 @@
 :root {
-    --ink: #172033;
-    --muted: #667085;
-    --blue: #2563eb;
-    --blue-dark: #1d4ed8;
-    --line: #dbe3f0;
-    --paper: #ffffff;
-    --wash: #eef4ff;
+    --auth-bg: #0d1117;
+    --auth-header: #0b0f14;
+    --auth-panel: #131a23;
+    --auth-panel-hover: #1a222d;
+    --auth-line: #2b3745;
+    --auth-text: #e2e6ea;
+    --auth-muted: #9aa4b2;
+    --auth-faint: #626d7d;
+    --auth-accent: #3ddc84;
+    --auth-accent-hover: #5ef0a0;
+    --auth-danger: #ff8d8d;
 }
 
 * {
@@ -15,9 +19,9 @@
 body {
     margin: 0;
     min-height: 100vh;
-    color: var(--ink);
-    background: linear-gradient(135deg, #f8fbff 0%, var(--wash) 100%);
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--auth-text);
+    background: var(--auth-bg);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
 }
 
 .auth-shell {
@@ -25,31 +29,33 @@ body {
     min-height: 100vh;
     place-items: center;
     padding: 32px 18px;
+    background: radial-gradient(circle at 50% -10%, #173322 0, transparent 42%), var(--auth-bg);
 }
 
 .auth-panel {
     width: min(100%, 440px);
     padding: 42px;
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: 0 24px 60px rgba(37, 99, 235, 0.12);
+    background: var(--auth-panel);
+    border: 1px solid var(--auth-line);
+    border-radius: 8px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
 }
 
 .logo {
-    color: var(--ink);
+    color: var(--auth-text);
+    font-family: "IBM Plex Mono", "SF Mono", monospace;
     font-size: 24px;
-    font-weight: 800;
+    font-weight: 600;
     text-decoration: none;
 }
 
 .logo span {
-    color: var(--blue);
+    color: var(--auth-accent);
 }
 
 .eyebrow {
     margin: 42px 0 8px;
-    color: var(--blue);
+    color: var(--auth-accent);
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.12em;
@@ -63,7 +69,7 @@ h1 {
 
 .intro {
     margin: 14px 0 28px;
-    color: var(--muted);
+    color: var(--auth-muted);
 }
 
 .auth-form {
@@ -80,55 +86,56 @@ h1 {
 .auth-form input {
     width: 100%;
     padding: 12px 13px;
-    color: var(--ink);
-    border: 1px solid var(--line);
-    border-radius: 7px;
+    color: var(--auth-text);
+    background: var(--auth-header);
+    border: 1px solid var(--auth-line);
+    border-radius: 6px;
     font: inherit;
 }
 
 .auth-form input:focus {
-    outline: 3px solid rgba(37, 99, 235, 0.16);
-    border-color: var(--blue);
+    outline: 3px solid rgba(61, 220, 132, 0.16);
+    border-color: var(--auth-accent);
 }
 
 .auth-form button {
     margin-top: 18px;
     padding: 13px 18px;
-    color: white;
-    background: var(--blue);
+    color: var(--auth-header);
+    background: var(--auth-accent);
     border: 0;
-    border-radius: 7px;
+    border-radius: 6px;
     cursor: pointer;
     font: inherit;
     font-weight: 700;
 }
 
 .auth-form button:hover {
-    background: var(--blue-dark);
+    background: var(--auth-accent-hover);
 }
 
 .auth-form ul {
     margin: 0;
     padding: 0;
-    color: #b42318;
+    color: var(--auth-danger);
     list-style: none;
     font-size: 13px;
 }
 
 .auth-form small {
-    color: var(--muted);
+    color: var(--auth-faint);
     font-size: 12px;
 }
 
 .switch-link {
     margin: 24px 0 0;
-    color: var(--muted);
+    color: var(--auth-muted);
     text-align: center;
     font-size: 14px;
 }
 
 .switch-link a {
-    color: var(--blue-dark);
+    color: var(--auth-accent);
     font-weight: 700;
 }
 

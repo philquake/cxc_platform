@@ -33,6 +33,12 @@
 
 .quiz-card {
     padding: 30px 32px;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.quiz-card:hover {
+    border-color: var(--color-accent-dim);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
 }
 
 .quiz-card-heading {
@@ -93,6 +99,18 @@
 .quiz-question input {
     flex: 0 0 auto;
     margin-top: 3px;
+    accent-color: var(--color-accent);
+}
+
+.quiz-submit {
+    margin-top: 24px;
+}
+
+.quiz-result {
+    margin: 18px 0 0;
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
 }
 
 @media (max-width: 560px) {

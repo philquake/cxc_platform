@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
@@ -8,8 +8,54 @@ from django.views.decorators.http import require_POST
 
 from apps.lessons.models import Lesson
 from apps.quizzes.models import Quiz
+from apps.subjects.models import Subject
 
 from .models import LessonProgress, QuizAnswer, QuizAttempt
+
+
+@login_required
+def dashboard(request):
+	lesson_progress_ids = set(
+		LessonProgress.objects.filter(
+			user=request.user,
+			completed=True,
+		).values_list("lesson_id", flat=True)
+	)
+	latest_attempts = {}
+	for attempt in QuizAttempt.objects.filter(
+		user=request.user,
+		completed_at__isnull=False,
+		quiz__is_active=True,
+		quiz__lesson__is_active=True,
+	).select_related("quiz", "quiz__lesson"):
+		latest_attempts.setdefault(attempt.quiz_id, attempt)
+
+	subjects = list(
+		Subject.objects.filter(is_active=True).prefetch_related("lessons")
+	)
+	for subject in subjects:
+		lessons = [lesson for lesson in subject.lessons.all() if lesson.is_active]
+		completed_count = 0
+		for lesson in lessons:
+			lesson.is_completed = lesson.id in lesson_progress_ids
+			lesson.latest_quiz_attempt = next(
+				(
+					attempt
+					for attempt in latest_attempts.values()
+					if attempt.quiz.lesson_id == lesson.id
+				),
+				None,
+			)
+			if lesson.is_completed:
+				completed_count += 1
+			subject.progress_lessons = lessons
+		subject.lesson_count = len(lessons)
+		subject.completed_count = completed_count
+		subject.progress_percentage = round(
+			(completed_count / len(lessons)) * 100
+		) if lessons else 0
+
+	return render(request, "progress/dashboard.html", {"subjects": subjects})
 
 
 def _safe_next_url(request, fallback):
@@ -87,8 +133,8 @@ def submit_quiz(request, quiz_id):
 	attempt.score = score
 	attempt.save(update_fields=["score"])
 
-	return redirect(
-		_safe_next_url(request, reverse("quizzes:list"))
-	)
+	destination = _safe_next_url(request, reverse("quizzes:list"))
+	separator = "&" if "?" in destination else "?"
+	return redirect(f"{destination}{separator}attempt={attempt.id}")
 
 # Create your views here.

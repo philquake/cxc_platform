@@ -6,6 +6,7 @@ from . import views
 app_name = "progress"
 
 urlpatterns = [
+    path("", views.dashboard, name="dashboard"),
     path(
         "lessons/<int:lesson_id>/complete/",
         views.complete_lesson,

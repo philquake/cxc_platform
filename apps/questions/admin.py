@@ -19,12 +19,15 @@ class AnswerInline(admin.TabularInline):
 class QuestionAdmin(admin.ModelAdmin):
     list_display = (
         "text",
+        "subject",
+        "topic",
         "lesson",
         "difficulty",
         "is_active",
     )
     list_filter = (
-        "lesson__subject",
+        "subject",
+        "topic",
         "lesson",
         "difficulty",
         "is_active",

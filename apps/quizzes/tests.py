@@ -3,14 +3,19 @@ from django.test import TestCase
 
 from apps.lessons.models import Lesson
 from apps.questions.models import Answer, Question
-from apps.subjects.models import Subject
+from apps.subjects.models import Subject, Topic
 
-from .models import Quiz, QuizQuestion
+from apps.quizzes.models import Quiz, QuizQuestion
 
 
 class QuizModelTests(TestCase):
 	def setUp(self):
 		self.subject = Subject.objects.create(name="Mathematics", code="MATH")
+		self.topic = Topic.objects.create(
+			subject=self.subject,
+			name="Algebra",
+			slug="algebra",
+		)
 		self.lesson = Lesson.objects.create(
 			subject=self.subject,
 			title="Algebra",
@@ -28,19 +33,33 @@ class QuizModelTests(TestCase):
 			section_number=1,
 		)
 		self.question = Question.objects.create(
+			subject=self.subject,
+			topic=self.topic,
 			lesson=self.lesson,
 			text="What is 2 + 2?",
 		)
 
 	def test_quiz_is_attached_to_lesson(self):
-		quiz = Quiz.objects.create(title="Algebra quiz", lesson=self.lesson)
+		quiz = Quiz.objects.create(
+			title="Algebra quiz",
+			subject=self.subject,
+			topic=self.topic,
+			lesson=self.lesson,
+		)
 
 		self.assertEqual(quiz.lesson, self.lesson)
 		self.assertEqual(self.lesson.quizzes.get(), quiz)
 
 	def test_quiz_question_must_match_quiz_lesson(self):
-		quiz = Quiz.objects.create(title="Algebra quiz", lesson=self.lesson)
+		quiz = Quiz.objects.create(
+			title="Algebra quiz",
+			subject=self.subject,
+			topic=self.topic,
+			lesson=self.lesson,
+		)
 		other_question = Question.objects.create(
+			subject=self.subject,
+			topic=self.topic,
 			lesson=self.other_lesson,
 			text="What is a triangle?",
 		)

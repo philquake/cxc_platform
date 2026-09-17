@@ -243,4 +243,35 @@ def leaderboard(request, subject_slug, topic_slug):
 		},
 	)
 
-# Create your views here.
+@login_required
+def subject_leaderboard(request, subject_slug):
+	subject = next(
+		(
+			item
+			for item in Subject.objects.filter(is_active=True)
+			if subject_slug in {slugify(item.name), slugify(item.code)}
+		),
+		None,
+	)
+	if subject is None:
+		raise Http404("Subject not found")
+
+	all_rows = list(
+		XPTransaction.objects.filter(topic__subject=subject)
+		.values("user_id", "user__username")
+		.annotate(xp=Sum("amount"))
+		.order_by("-xp", "user_id")
+	)
+	for index, row in enumerate(all_rows, start=1):
+		row["rank"] = index
+	current_user_row = next((row for row in all_rows if row["user_id"] == request.user.id), None)
+	return render(
+		request,
+		"progress/leaderboard.html",
+		{
+			"subject": subject,
+			"topic": None,
+			"leaderboard": all_rows[:20],
+			"current_user_row": current_user_row,
+		},
+	)

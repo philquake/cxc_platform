@@ -8,6 +8,11 @@ app_name = "progress"
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path(
+        "leaderboard/<slug:subject_slug>/",
+        views.subject_leaderboard,
+        name="subject-leaderboard",
+    ),
+    path(
         "leaderboard/<slug:subject_slug>/<slug:topic_slug>/",
         views.leaderboard,
         name="leaderboard",

@@ -79,5 +79,14 @@
             <p class="progress-empty">No subjects are available yet.</p>
         {% endfor %}
     </div>
+    {% if subject.active_topics %}
+    <div class="progress-topic-links">
+        <span class="progress-topic-label">TOPIC LEADERBOARDS</span>
+        <a href="{% url 'progress:subject-leaderboard' subject.name|slugify %}"><strong>All of {{ subject.code }}</strong></a>
+        {% for topic in subject.active_topics %}
+            <a href="{% url 'progress:leaderboard' subject.name|slugify topic.slug %}">{{ topic.name }}</a>
+        {% endfor %}
+    </div>
+{% endif %}
 </div>
 {% endblock %}

@@ -11,9 +11,9 @@
 <div class="progress-page leaderboard-page">
     <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
     <header class="progress-header">
-        <span class="content-card-label">{{ subject.code }} / {{ topic.name }}</span>
-        <h1>Topic leaderboard</h1>
-        <p>Ranked by XP earned from lessons and quizzes in {{ topic.name }}.</p>
+        <span class="content-card-label">{{ subject.code }}{% if topic %} / {{ topic.name }}{% endif %}</span>
+<h1>{% if topic %}{{ topic.name }} leaderboard{% else %}{{ subject.name }} leaderboard{% endif %}</h1>
+<p>{% if topic %}Ranked by XP earned from lessons and quizzes in {{ topic.name }}.{% else %}Ranked by total XP earned across all topics in {{ subject.name }}.{% endif %}</p>
     </header>
 
     {% if current_user_row %}

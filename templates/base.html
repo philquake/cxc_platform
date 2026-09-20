@@ -18,7 +18,7 @@
       <ul class="nav-links">
         <li><a href="{% url 'home' %}" class="active">Dashboard</a></li>
         <li><a href="{% url 'subjects:list' %}">Subjects</a></li>
-        <li><a href="{% url 'quizzes:list' %}">Quiz</a></li>
+        {% comment %} <li><a href="{% url 'quizzes:list' %}">Quiz</a></li> add Quiz-> SUbjects -> Topic -> Difficulty{% endcomment %}
         <li><a href="{% url 'progress:dashboard' %}">Progress</a></li>
       </ul>
     </div>

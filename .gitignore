@@ -41,6 +41,7 @@ pnpm-debug.log*
 out/
 coverage/
 *.log
+staticfiles/
 
 ### IDEs and editors
 .idea/

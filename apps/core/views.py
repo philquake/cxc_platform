@@ -13,3 +13,9 @@ def home(request):
             "subjects": subjects,
         },
     )
+    
+def terms(request):
+    return render(request, "legal/terms.html")
+
+def privacy(request):
+    return render(request, "legal/privacy.html")

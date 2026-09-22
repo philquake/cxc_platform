@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Terms of Service | compile{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/legal.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-column legal-page">
+    <header class="content-header">
+        <span class="content-card-label">LEGAL</span>
+        <h1>Terms of Service</h1>
+        <p>Last updated: {{ legal_updated_date|default:"September 21, 2026" }}</p>
+    </header>
+
+    <div class="legal-body">
+        <p>
+            These Terms of Service ("Terms") govern your access to and use of compile/
+            (the "Service"), operated by us ("compile", "we", "us", or "our"). By
+            creating an account or otherwise using the Service, you agree to these
+            Terms. If you do not agree, please do not use the Service.
+        </p>
+
+        <section class="legal-section">
+            <h2>1. Who can use compile/</h2>
+            <p>
+                compile/ is built for students preparing for CSEC and CAPE
+                examinations, and is intended for use by students, teachers, and
+                anyone supporting Caribbean secondary and post-secondary exam
+                preparation. If you are under the age of majority in your
+                jurisdiction, you confirm that you have the permission of a parent
+                or guardian to use the Service, and that they have read these Terms
+                and our Privacy Policy on your behalf.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>2. Your account</h2>
+            <ul>
+                <li>You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account.</li>
+                <li>You agree to provide accurate information when creating your account and to keep it up to date.</li>
+                <li>You must notify us promptly if you believe your account has been accessed without authorization.</li>
+                <li>We may suspend or terminate accounts that violate these Terms, that are inactive for an extended period, or that we reasonably believe are being used fraudulently or abusively.</li>
+            </ul>
+        </section>
+
+        <section class="legal-section">
+            <h2>3. Acceptable use</h2>
+            <p>When using compile/, you agree not to:</p>
+            <ul>
+                <li>Copy, scrape, redistribute, or resell lessons, quiz questions, explanations, or other content from the Service without our prior written permission;</li>
+                <li>Attempt to circumvent, disable, or interfere with any security or access-control feature of the Service;</li>
+                <li>Use automated means (bots, scripts, scrapers) to access the Service except where we explicitly allow it;</li>
+                <li>Upload or transmit content that is unlawful, harassing, or infringes another person's rights;</li>
+                <li>Misrepresent your identity or impersonate another person, including another student, for the purpose of quizzes, leaderboards, or progress tracking;</li>
+                <li>Interfere with other users' access to or enjoyment of the Service.</li>
+            </ul>
+        </section>
+
+        <section class="legal-section">
+            <h2>4. Content and intellectual property</h2>
+            <p>
+                All lessons, notes, quiz questions, explanations, graphics, and the
+                overall design and branding of compile/ are owned by us or our
+                licensors and are protected by copyright and other intellectual
+                property laws. Subject to your compliance with these Terms, we grant
+                you a limited, non-exclusive, non-transferable license to access and
+                use this content for your personal, non-commercial study purposes.
+            </p>
+            <p>
+                CSEC and CAPE are examinations administered by the Caribbean
+                Examinations Council (CXC). compile/ is an independent study
+                platform and is not affiliated with, endorsed by, or operated by
+                CXC. References to CSEC and CAPE syllabuses are for descriptive and
+                educational purposes only.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>5. Progress data, quizzes, and leaderboards</h2>
+            <p>
+                Features such as XP, streaks, quiz results, and topic leaderboards
+                are provided to support your learning and are not official academic
+                records. We do not guarantee that quiz scores, explanations, or any
+                other content on the Service reflect the exact content, format, or
+                difficulty of an actual CSEC or CAPE examination. Use compile/ as a
+                study aid alongside, not a replacement for, your official
+                coursework and teacher guidance.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>6. Service availability and changes</h2>
+            <p>
+                We aim to keep compile/ available and up to date, but we do not
+                guarantee uninterrupted access. We may modify, suspend, or
+                discontinue any part of the Service, including specific subjects,
+                lessons, or features, at any time. We will make reasonable efforts
+                to notify you of material changes that affect your account or
+                stored progress.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>7. Disclaimer of warranties</h2>
+            <p>
+                The Service is provided "as is" and "as available," without
+                warranties of any kind, express or implied, including but not
+                limited to accuracy, completeness, or fitness for a particular
+                purpose. We do not warrant that using compile/ will result in any
+                particular examination outcome.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>8. Limitation of liability</h2>
+            <p>
+                To the fullest extent permitted by law, compile/ and its operators
+                will not be liable for any indirect, incidental, or consequential
+                damages arising from your use of, or inability to use, the Service,
+                including damages related to examination performance or lost
+                progress data.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>9. Termination</h2>
+            <p>
+                You may stop using the Service and request deletion of your account
+                at any time. We may suspend or terminate your access if you
+                violate these Terms. Sections that by their nature should survive
+                termination (such as intellectual property and limitation of
+                liability) will continue to apply.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>10. Changes to these Terms</h2>
+            <p>
+                We may update these Terms from time to time. If we make material
+                changes, we will update the "Last updated" date above and, where
+                appropriate, notify you through the Service. Continued use of
+                compile/ after changes take effect means you accept the revised
+                Terms.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>11. Contact</h2>
+            <p>
+                Questions about these Terms can be sent to
+                <a href="mailto:{{ legal_contact_email|default:"tutorcole15@gmail.com" }}">{{ legal_contact_email|default:"tutorcole15@gmail.com" }}</a>,
+                or raised via our
+                <a href="https://github.com/philquake/cxc_platform/issues" target="_blank" rel="noopener">issue tracker</a>.
+            </p>
+        </section>
+    </div>
+
+    <p class="legal-footnote">
+        See also our <a href="{% url 'privacy' %}">Privacy Policy</a>.
+    </p>
+</div>
+{% endblock %}

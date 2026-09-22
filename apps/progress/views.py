@@ -224,7 +224,11 @@ def leaderboard(request, subject_slug, topic_slug):
 		raise Http404("Subject not found")
 	topic = get_object_or_404(Topic, subject=subject, slug=topic_slug, is_active=True)
 	all_rows = list(
-		XPTransaction.objects.filter(topic=topic)
+		XPTransaction.objects.filter(
+			topic=topic,
+			user__is_staff=False,
+			user__is_superuser=False,
+		)
 		.values("user_id", "user__username")
 		.annotate(xp=Sum("amount"))
 		.order_by("-xp", "user_id")
@@ -257,7 +261,11 @@ def subject_leaderboard(request, subject_slug):
 		raise Http404("Subject not found")
 
 	all_rows = list(
-		XPTransaction.objects.filter(topic__subject=subject)
+		XPTransaction.objects.filter(
+			topic__subject=subject,
+			user__is_staff=False,
+			user__is_superuser=False,
+		)
 		.values("user_id", "user__username")
 		.annotate(xp=Sum("amount"))
 		.order_by("-xp", "user_id")

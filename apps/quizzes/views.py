@@ -16,6 +16,10 @@ def quiz_queryset(subject=None, topic=None):
         quiz_questions = quiz_questions.filter(question__subject=subject)
     if topic is not None:
         quiz_questions = quiz_questions.filter(question__topic=topic)
+        
+    # Randomize question order (and answer order within each question)
+    # on every render, instead of always following the fixed "order" field.
+    quiz_questions = quiz_questions.order_by("?")
 
     quiz_filters = {"is_active": True, "lesson__is_active": True}
     if subject is not None:
@@ -165,11 +169,14 @@ def _add_latest_attempts(request, quizzes):
 
 
 def _result_attempt(request):
-    attempt_id = request.GET.get("attempt")
-    if not request.user.is_authenticated or not attempt_id or not attempt_id.isdigit():
-        return None
-    return QuizAttempt.objects.filter(
-        id=int(attempt_id),
-        user=request.user,
-        completed_at__isnull=False,
-    ).select_related("quiz").first()
+	attempt_id = request.GET.get("attempt")
+	if not request.user.is_authenticated or not attempt_id or not attempt_id.isdigit():
+		return None
+	return QuizAttempt.objects.filter(
+		id=int(attempt_id),
+		user=request.user,
+		completed_at__isnull=False,
+	).select_related("quiz").prefetch_related(
+		"answers__question__answers",
+		"answers__selected_answer",
+	).first()

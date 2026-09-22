@@ -3,7 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
-
+from .forms import SignupForm
 
 def _redirect_after_auth(request):
 	redirect_to = request.POST.get("next") or request.GET.get("next")
@@ -30,7 +30,7 @@ def login_view(request):
 
 
 def signup(request):
-	form = UserCreationForm(request.POST or None)
+	form = SignupForm(request.POST or None)
 	if request.method == "POST" and form.is_valid():
 		user = form.save()
 		login(request, user)

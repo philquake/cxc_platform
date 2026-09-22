@@ -6,13 +6,15 @@ from django.urls import reverse
 class AccountFlowTests(TestCase):
 	def test_signup_creates_and_logs_in_user(self):
 		response = self.client.post(
-			reverse("signup"),
-			{
-				"username": "newstudent",
-				"password1": "A-strong-password-123",
-				"password2": "A-strong-password-123",
-			},
-		)
+		reverse("signup"),
+		{
+			"username": "newstudent",
+			"first_name": "New",
+			"last_name": "Student",
+			"password1": "A-strong-password-123",
+			"password2": "A-strong-password-123",
+		},
+	)
 
 		self.assertRedirects(response, reverse("home"))
 		self.assertTrue(response.wsgi_request.user.is_authenticated)

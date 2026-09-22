@@ -42,6 +42,7 @@ out/
 coverage/
 *.log
 staticfiles/
+media/
 
 ### IDEs and editors
 .idea/

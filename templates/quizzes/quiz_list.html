@@ -20,6 +20,18 @@
                 {% if result_attempt.xp_transaction %}
                     <p class="quiz-result-xp">+{{ result_attempt.xp_transaction.amount }} XP earned</p>
                 {% endif %}
+                <div class="quiz-result-breakdown">
+                    {% for answer in result_attempt.answers.all %}
+                        {% if not answer.is_correct %}
+                            <div class="quiz-result-item is-incorrect">
+                                <p class="quiz-result-item-question">Question {{ forloop.counter }}</p>
+                                <p class="quiz-result-item-status">
+                                    ✗ Your answer: {% if answer.selected_answer %}{{ answer.selected_answer.text }}{% else %}No answer selected{% endif %}
+                                </p>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
                 {% if result_attempt.percentage >= 70 %}
                     <p>You passed. Keep your momentum going.</p>
                     <div class="quiz-result-actions">

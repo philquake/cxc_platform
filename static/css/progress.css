@@ -397,3 +397,56 @@
         font-size: 12px;
     }
 }
+
+.mistake-answer {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+}
+
+.mistake-answer-correct {
+    color: var(--color-correct);
+    background: var(--color-correct-bg);
+}
+
+.mistake-answer-wrong {
+    color: var(--color-incorrect);
+    background: var(--color-incorrect-bg);
+    text-decoration: line-through;
+}
+
+.mistake-answer small {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-decoration: none;
+}
+
+.mistake-explanation {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-panel-border);
+}
+
+.mistake-bank-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 8px 13px;
+    color: var(--color-accent);
+    background: linear-gradient(135deg, var(--color-bg-header), #10261a);
+    border: 1px solid var(--color-accent-dim);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.mistake-bank-link:hover {
+    color: var(--color-bg-header);
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mistake bank | Compile{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/progress.css' %}">
+<link rel="stylesheet" href="{% static 'css/quizzes.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="progress-page">
+    <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
+
+    <header class="progress-header">
+        <span class="content-card-label">REVIEW</span>
+        <h1>Mistake bank</h1>
+        <p>Every question you've missed, with the correct answer and explanation — so you don't miss it twice.</p>
+    </header>
+
+    <div class="quiz-list">
+        {% for mistake in mistakes %}
+            <article class="quiz-card">
+                <div class="quiz-card-heading">
+                    <div>
+                        <span class="content-card-label">
+                            {{ mistake.question.subject.code }} / {{ mistake.question.topic.name }}
+                        </span>
+                        <h2>{{ mistake.question.text }}</h2>
+                    </div>
+                    <span class="quiz-card-meta">
+                        Missed {{ mistake.attempt.completed_at|date:"M j, Y" }}
+                    </span>
+                </div>
+
+                <fieldset class="quiz-question">
+                    <legend>Your answer vs. the correct one</legend>
+
+                    {% for answer in mistake.question.answers.all %}
+                        <label class="mistake-answer
+                            {% if answer.is_correct %}mistake-answer-correct{% endif %}
+                            {% if mistake.selected_answer_id == answer.id and not answer.is_correct %}mistake-answer-wrong{% endif %}">
+                            {% if answer.is_correct %}
+                                <span aria-hidden="true">✓</span>
+                            {% elif mistake.selected_answer_id == answer.id %}
+                                <span aria-hidden="true">✗</span>
+                            {% else %}
+                                <span aria-hidden="true">&nbsp;</span>
+                            {% endif %}
+                            {{ answer.text }}
+                            {% if answer.is_correct %}<small>Correct answer</small>{% endif %}
+                            {% if mistake.selected_answer_id == answer.id and not answer.is_correct %}<small>You picked this</small>{% endif %}
+                        </label>
+                    {% endfor %}
+                </fieldset>
+
+                {% if mistake.question.explanation %}
+                    <p class="quiz-card-description mistake-explanation">
+                        <strong>Why:</strong> {{ mistake.question.explanation }}
+                    </p>
+                {% endif %}
+
+                <a class="progress-action-link" href="{% url 'subjects:lesson-detail' mistake.question.subject.name|slugify mistake.question.lesson.slug %}">
+                    Review the lesson →
+                </a>
+            </article>
+        {% empty %}
+            <p class="progress-empty">No mistakes recorded yet — keep practicing, and anything you miss will show up here for review.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -283,3 +283,24 @@ def subject_leaderboard(request, subject_slug):
 			"current_user_row": current_user_row,
 		},
 	)
+
+@login_required
+def mistake_bank(request):
+    wrong_answers = (
+        QuizAnswer.objects.filter(
+            attempt__user=request.user,
+            is_correct=False,
+        )
+        .select_related("question", "question__subject", "question__topic", "selected_answer")
+        .prefetch_related("question__answers")
+        .order_by("-attempt__completed_at")
+    )
+
+    # collapse to one entry per question (latest miss), so repeats don't spam the list
+    seen = {}
+    for wa in wrong_answers:
+        seen.setdefault(wa.question_id, wa)
+
+    return render(request, "progress/mistake_bank.html", {
+        "mistakes": seen.values(),
+    })

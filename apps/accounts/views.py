@@ -1,4 +1,5 @@
 from django.contrib.auth import login, logout
+from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -30,10 +31,14 @@ def login_view(request):
 
 
 def signup(request):
-	form = SignupForm(request.POST or None)
+	form = UserCreationForm(request.POST or None)
 	if request.method == "POST" and form.is_valid():
 		user = form.save()
 		login(request, user)
+		messages.success(
+			request,
+			f"You're signed up, {user.username}! Welcome to compile/.",
+		)
 		return _redirect_after_auth(request)
 
 	return render(

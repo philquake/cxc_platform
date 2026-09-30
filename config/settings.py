@@ -156,3 +156,24 @@ MAILERS = {
 
 # 20 MB, up from Django's 2.5 MB default
 FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024 
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}

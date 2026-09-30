@@ -2,6 +2,7 @@
 
 {% block extra_css %}
 {% load static %}
+{% load lesson_extras %}
 <link rel="stylesheet" href="{% static 'css/subjects.css' %}">
 <link rel="stylesheet" href="{% static 'css/quizzes.css' %}">
 {% endblock %}
@@ -18,10 +19,10 @@
         {% if lesson.section_title %}
             <section class="lesson-section">
                 <h2>{{ lesson.section_title }}</h2>
-                <div class="lesson-body">{{ lesson.content|safe }}</div>
+                <div class="lesson-body">{{ lesson.content|optimize_images }}</div>
             </section>
         {% else %}
-            <div class="lesson-body">{{ lesson.content|safe }}</div>
+            <div class="lesson-body">{{ lesson.content|optimize_images }}</div>
         {% endif %}
         {% if user.is_authenticated %}
             <form method="post" action="{% url 'progress:complete-lesson' lesson.id %}" class="progress-action">

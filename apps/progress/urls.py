@@ -35,4 +35,20 @@ urlpatterns = [
     path("mistakes/",
         views.mistake_bank,
         name="mistake-bank"),
+
+    path(
+        "flashcards/review/",
+        views.review_flashcard,
+        name="review-flashcard",
+    ),
+    path(
+        "flashcards/<slug:subject_slug>/",
+        views.flashcard_session,
+        name="flashcards",
+    ),
+    path(
+        "flashcards/<slug:subject_slug>/<slug:topic_slug>/",
+        views.flashcard_session,
+        name="flashcards-topic",
+    ),
 ]

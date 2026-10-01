@@ -24,6 +24,7 @@ class Topic(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220)
     description = models.TextField(blank=True)
+    exam_weight = models.PositiveSmallIntegerField(default=1)
     is_active = models.BooleanField(default=True)
 
     class Meta:

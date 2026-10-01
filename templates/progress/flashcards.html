@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ topic.name|default:"Flashcards" }} | Compile{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/progress.css">
+<link rel="stylesheet" href="/static/css/flashcards.css">
+{% endblock %}
+
+{% block content %}
+<div class="progress-page flashcard-page">
+    <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
+
+    <header class="progress-header">
+        <span class="content-card-label">{{ subject.code }}{% if topic %} / {{ topic.name }}{% endif %} FLASHCARDS</span>
+        <h1>Review</h1>
+        <p>{{ due_count }} card{{ due_count|pluralize }} due today.</p>
+    </header>
+
+    {% if cards %}
+        <div class="flashcard-shell" data-total="{{ cards|length }}">
+            <div class="flashcard-progress">
+                <span id="fc-position">1</span> / {{ cards|length }}
+            </div>
+
+            {% for card in cards %}
+                <article class="flashcard {% if not forloop.first %}is-hidden{% endif %}"
+                          data-index="{{ forloop.counter0 }}"
+                          data-question-id="{{ card.question.id }}">
+                    <div class="flashcard-inner">
+                        <div class="flashcard-face flashcard-front">
+                            <span class="content-card-label">{{ card.question.difficulty|upper }}</span>
+                            <p class="flashcard-text">{{ card.question.text }}</p>
+                            <button type="button" class="flashcard-flip-btn">Show answer</button>
+                        </div>
+                        <div class="flashcard-face flashcard-back">
+                            <p class="flashcard-answer">
+                                {% for answer in card.question.answers.all %}
+                                    {% if answer.is_correct %}{{ answer.text }}{% endif %}
+                                {% endfor %}
+                            </p>
+                            {% if card.question.explanation %}
+                                <p class="flashcard-explanation">{{ card.question.explanation }}</p>
+                            {% endif %}
+                            <div class="flashcard-rate" role="group" aria-label="Rate your recall">
+                                <button type="button" class="rate-btn rate-again" data-rating="again">Again</button>
+                                <button type="button" class="rate-btn rate-hard" data-rating="hard">Hard</button>
+                                <button type="button" class="rate-btn rate-good" data-rating="good">Good</button>
+                                <button type="button" class="rate-btn rate-easy" data-rating="easy">Easy</button>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+
+            <div class="flashcard-done is-hidden">
+                <p class="content-card-label">SESSION COMPLETE</p>
+                <h2>Nice work.</h2>
+                <p>You reviewed {{ cards|length }} card{{ cards|length|pluralize }}.</p>
+                <a class="btn btn-primary" href="{% url 'progress:dashboard' %}">Back to progress</a>
+            </div>
+        </div>
+
+        <form id="flashcard-review-form" method="post" action="{% url 'progress:review-flashcard' %}" class="visually-hidden">
+            {% csrf_token %}
+            <input type="hidden" name="question_id" id="fc-question-id">
+            <input type="hidden" name="rating" id="fc-rating">
+        </form>
+    {% else %}
+        <p class="progress-empty">No cards are due right now. Check back later.</p>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const cards = Array.from(document.querySelectorAll(".flashcard"));
+    const shell = document.querySelector(".flashcard-shell");
+    const positionEl = document.getElementById("fc-position");
+    const doneEl = document.querySelector(".flashcard-done");
+    const form = document.getElementById("flashcard-review-form");
+    const questionInput = document.getElementById("fc-question-id");
+    const ratingInput = document.getElementById("fc-rating");
+    let current = 0;
+
+    cards.forEach(function (card) {
+        const flipBtn = card.querySelector(".flashcard-flip-btn");
+        flipBtn.addEventListener("click", function () {
+            card.classList.add("is-flipped");
+        });
+
+        card.querySelectorAll(".rate-btn").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                questionInput.value = card.dataset.questionId;
+                ratingInput.value = btn.dataset.rating;
+
+                // fire-and-forget so the review doesn't block moving to the next card
+                fetch(form.action, {
+                    method: "POST",
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                    body: new FormData(form),
+                });
+
+                advance();
+            });
+        });
+    });
+
+    function advance() {
+        cards[current].classList.add("is-hidden");
+        current += 1;
+        if (current < cards.length) {
+            cards[current].classList.remove("is-hidden");
+            positionEl.textContent = current + 1;
+        } else {
+            shell.querySelector(".flashcard-progress").classList.add("is-hidden");
+            doneEl.classList.remove("is-hidden");
+        }
+    }
+});
+</script>
+{% endblock %}

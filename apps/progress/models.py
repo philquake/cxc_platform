@@ -116,6 +116,7 @@ class QuizAnswer(models.Model):
         blank=True,
         related_name="selected_in_attempts",
     )
+    selected_text = models.TextField(blank=True, default="")
     is_correct = models.BooleanField(default=False)
 
     def __str__(self):
@@ -166,4 +167,18 @@ class MistakeReview(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["user", "question"], name="unique_user_question_review")
+        ]
+        
+class FlashcardState(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="flashcard_states")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="flashcard_states")
+    ease = models.FloatField(default=2.5)          # SM-2 ease factor
+    interval_days = models.PositiveIntegerField(default=0)
+    due_at = models.DateField(null=True, blank=True)
+    reps = models.PositiveIntegerField(default=0)
+    last_reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "question"], name="unique_user_question_flashcard")
         ]

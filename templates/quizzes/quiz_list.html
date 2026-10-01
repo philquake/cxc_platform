@@ -26,7 +26,7 @@
                             <div class="quiz-result-item is-incorrect">
                                 <p class="quiz-result-item-question">Question {{ forloop.counter }}</p>
                                 <p class="quiz-result-item-status">
-                                    ✗ Your answer: {% if answer.selected_answer %}{{ answer.selected_answer.text }}{% else %}No answer selected{% endif %}
+                                    ✗ Your answer: {% if answer.selected_answer %}{{ answer.selected_answer.text }}{% elif answer.selected_text %}{{ answer.selected_text }}{% else %}No answer selected{% endif %}
                                 </p>
                             </div>
                         {% endif %}
@@ -105,12 +105,46 @@
                 {% for quiz_question in quiz.quiz_questions.all %}
                     <fieldset class="quiz-question">
                         <legend>{{ forloop.counter }}. {{ quiz_question.question.text }}</legend>
-                        {% for answer in quiz_question.question.answers.all %}
+                        {% if quiz_question.question.format == 'matching' %}
+                            {% for answer in quiz_question.question.answers.all %}
+                                <label>
+                                    {{ answer.text }}
+                                    <select name="question-{{ quiz_question.question.id }}-{{ answer.id }}">
+                                        <option value="">Choose a match</option>
+                                        {% for option in quiz_question.question.answers.all %}
+                                            <option value="{{ option.match_text }}">{{ option.match_text }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                            {% endfor %}
+                        {% elif quiz_question.question.is_open_ended %}
                             <label>
-                                <input type="radio" name="question-{{ quiz_question.question.id }}" value="{{ answer.id }}">
-                                {{ answer.text }}
+                                {% if quiz_question.question.format == 'worded' %}
+                                    <span class="sr-only">Your answer</span>
+                                    <textarea name="question-{{ quiz_question.question.id }}" rows="4" placeholder="Write your answer"></textarea>
+                                {% else %}
+                                    <span class="sr-only">Your answer</span>
+                                    <input type="text" name="question-{{ quiz_question.question.id }}" placeholder="Type your answer" autocomplete="off">
+                                {% endif %}
                             </label>
-                        {% endfor %}
+                        {% elif quiz_question.question.format == 'true_false' %}
+                            {% for answer in quiz_question.question.answers.all %}
+                                <label>
+                                    <input type="radio" name="question-{{ quiz_question.question.id }}" value="{{ answer.id }}">
+                                    {{ answer.text }}
+                                </label>
+                            {% empty %}
+                                <label><input type="radio" name="question-{{ quiz_question.question.id }}" value="True">True</label>
+                                <label><input type="radio" name="question-{{ quiz_question.question.id }}" value="False">False</label>
+                            {% endfor %}
+                        {% else %}
+                            {% for answer in quiz_question.question.answers.all %}
+                                <label>
+                                    <input type="radio" name="question-{{ quiz_question.question.id }}" value="{{ answer.id }}">
+                                    {{ answer.text }}
+                                </label>
+                            {% endfor %}
+                        {% endif %}
                     </fieldset>
                 {% empty %}
                     <p class="quiz-empty">Questions will be added soon.</p>

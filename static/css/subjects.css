@@ -320,6 +320,72 @@
     font-size: 20px;
 }
 
+/* Text alignment */
+.lesson-body .has-text-align-left    { text-align: left; }
+.lesson-body .has-text-align-center  { text-align: center; }
+.lesson-body .has-text-align-right   { text-align: right; }
+.lesson-body .has-text-align-justify { text-align: justify; }
+
+/* Images */
+.lesson-body figure.image {
+    margin: 1.5rem auto;
+    max-width: 100%;
+}
+
+.lesson-body figure.image img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.lesson-body figure.image figcaption {
+    margin-top: 8px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+/* Image beside text */
+.lesson-body .image-style-align-left,
+.lesson-body .image-style-align-right,
+.lesson-body .image-style-side {
+    max-width: 50%;
+}
+
+.lesson-body .image-style-align-left {
+    float: left;
+    margin: 4px 24px 12px 0;
+}
+
+.lesson-body .image-style-align-right,
+.lesson-body .image-style-side {
+    float: right;
+    margin: 4px 0 12px 24px;
+}
+
+.lesson-body .image-style-align-center {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Keep floats from spilling out of the card */
+.lesson-body::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+/* Stack on small screens */
+@media (max-width: 560px) {
+    .lesson-body .image-style-align-left,
+    .lesson-body .image-style-align-right,
+    .lesson-body .image-style-side {
+        float: none;
+        max-width: 100%;
+        margin: 1.5rem auto;
+    }
+}
+
 @media (max-width: 900px) {
     .content-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -392,6 +458,7 @@
     .quiz-link {
         padding: 14px;
     }
+    
 
     .content-card,
     .lesson-link {

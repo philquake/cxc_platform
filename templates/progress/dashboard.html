@@ -4,7 +4,7 @@
 {% block title %}Progress | Compile{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/progress.css' %}">
+<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=1.1">
 {% endblock %}
 
 {% block content %}
@@ -13,9 +13,11 @@
         <span class="content-card-label">YOUR LEARNING PATH</span>
         <h1>Progress</h1>
         <p>See how far you have moved through each subject and lesson.</p>
-        <a href="{% url 'progress:mistake-bank' %}" class="mistake-bank-link">
-            Review your mistakes →
-        </a>
+        <div class="progress-header-links">
+            <a href="{% url 'progress:mistake-bank' %}" class="mistake-bank-link">
+                Review your mistakes →
+            </a>
+        </div>
     </header>
 
     <section class="progress-stats" aria-label="Your progression stats">
@@ -54,9 +56,88 @@
                     <span style="width: {{ subject.progress_percentage }}%"></span>
                 </div>
                 <p class="progress-summary">{{ subject.completed_count }} of {{ subject.lesson_count }} lessons complete</p>
+                <div class="progress-callouts">
+                    <a href="{% url 'progress:flashcards' subject.name|slugify %}" class="mistake-bank-link">
+                        Practice flashcards →
+                    </a>
+                </div>
+
+                <section class="progress-readiness" aria-label="{{ subject.name }} estimated readiness">
+                    <div class="progress-readiness-heading">
+                        <div>
+                            <h3>Estimated readiness</h3>
+                            {% if subject.readiness.available %}
+                                <p>{{ subject.readiness.band }}</p>
+                            {% endif %}
+                        </div>
+                        {% if subject.readiness.available %}
+                            <strong>{{ subject.readiness.score_percent }}%</strong>
+                        {% else %}
+                            <strong>Unknown</strong>
+                        {% endif %}
+                    </div>
+                    <p class="progress-readiness-detail">
+                        {% if subject.readiness.available %}
+                            {{ subject.readiness.confidence_percent }}% of syllabus weight supported by 5+ answers.
+                            {% if subject.readiness.mock_attempt %}Uses 70% topic mastery and 30% latest mock ({{ subject.readiness.mock_attempt.percentage }}%).{% else %}Based on topic mastery; no completed mock yet.{% endif %}
+                        {% else %}
+                            Not enough topic evidence yet. Topics need at least 5 answers; readiness is not a predicted grade.
+                        {% endif %}
+                        Lesson coverage: {{ subject.progress_percentage }}% ({{ subject.completed_count }}/{{ subject.lesson_count }}).
+                    </p>
+                </section>
+
+                <section class="progress-mastery" aria-label="{{ subject.name }} topic mastery">
+                    <h3>Topic mastery</h3>
+                    <div class="progress-mastery-list">
+                        {% for topic in subject.active_topics %}
+                            <div class="progress-mastery-row">
+                                <div class="progress-mastery-heading">
+                                    <strong>{{ topic.name }}</strong>
+                                    {% if topic.mastery_available %}
+                                        <span>{{ topic.mastery_percentage }}% · {{ topic.mastery_count }} answers</span>
+                                    {% else %}
+                                        <span>Unknown · {{ topic.mastery_count }}/5 answers</span>
+                                    {% endif %}
+                                </div>
+                                {% if topic.mastery_available %}
+                                    <div class="progress-track" role="progressbar" aria-valuenow="{{ topic.mastery_percentage }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ topic.name }} mastery">
+                                        <span style="width: {{ topic.mastery_percentage }}%"></span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% empty %}
+                            <p class="progress-empty">No active topics in this subject yet.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                {% if subject.weakest_topics %}
+                    <section class="progress-weak-topics" aria-label="{{ subject.name }} weakest topics">
+                        <h3>Weakest topics</h3>
+                        <ul>
+                            {% for topic in subject.weakest_topics %}
+                                <li>
+                                    <span class="progress-weak-topic-copy">
+                                        <strong>{{ topic.name }} · {{ topic.mastery_percentage }}%</strong>
+                                            <small>{{ topic.mastery_count }} answers</small>
+                                    </span>
+                                    <span class="progress-weak-topic-links">
+                                        {% if topic.mastery_lesson %}
+                                            <a href="{% url 'subjects:lesson-detail' subject.name|slugify topic.mastery_lesson.slug %}">Study lesson</a>
+                                        {% endif %}
+                                        <a href="{% url 'progress:mistake-bank' %}">Mistake bank</a>
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+                {% endif %}
+
                 {% if subject.active_topics %}
                     <div class="progress-topic-links">
                         <span class="progress-topic-label">TOPIC LEADERBOARDS</span>
+                        <a href="{% url 'progress:subject-leaderboard' subject.name|slugify %}"><strong>All of {{ subject.code }}</strong></a>
                         {% for topic in subject.active_topics %}
                             <a href="{% url 'progress:leaderboard' subject.name|slugify topic.slug %}">{{ topic.name }}</a>
                         {% endfor %}
@@ -82,14 +163,22 @@
             <p class="progress-empty">No subjects are available yet.</p>
         {% endfor %}
     </div>
-    {% if subject.active_topics %}
-    <div class="progress-topic-links">
-        <span class="progress-topic-label">TOPIC LEADERBOARDS</span>
-        <a href="{% url 'progress:subject-leaderboard' subject.name|slugify %}"><strong>All of {{ subject.code }}</strong></a>
-        {% for topic in subject.active_topics %}
-            <a href="{% url 'progress:leaderboard' subject.name|slugify topic.slug %}">{{ topic.name }}</a>
+
+    <section class="progress-score-trend" aria-label="Quiz and mock score trend">
+        <h2>Quiz and mock score trend</h2>
+        {% for attempt in score_trend %}
+            <div class="progress-trend-row">
+                <div class="progress-trend-heading">
+                    <span><strong>{{ attempt.quiz.title }}</strong><small>{{ attempt.completed_at|date:"M j, Y" }}</small></span>
+                    <strong>{{ attempt.percentage }}%</strong>
+                </div>
+                <div class="progress-track" role="progressbar" aria-valuenow="{{ attempt.percentage }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ attempt.quiz.title }} score">
+                    <span style="width: {{ attempt.percentage }}%"></span>
+                </div>
+            </div>
+        {% empty %}
+            <p class="progress-empty">Completed quiz and mock scores will appear here.</p>
         {% endfor %}
-    </div>
-{% endif %}
+    </section>
 </div>
 {% endblock %}

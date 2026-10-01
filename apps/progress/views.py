@@ -504,12 +504,19 @@ def flashcard_session(request, subject_slug, topic_slug=None):
 @login_required
 @require_POST
 def review_flashcard(request):
-    question_id = request.POST.get("question_id")
-    rating = (request.POST.get("rating") or "").lower()
-    if question_id is None or rating == "":
-        return JsonResponse({"ok": False, "error": "Missing data"}, status=400)
+	question_id = request.POST.get("question_id")
+	rating = (request.POST.get("rating") or "").lower()
+	if question_id is None or rating == "":
+		return JsonResponse({"ok": False, "error": "Missing data"}, status=400)
 
-    question = get_object_or_404(Question, pk=question_id, is_active=True)
-    due_days = {"again": 0, "hard": 1, "good": 3, "easy": 5}.get(rating, 0)
-    _ensure_flashcard_state(request.user, question, due_days=due_days)
-    return JsonResponse({"ok": True, "due_days": due_days})
+	if rating not in {"again", "hard", "good", "easy"}:
+		return JsonResponse({"ok": False, "error": "Invalid rating"}, status=400)
+
+	question = get_object_or_404(Question, pk=question_id, is_active=True)
+	state, _ = FlashcardState.objects.get_or_create(
+		user=request.user,
+		question=question,
+		defaults={"due_at": timezone.localdate()},
+	)
+	due_days = state.review(rating)
+	return JsonResponse({"ok": True, "due_days": due_days})

@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 
 from apps.lessons.models import Lesson
 from apps.questions.models import Answer, Question
@@ -75,3 +76,23 @@ class QuizModelTests(TestCase):
 		Answer.objects.bulk_create(answers)
 
 		self.assertEqual(self.question.answers.count(), 4)
+
+	def test_quiz_index_shows_only_active_quizzes(self):
+		active_quiz = Quiz.objects.create(
+			title="Algebra quiz",
+			subject=self.subject,
+			topic=self.topic,
+			lesson=self.lesson,
+		)
+		Quiz.objects.create(
+			title="Archived quiz",
+			subject=self.subject,
+			topic=self.topic,
+			lesson=self.lesson,
+			is_active=False,
+		)
+
+		response = self.client.get(reverse("quizzes:list"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(list(response.context["quizzes"]), [active_quiz])

@@ -1,10 +1,14 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from apps.lessons.models import Lesson
 from apps.questions.models import Question
 from apps.quizzes.models import Quiz
-from apps.subjects.models import Topic
+from apps.subjects.models import Subject, Topic
 
 
 class UserProgress(models.Model):
@@ -182,3 +186,126 @@ class FlashcardState(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["user", "question"], name="unique_user_question_flashcard")
         ]
+
+    def review(self, rating, *, reviewed_at=None):
+        qualities = {"again": 0, "hard": 3, "good": 4, "easy": 5}
+        if rating not in qualities:
+            raise ValueError("Unsupported flashcard rating.")
+
+        quality = qualities[rating]
+        reviewed_at = reviewed_at or timezone.now()
+        self.ease = max(
+            1.3,
+            self.ease + 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02),
+        )
+        if quality < 3:
+            self.reps = 0
+            self.interval_days = 1
+        else:
+            if self.reps == 0:
+                self.interval_days = 1
+            elif self.reps == 1:
+                self.interval_days = 6
+            else:
+                self.interval_days = round(self.interval_days * self.ease)
+            self.reps += 1
+
+        self.due_at = timezone.localdate(reviewed_at) + timedelta(days=self.interval_days)
+        self.last_reviewed_at = reviewed_at
+        self.save(
+            update_fields=[
+                "ease",
+                "interval_days",
+                "due_at",
+                "reps",
+                "last_reviewed_at",
+            ]
+        )
+        return self.interval_days
+
+
+class StudyPlan(models.Model):
+    user = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="study_plans",
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.CASCADE,
+        related_name="study_plans",
+    )
+    title = models.CharField(max_length=200)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["start_date", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_date__isnull=True)
+                | models.Q(end_date__gte=models.F("start_date")),
+                name="study_plan_end_after_start",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user} - {self.title}"
+
+
+class StudyPlanItem(models.Model):
+    plan = models.ForeignKey(
+        StudyPlan,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    lesson = models.ForeignKey(
+        Lesson,
+        on_delete=models.CASCADE,
+        related_name="study_plan_items",
+        null=True,
+        blank=True,
+    )
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name="study_plan_items",
+        null=True,
+        blank=True,
+    )
+    scheduled_date = models.DateField()
+    order = models.PositiveIntegerField(default=0)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["scheduled_date", "order", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(lesson__isnull=False, quiz__isnull=True)
+                    | models.Q(lesson__isnull=True, quiz__isnull=False)
+                ),
+                name="study_plan_item_one_target",
+            ),
+            models.UniqueConstraint(
+                fields=["plan", "scheduled_date", "order"],
+                name="unique_plan_day_item_order",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        target = self.lesson or self.quiz
+        if self.plan_id and target and target.subject_id != self.plan.subject_id:
+            raise ValidationError("The study item must belong to the plan subject.")
+        if self.plan_id and (
+            self.scheduled_date < self.plan.start_date
+            or (self.plan.end_date and self.scheduled_date > self.plan.end_date)
+        ):
+            raise ValidationError("The scheduled date must fall within the plan dates.")
+
+    def __str__(self):
+        return f"{self.plan.title} - {self.lesson or self.quiz}"

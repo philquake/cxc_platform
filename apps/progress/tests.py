@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -13,6 +14,10 @@ from apps.progress.models import (
 	LessonProgress,
 	QuizAnswer,
 	QuizAttempt,
+	StudyPlan,
+	StudyPlanItem,
+	StudyPlan,
+	StudyPlanItem,
 	UserProgress,
 	XPTransaction,
 )
@@ -397,6 +402,75 @@ class ProgressFlowTests(TestCase):
 			).exists()
 		)
 
+	def test_flashcard_reviews_apply_sm2_growth_ease_and_reset(self):
+		self.client.force_login(self.user)
+		review_url = reverse("progress:review-flashcard")
+		payload = {"question_id": self.correct_answer.question_id, "rating": "good"}
+
+		first = self.client.post(review_url, payload)
+		self.assertEqual(first.json()["due_days"], 1)
+		state = FlashcardState.objects.get(user=self.user, question=self.correct_answer.question)
+		self.assertEqual((state.reps, state.interval_days, state.ease), (1, 1, 2.5))
+
+		second = self.client.post(review_url, payload)
+		self.assertEqual(second.json()["due_days"], 6)
+		state.refresh_from_db()
+		self.assertEqual((state.reps, state.interval_days), (2, 6))
+
+		hard = self.client.post(review_url, {**payload, "rating": "hard"})
+		self.assertEqual(hard.json()["due_days"], 14)
+		state.refresh_from_db()
+		self.assertEqual(state.reps, 3)
+		self.assertAlmostEqual(state.ease, 2.36)
+
+		again = self.client.post(review_url, {**payload, "rating": "again"})
+		self.assertEqual(again.json()["due_days"], 1)
+		state.refresh_from_db()
+		self.assertEqual((state.reps, state.interval_days), (0, 1))
+
+	def test_flashcard_review_rejects_unknown_rating(self):
+		self.client.force_login(self.user)
+
+		response = self.client.post(
+			reverse("progress:review-flashcard"),
+			{"question_id": self.correct_answer.question_id, "rating": "soon"},
+		)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertFalse(FlashcardState.objects.filter(user=self.user).exists())
+
+	def test_study_plan_items_require_one_same_subject_target_and_valid_date(self):
+		plan = StudyPlan.objects.create(
+			user=self.user,
+			subject=self.lesson.subject,
+			title="Algebra review",
+			start_date=timezone.localdate(),
+			end_date=timezone.localdate() + timezone.timedelta(days=7),
+		)
+		valid_item = StudyPlanItem(
+			plan=plan,
+			lesson=self.lesson,
+			scheduled_date=plan.start_date,
+		)
+		valid_item.full_clean()
+		valid_item.save()
+
+		with self.assertRaises(ValidationError):
+			StudyPlanItem(plan=plan, scheduled_date=plan.start_date).full_clean()
+
+		other_subject = Subject.objects.create(name="Science", code="SCI")
+		other_lesson = Lesson.objects.create(
+			subject=other_subject,
+			title="Cells",
+			content="<p>Cells</p>",
+		)
+		with self.assertRaises(ValidationError):
+			StudyPlanItem(
+				plan=plan,
+				lesson=other_lesson,
+				scheduled_date=plan.start_date,
+			).full_clean()
+
 	def test_reviewing_card_as_again_or_hard_creates_flashcard_state(self):
 		self.client.force_login(self.user)
 
@@ -425,6 +499,75 @@ class ProgressFlowTests(TestCase):
 				question=self.correct_answer.question,
 			).exists()
 		)
+
+	def test_flashcard_reviews_apply_sm2_growth_ease_and_reset(self):
+		self.client.force_login(self.user)
+		review_url = reverse("progress:review-flashcard")
+		payload = {"question_id": self.correct_answer.question_id, "rating": "good"}
+
+		first = self.client.post(review_url, payload)
+		self.assertEqual(first.json()["due_days"], 1)
+		state = FlashcardState.objects.get(user=self.user, question=self.correct_answer.question)
+		self.assertEqual((state.reps, state.interval_days, state.ease), (1, 1, 2.5))
+
+		second = self.client.post(review_url, payload)
+		self.assertEqual(second.json()["due_days"], 6)
+		state.refresh_from_db()
+		self.assertEqual((state.reps, state.interval_days), (2, 6))
+
+		hard = self.client.post(review_url, {**payload, "rating": "hard"})
+		self.assertEqual(hard.json()["due_days"], 14)
+		state.refresh_from_db()
+		self.assertEqual(state.reps, 3)
+		self.assertAlmostEqual(state.ease, 2.36)
+
+		again = self.client.post(review_url, {**payload, "rating": "again"})
+		self.assertEqual(again.json()["due_days"], 1)
+		state.refresh_from_db()
+		self.assertEqual((state.reps, state.interval_days), (0, 1))
+
+	def test_flashcard_review_rejects_unknown_rating(self):
+		self.client.force_login(self.user)
+
+		response = self.client.post(
+			reverse("progress:review-flashcard"),
+			{"question_id": self.correct_answer.question_id, "rating": "soon"},
+		)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertFalse(FlashcardState.objects.filter(user=self.user).exists())
+
+	def test_study_plan_items_require_one_same_subject_target_and_valid_date(self):
+		plan = StudyPlan.objects.create(
+			user=self.user,
+			subject=self.lesson.subject,
+			title="Algebra review",
+			start_date=timezone.localdate(),
+			end_date=timezone.localdate() + timezone.timedelta(days=7),
+		)
+		valid_item = StudyPlanItem(
+			plan=plan,
+			lesson=self.lesson,
+			scheduled_date=plan.start_date,
+		)
+		valid_item.full_clean()
+		valid_item.save()
+
+		with self.assertRaises(Exception):
+			StudyPlanItem(plan=plan, scheduled_date=plan.start_date).full_clean()
+
+		other_subject = Subject.objects.create(name="Science", code="SCI")
+		other_lesson = Lesson.objects.create(
+			subject=other_subject,
+			title="Cells",
+			content="<p>Cells</p>",
+		)
+		with self.assertRaises(Exception):
+			StudyPlanItem(
+				plan=plan,
+				lesson=other_lesson,
+				scheduled_date=plan.start_date,
+			).full_clean()
 
 	def test_short_answer_questions_are_scored_by_expected_text(self):
 		short_answer_question = Question.objects.create(

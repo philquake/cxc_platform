@@ -51,10 +51,34 @@ INSTALLED_APPS = [
 CKEDITOR_5_CONFIGS = {
     "extends": {
         "toolbar": [
-            "heading", "|", "bold", "italic", "link", "imageUpload",
-            "bulletedList", "numberedList", "blockQuote", "insertTable",
+            "heading", "|",
+            "bold", "italic", "link", "|",
+            "alignment", "|",
+            "imageUpload", "bulletedList", "numberedList",
+            "blockQuote", "insertTable", "|",
             "undo", "redo",
         ],
+        "image": {
+            "toolbar": [
+                "imageTextAlternative", "|",
+                "imageStyle:alignLeft",
+                "imageStyle:alignCenter",
+                "imageStyle:alignRight",
+                "imageStyle:side",
+                "|",
+                "toggleImageCaption",
+            ],
+            "styles": [
+                "full",
+                "side",
+                "alignLeft",
+                "alignCenter",
+                "alignRight",
+            ],
+        },
+        "table": {
+            "contentToolbar": ["tableColumn", "tableRow", "mergeTableCells"],
+        },
     },
 }
 

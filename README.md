@@ -199,4 +199,10 @@ Run the test suite with:
 python manage.py test
 ```
 
-The project currently has app test modules, but some contain no test cases yet.
+Install the development requirements and enforce the 80% coverage target for `core`, `subjects`, `lessons`, and `quizzes` with:
+
+```bash
+pip install -r requirements-dev.txt
+python -m coverage run manage.py test apps.core apps.subjects apps.lessons apps.quizzes --keepdb
+python -m coverage report
+```

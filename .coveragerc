@@ -1,0 +1,10 @@
+[run]
+source = apps.core, apps.subjects, apps.lessons, apps.quizzes
+omit =
+    */tests.py
+    */migrations/*
+
+[report]
+fail_under = 80
+show_missing = True
+skip_covered = True

@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core import mail
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 
@@ -38,7 +39,68 @@ class AccountFlowTests(TestCase):
 			{"username": "student", "password": "A-strong-password-123"},
 		)
 
-		self.assertRedirects(response, reverse("home"))
+		self.assertRedirects(response, reverse("progress:dashboard"))
+		self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+	@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+	def test_password_reset_sends_link_to_registered_email(self):
+		get_user_model().objects.create_user(
+			username="student",
+			password="A-strong-password-123",
+			email="student@example.com",
+		)
+
+		response = self.client.post(
+			reverse("password_reset"),
+			{"email": "student@example.com"},
+		)
+
+		self.assertRedirects(response, reverse("password_reset_done"))
+		self.assertEqual(len(mail.outbox), 1)
+		self.assertIn("password-reset/", mail.outbox[0].body)
+
+	def test_account_profile_updates_name_and_email(self):
+		user = get_user_model().objects.create_user(
+			username="student",
+			password="A-strong-password-123",
+			email="before@example.com",
+		)
+		self.client.force_login(user)
+
+		response = self.client.post(
+			reverse("account"),
+			{
+				"first_name": "Updated",
+				"last_name": "Student",
+				"email": "updated@example.com",
+			},
+		)
+
+		self.assertRedirects(response, reverse("account"))
+		user.refresh_from_db()
+		self.assertEqual(user.first_name, "Updated")
+		self.assertEqual(user.last_name, "Student")
+		self.assertEqual(user.email, "updated@example.com")
+
+	def test_password_change_updates_password_and_keeps_user_logged_in(self):
+		user = get_user_model().objects.create_user(
+			username="student",
+			password="A-strong-password-123",
+		)
+		self.client.force_login(user)
+
+		response = self.client.post(
+			reverse("password_change"),
+			{
+				"old_password": "A-strong-password-123",
+				"new_password1": "An-even-stronger-password-456",
+				"new_password2": "An-even-stronger-password-456",
+			},
+		)
+
+		self.assertRedirects(response, reverse("password_change_done"))
+		user.refresh_from_db()
+		self.assertTrue(user.check_password("An-even-stronger-password-456"))
 		self.assertTrue(response.wsgi_request.user.is_authenticated)
 
 	def test_login_rejects_invalid_credentials(self):

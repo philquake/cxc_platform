@@ -12,6 +12,7 @@ CXC Platform is a Django-based learning platform for Caribbean students preparin
 - Questions and answers linked to lessons
 - Quizzes assembled from questions
 - User accounts and lesson progress tracking
+- Password reset, password change, and account profile management
 - PostgreSQL database support
 - Static and uploaded media handling for development
 
@@ -88,9 +89,13 @@ POSTGRES_USER=postgres
 POSTGRES_PASSWORD=your-password
 POSTGRES_HOST=127.0.0.1
 POSTGRES_PORT=5432
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+DEFAULT_FROM_EMAIL=noreply@example.com
+# For production SMTP, set EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+# and configure EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS.
 ```
 
-The settings module reads these values with `python-dotenv`. `ALLOWED_HOSTS` is currently empty, so add your development or production hostnames before deploying.
+The settings module reads these values with `python-dotenv`. `ALLOWED_HOSTS` is currently empty, so add your development or production hostnames before deploying. Configure a Django SMTP email backend and its environment variables in production so password-reset messages can be delivered.
 
 ### 4. Apply migrations
 

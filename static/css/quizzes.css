@@ -368,3 +368,10 @@
     font-family: var(--font-mono);
     font-size: 12px;
 }
+
+.quiz-result-item-explanation {
+    margin: 6px 0 0;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}

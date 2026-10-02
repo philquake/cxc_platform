@@ -28,6 +28,12 @@
                                 <p class="quiz-result-item-status">
                                     ✗ Your answer: {% if answer.selected_answer %}{{ answer.selected_answer.text }}{% elif answer.selected_text %}{{ answer.selected_text }}{% else %}No answer selected{% endif %}
                                 </p>
+                                {% if answer.question.correct_answer_text %}
+                                    <p class="quiz-result-item-correct">✓ Correct answer: {{ answer.question.correct_answer_text }}</p>
+                                {% endif %}
+                                {% if answer.question.explanation %}
+                                    <p class="quiz-result-item-explanation">{{ answer.question.explanation }}</p>
+                                {% endif %}
                             </div>
                         {% endif %}
                     {% endfor %}

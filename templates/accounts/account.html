@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Account settings | CXCStudy</title>
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body>
+    <main class="auth-shell">
+        <section class="auth-panel" aria-labelledby="account-title">
+            <a href="{% url 'home' %}" class="logo">CXC<span>Study</span></a>
+            <p class="eyebrow">YOUR PROFILE</p>
+            <h1 id="account-title">Account settings</h1>
+            <p class="intro">Update the details connected to your study account.</p>
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+                {% for field in form %}
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {{ field.errors }}
+                {% endfor %}
+                <button type="submit">Save changes</button>
+            </form>
+            <p class="switch-link"><a href="{% url 'password_change' %}">Change password</a></p>
+            <p class="switch-link"><a href="{% url 'progress:dashboard' %}">Back to progress</a></p>
+        </section>
+    </main>
+</body>
+</html>

@@ -11,15 +11,20 @@ class AccountFlowTests(TestCase):
 			"username": "newstudent",
 			"first_name": "New",
 			"last_name": "Student",
+			"email": "newstudent@example.com",
 			"password1": "A-strong-password-123",
 			"password2": "A-strong-password-123",
 		},
 	)
 
-		self.assertRedirects(response, reverse("home"))
+		self.assertRedirects(response, reverse("progress:dashboard"))
 		self.assertTrue(response.wsgi_request.user.is_authenticated)
 		self.assertTrue(
 			get_user_model().objects.filter(username="newstudent").exists()
+		)
+		self.assertEqual(
+			get_user_model().objects.get(username="newstudent").email,
+			"newstudent@example.com",
 		)
 
 	def test_login_authenticates_existing_user(self):
@@ -75,4 +80,4 @@ class AccountFlowTests(TestCase):
 			},
 		)
 
-		self.assertRedirects(response, reverse("home"))
+		self.assertRedirects(response, reverse("progress:dashboard"))

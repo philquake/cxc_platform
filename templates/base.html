@@ -32,7 +32,7 @@
         <button type="submit" class="btn-ghost">Search</button>
       </form>
       {% if user.is_authenticated %}
-        <span class="nav-user">Hi, {{ user.get_username }}</span>
+        <a class="nav-user" href="{% url 'account' %}">Hi, {{ user.get_username }}</a>
         <form method="post" action="{% url 'logout' %}">
           {% csrf_token %}
           <button type="submit" class="btn-ghost">Sign out</button>

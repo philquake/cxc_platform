@@ -627,17 +627,45 @@ def mistake_bank(request):
     })
     
 @login_required
-def flashcard_session(request, subject_slug, topic_slug=None):
-    subject = next(
-        (
-            item
-            for item in Subject.objects.filter(is_active=True)
-            if subject_slug in {slugify(item.name), slugify(item.code)}
-        ),
-        None,
-    )
-    if subject is None:
-        raise Http404("Subject not found")
+def flashcard_hub(request):
+	subjects = list(Subject.objects.filter(is_active=True).order_by("name"))
+	due_counts = dict(
+		FlashcardState.objects.filter(
+			user=request.user,
+			question__is_active=True,
+			question__subject__is_active=True,
+			due_at__lte=timezone.localdate(),
+		)
+		.values_list("question__subject_id")
+		.annotate(due_count=Count("id"))
+	)
+	for subject in subjects:
+		subject.due_count = due_counts.get(subject.id, 0)
+
+	return render(
+		request,
+		"progress/flashcard_hub.html",
+		{
+			"subjects": subjects,
+			"all_due_count": sum(due_counts.values()),
+		},
+	)
+
+
+@login_required
+def flashcard_session(request, subject_slug=None, topic_slug=None):
+	subject = None
+	if subject_slug is not None:
+		subject = next(
+			(
+				item
+				for item in Subject.objects.filter(is_active=True)
+				if subject_slug in {slugify(item.name), slugify(item.code)}
+			),
+			None,
+		)
+		if subject is None:
+			raise Http404("Subject not found")
 
     topic = None
     if topic_slug:
@@ -645,10 +673,12 @@ def flashcard_session(request, subject_slug, topic_slug=None):
 
     states = FlashcardState.objects.filter(
         user=request.user,
-        question__subject=subject,
         question__is_active=True,
+		question__subject__is_active=True,
         due_at__lte=timezone.localdate(),
     )
+	if subject is not None:
+		states = states.filter(question__subject=subject)
     if topic is not None:
         states = states.filter(question__topic=topic)
 
@@ -665,6 +695,7 @@ def flashcard_session(request, subject_slug, topic_slug=None):
             "topic": topic,
             "cards": cards,
             "due_count": len(cards),
+			"is_all_subjects": subject is None,
         },
     )
 

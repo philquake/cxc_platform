@@ -13,7 +13,7 @@
     <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
 
     <header class="progress-header">
-        <span class="content-card-label">{{ subject.code }}{% if topic %} / {{ topic.name }}{% endif %} FLASHCARDS</span>
+        <span class="content-card-label">{% if is_all_subjects %}ALL SUBJECTS{% else %}{{ subject.code }}{% endif %}{% if topic %} / {{ topic.name }}{% endif %} FLASHCARDS</span>
         <h1>Review</h1>
         <p>{{ due_count }} card{{ due_count|pluralize }} due today.</p>
     </header>
@@ -58,7 +58,7 @@
                 <p class="content-card-label">SESSION COMPLETE</p>
                 <h2>Nice work.</h2>
                 <p>You reviewed {{ cards|length }} card{{ cards|length|pluralize }}.</p>
-                <a class="btn btn-primary" href="{% url 'progress:dashboard' %}">Back to progress</a>
+                <a class="btn btn-primary" href="{% url 'progress:flashcard-hub' %}">Back to flashcards</a>
             </div>
         </div>
 

@@ -47,6 +47,17 @@ urlpatterns = [
         name="review-flashcard",
     ),
     path(
+        "flashcards/",
+        views.flashcard_hub,
+        name="flashcard-hub",
+    ),
+    path(
+        "flashcards/all/",
+        views.flashcard_session,
+        {"subject_slug": None},
+        name="flashcards-all",
+    ),
+    path(
         "flashcards/<slug:subject_slug>/",
         views.flashcard_session,
         name="flashcards",

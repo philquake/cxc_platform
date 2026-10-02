@@ -462,6 +462,40 @@ class ProgressFlowTests(TestCase):
 		self.assertEqual(flashcards_response.status_code, 200)
 		self.assertContains(flashcards_response, "What is 2 + 2?")
 
+	def test_flashcard_hub_offers_all_due_and_subject_sessions(self):
+		self.client.force_login(self.user)
+		FlashcardState.objects.create(
+			user=self.user,
+			question=self.correct_answer.question,
+			due_at=timezone.localdate(),
+		)
+		second_subject = Subject.objects.create(name="Biology", code="BIO")
+		second_topic = Topic.objects.create(subject=second_subject, name="Cells", slug="cells")
+		second_question = Question.objects.create(
+			subject=second_subject,
+			topic=second_topic,
+			text="What is a cell?",
+		)
+		Answer.objects.create(question=second_question, text="A basic unit of life", is_correct=True)
+		FlashcardState.objects.create(
+			user=self.user,
+			question=second_question,
+			due_at=timezone.localdate(),
+		)
+
+		hub_response = self.client.get(reverse("progress:flashcard-hub"))
+		self.assertEqual(hub_response.status_code, 200)
+		self.assertContains(hub_response, reverse("progress:flashcards-all"))
+		self.assertContains(hub_response, reverse("progress:flashcards", args=["mathematics"]))
+		self.assertContains(hub_response, reverse("progress:flashcards", args=["biology"]))
+		self.assertContains(hub_response, "2 cards due")
+
+		all_cards_response = self.client.get(reverse("progress:flashcards-all"))
+		self.assertEqual(all_cards_response.status_code, 200)
+		self.assertContains(all_cards_response, "What is 2 + 2?")
+		self.assertContains(all_cards_response, "What is a cell?")
+		self.assertContains(all_cards_response, "2 cards due today")
+
 	def test_dashboard_suggests_active_study_plan_and_getting_started(self):
 		self.client.force_login(self.user)
 		StudyPlan.objects.create(

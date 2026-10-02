@@ -77,6 +77,14 @@ class Question(models.Model):
     def is_open_ended(self):
         return self.format in {self.FORMAT_SHORT_ANSWER, self.FORMAT_WORDED}
 
+    @property
+    def correct_answer_text(self):
+        if self.is_open_ended:
+            return self.expected_answer.strip() or None
+
+        correct = next((answer for answer in self.answers.all() if answer.is_correct), None)
+        return correct.text if correct else None
+
 
 class Answer(models.Model):
     question = models.ForeignKey(

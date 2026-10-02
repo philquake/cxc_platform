@@ -770,23 +770,29 @@ class ProgressFlowTests(TestCase):
 		self.assertEqual(attempt.score, 1)
 
 	def test_quiz_submission_saves_score_and_answers(self):
+		question = self.correct_answer.question
+		question.explanation = "Because 2 + 2 = 4, the correct answer is four."
+		question.save(update_fields=["explanation"])
+		wrong_answer = question.answers.exclude(pk=self.correct_answer.pk).first()
 		self.client.force_login(self.user)
 
 		response = self.client.post(
 			reverse("progress:submit-quiz", args=[self.quiz.id]),
-			{f"question-{self.correct_answer.question_id}": self.correct_answer.id},
+			{f"question-{question.id}": wrong_answer.id},
 		)
 
 		self.assertEqual(response.status_code, 302)
 		self.assertIn("/quizzes/?attempt=", response["Location"])
 		result_response = self.client.get(response["Location"])
-		self.assertContains(result_response, "+45 XP earned")
+		self.assertContains(result_response, "+25 XP earned")
+		self.assertContains(result_response, "✓ Correct answer: 4")
+		self.assertContains(result_response, "Because 2 + 2 = 4, the correct answer is four.")
 		attempt = QuizAttempt.objects.get(user=self.user, quiz=self.quiz)
-		self.assertEqual(attempt.score, 1)
+		self.assertEqual(attempt.score, 0)
 		self.assertEqual(attempt.total_questions, 1)
 		self.assertEqual(attempt.answers.count(), 1)
-		self.assertTrue(attempt.answers.get().is_correct)
-		self.assertEqual(UserProgress.objects.get(user=self.user).total_xp, 45)
+		self.assertFalse(attempt.answers.get().is_correct)
+		self.assertEqual(UserProgress.objects.get(user=self.user).total_xp, 25)
 
 	def test_topic_leaderboard_is_scoped_to_topic(self):
 		other_user = get_user_model().objects.create_user(username="other")

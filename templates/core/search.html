@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/subjects.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-column">
+    <header class="content-header">
+        <span class="content-card-label">SEARCH</span>
+        <h1>{% if query %}Results for “{{ query }}”{% else %}Search{% endif %}</h1>
+        <p>Find lessons and questions across the platform.</p>
+    </header>
+
+    {% if not query %}
+        <p class="content-empty">Enter a search term to find lessons and practice questions.</p>
+    {% else %}
+        <section aria-labelledby="lesson-results-heading">
+            <h2 id="lesson-results-heading">Lessons</h2>
+            <div class="content-grid">
+                {% for lesson in lesson_results %}
+                    <a class="content-card" href="{% url 'subjects:lesson-detail' lesson.subject.name|slugify lesson.slug %}">
+                        <span class="content-card-label">{{ lesson.subject.code }} · LESSON</span>
+                        <h2>{{ lesson.title }}</h2>
+                        {% if lesson.section_title %}<p>{{ lesson.section_title }}</p>{% endif %}
+                        <p>{{ lesson.content|striptags|truncatewords:20 }}</p>
+                        <span class="content-card-meta">Open lesson <span aria-hidden="true">→</span></span>
+                    </a>
+                {% empty %}
+                    <p>No lesson matches found.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section aria-labelledby="question-results-heading">
+            <h2 id="question-results-heading">Questions</h2>
+            <div class="content-grid">
+                {% for question in question_results %}
+                    <a class="content-card" href="{% url 'subjects:lesson-detail' question.subject.name|slugify question.lesson.slug %}">
+                        <span class="content-card-label">{{ question.subject.code }} · QUESTION</span>
+                        <h2>{{ question.text|truncatewords:12 }}</h2>
+                        <p>{{ question.lesson.title }}</p>
+                        <span class="content-card-meta">Review lesson <span aria-hidden="true">→</span></span>
+                    </a>
+                {% empty %}
+                    <p>No question matches found.</p>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</div>
+{% endblock %}

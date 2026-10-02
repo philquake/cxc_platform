@@ -26,6 +26,11 @@
       </ul>
     </div>
     <div class="navbar-right">
+      <form method="get" action="{% url 'search' %}" class="navbar-search" role="search">
+        <label class="sr-only" for="global-search">Search lessons and questions</label>
+        <input id="global-search" type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search lessons & questions" aria-label="Search lessons and questions">
+        <button type="submit" class="btn-ghost">Search</button>
+      </form>
       {% if user.is_authenticated %}
         <span class="nav-user">Hi, {{ user.get_username }}</span>
         <form method="post" action="{% url 'logout' %}">

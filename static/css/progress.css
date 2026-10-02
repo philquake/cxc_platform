@@ -335,8 +335,13 @@
 
 .progress-difficulty-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
+}
+
+.progress-exam-analytics .progress-stat {
+    min-height: 132px;
+    padding: 18px;
 }
 
 .progress-mock-badge {
@@ -932,6 +937,10 @@
 
 @media (max-width: 760px) {
     .progress-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .progress-exam-analytics .progress-difficulty-list {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 

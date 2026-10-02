@@ -56,6 +56,29 @@
                     <span style="width: {{ subject.progress_percentage }}%"></span>
                 </div>
                 <p class="progress-summary">{{ subject.completed_count }} of {{ subject.lesson_count }} lessons complete</p>
+                <section class="progress-suggested-next" aria-label="{{ subject.name }} suggested next">
+                    <h3>Suggested next</h3>
+                    <div class="progress-suggested-actions">
+                        <div>
+                            <span class="content-card-label">FLASHCARDS</span>
+                            {% if subject.due_flashcard_count %}
+                                <a href="{% url 'progress:flashcards' subject.name|slugify %}">Review {{ subject.due_flashcard_count }} due card{{ subject.due_flashcard_count|pluralize }}</a>
+                            {% else %}
+                                <p>No cards due yet. Take a lesson quiz to add cards to your review queue.</p>
+                                <a href="{% url 'subjects:detail' subject.name|slugify %}">Browse lessons</a>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="content-card-label">STUDY PLAN</span>
+                            {% if subject.active_study_plan %}
+                                <a href="{% url 'progress:study-plan' subject.name|slugify %}">Continue your active plan</a>
+                            {% else %}
+                                <p>No active plan yet. Set your exam date to build a schedule.</p>
+                                <a href="{% url 'progress:study-plan' subject.name|slugify %}">Create a study plan</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
                 <div class="progress-callouts">
                     <a href="{% url 'progress:study-plan' subject.name|slugify %}" class="mistake-bank-link">
                         Study plan →

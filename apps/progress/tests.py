@@ -453,12 +453,28 @@ class ProgressFlowTests(TestCase):
 			dashboard_response,
 			reverse("progress:flashcards", args=["mathematics"]),
 		)
+		self.assertContains(dashboard_response, "Review 1 due card")
+		self.assertContains(dashboard_response, "No active plan yet")
 
 		flashcards_response = self.client.get(
 			reverse("progress:flashcards", args=["mathematics"])
 		)
 		self.assertEqual(flashcards_response.status_code, 200)
 		self.assertContains(flashcards_response, "What is 2 + 2?")
+
+	def test_dashboard_suggests_active_study_plan_and_getting_started(self):
+		self.client.force_login(self.user)
+		StudyPlan.objects.create(
+			user=self.user,
+			subject=self.lesson.subject,
+			target_date=timezone.localdate() + timezone.timedelta(days=30),
+		)
+
+		response = self.client.get(reverse("progress:dashboard"))
+
+		self.assertContains(response, "Continue your active plan")
+		self.assertContains(response, "No cards due yet")
+		self.assertContains(response, "Take a lesson quiz to add cards")
 
 	def test_wrong_answer_creates_flashcard_state(self):
 		self.client.force_login(self.user)

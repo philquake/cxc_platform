@@ -848,6 +848,53 @@
     margin-top: 16px;
 }
 
+.progress-suggested-next {
+    display: grid;
+    grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+    margin-top: 20px;
+    padding: 18px 20px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid var(--color-panel-border);
+    border-left: 3px solid var(--color-accent);
+    border-radius: 0 6px 6px 0;
+}
+
+.progress-suggested-next h3 {
+    margin: 2px 0 0;
+    font-size: 16px;
+}
+
+.progress-suggested-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.progress-suggested-actions > div {
+    display: grid;
+    justify-items: start;
+    gap: 7px;
+}
+
+.progress-suggested-actions .content-card-label {
+    font-size: 10px;
+}
+
+.progress-suggested-actions p {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.progress-suggested-actions a {
+    color: var(--color-accent);
+    font-size: 14px;
+    font-weight: 700;
+}
+
 .progress-readiness {
     padding: 18px 20px;
     background: linear-gradient(110deg, rgba(61, 220, 132, 0.08), rgba(17, 24, 32, 0.65) 70%);
@@ -1001,6 +1048,11 @@
 
     .progress-subject-summary {
         padding: 8px;
+    }
+
+    .progress-suggested-next,
+    .progress-suggested-actions {
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .progress-readiness {

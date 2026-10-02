@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import OuterRef, Q, Subquery, Sum
+from django.db.models import Count, OuterRef, Q, Subquery, Sum
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -24,6 +24,7 @@ from .models import (
     QuizAnswer,
     QuizAttempt,
 	StudyPlanItem,
+	StudyPlan,
     UserProgress,
     XPTransaction,
 )
@@ -97,7 +98,27 @@ def dashboard(request):
 	subjects = list(
 		Subject.objects.filter(is_active=True).prefetch_related("lessons", "topics")
 	)
+	today = timezone.localdate()
+	due_flashcards_by_subject = {
+		row["question__subject_id"]: row["due_count"]
+		for row in FlashcardState.objects.filter(
+			user=request.user,
+			question__subject__in=subjects,
+			question__is_active=True,
+			due_at__lte=today,
+		).values("question__subject_id").annotate(due_count=Count("id"))
+	}
+	active_plans_by_subject = {
+		plan.subject_id: plan
+		for plan in StudyPlan.objects.filter(
+			user=request.user,
+			subject__in=subjects,
+			is_active=True,
+		)
+	}
 	for subject in subjects:
+		subject.due_flashcard_count = due_flashcards_by_subject.get(subject.id, 0)
+		subject.active_study_plan = active_plans_by_subject.get(subject.id)
 		lessons = [lesson for lesson in subject.lessons.all() if lesson.is_active]
 		topic_results = topic_mastery(request.user, subject)
 		active_topics = [topic for topic in subject.topics.all() if topic.is_active]

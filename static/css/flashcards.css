@@ -31,6 +31,33 @@
     margin: 0 auto;
 }
 
+.flashcard-empty-state {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    width: min(100%, 560px);
+    min-height: 220px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    text-align: center;
+    background: linear-gradient(145deg, var(--color-panel), #111820);
+    border: 1px solid var(--color-panel-border);
+    border-top: 3px solid var(--color-accent-dim);
+    border-radius: var(--radius-md);
+}
+
+.flashcard-empty-state h2 {
+    margin: 0;
+    color: var(--color-white);
+    font-size: 24px;
+}
+
+.flashcard-empty-state p {
+    max-width: 38ch;
+    margin: 0;
+    color: var(--color-text-muted);
+}
+
 .flashcard-progress {
     margin-bottom: 16px;
     color: var(--color-text-faint);
@@ -158,6 +185,11 @@
 }
 
 @media (max-width: 560px) {
+    .flashcard-empty-state {
+        min-height: 190px;
+        padding: 28px 18px;
+    }
+
     .flashcard-inner {
         min-height: 260px;
     }

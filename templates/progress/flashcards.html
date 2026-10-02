@@ -5,7 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/progress.css' %}?v=1.2">
-<link rel="stylesheet" href="{% static 'css/flashcards.css' %}?v=1.1">
+<link rel="stylesheet" href="{% static 'css/flashcards.css' %}?v=1.2">
 {% endblock %}
 
 {% block content %}
@@ -68,7 +68,11 @@
             <input type="hidden" name="rating" id="fc-rating">
         </form>
     {% else %}
-        <p class="progress-empty">No cards are due right now. Check back later.</p>
+        <section class="flashcard-empty-state" role="status" aria-label="Flashcard session status">
+            <span class="content-card-label">SESSION CLEAR</span>
+            <h2>No cards due</h2>
+            <p>No cards are due right now. Check back later.</p>
+        </section>
     {% endif %}
 </div>
 

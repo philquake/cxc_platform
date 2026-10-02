@@ -42,6 +42,11 @@
                             <a class="btn btn-secondary" href="{% url 'subjects:lesson-detail' next_lesson.subject.name|slugify next_lesson.slug %}">Move to next lesson</a>
                         {% endif %}
                     </div>
+                {% elif result_attempt.quiz.is_mock %}
+                    <p>Review the question breakdown, then try another exam paper when you are ready.</p>
+                    <div class="quiz-result-actions">
+                        <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Try again</button>
+                    </div>
                 {% else %}
                     <p>Review the lesson once more, then try the quiz again.</p>
                     <div class="quiz-result-actions">
@@ -93,14 +98,25 @@
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <div class="quiz-card-heading">
                     <div>
-                        <span class="content-card-label">{{ quiz.subject.code }} / {{ quiz.topic.name }}</span>
+                        <span class="content-card-label">{{ quiz.subject.code }}{% if quiz.topic %} / {{ quiz.topic.name }}{% elif quiz.is_mock %} / MOCK EXAM{% endif %}</span>
                         <h2>{{ quiz.title }}</h2>
                     </div>
                     <span class="quiz-card-meta">
-                        Lesson {{ quiz.lesson.lesson_number }} / Section {{ quiz.lesson.section_number }}
+                        {% if quiz.is_mock %}
+                            Mock exam{% if quiz.time_limit_minutes %} · {{ quiz.time_limit_minutes }} minutes{% endif %}
+                        {% elif quiz.lesson %}
+                            Lesson {{ quiz.lesson.lesson_number }} / Section {{ quiz.lesson.section_number }}
+                        {% endif %}
                     </span>
                 </div>
                 {% if quiz.description %}<p class="quiz-card-description">{{ quiz.description }}</p>{% endif %}
+                {% if quiz.is_mock and quiz.time_limit_minutes %}
+                    <div class="mock-exam-timer" data-time-limit-minutes="{{ quiz.time_limit_minutes }}">
+                        <span>Time remaining</span>
+                        <strong class="mock-exam-countdown" role="timer">{{ quiz.time_limit_minutes }}:00</strong>
+                    </div>
+                    <input type="hidden" name="time_taken_seconds" value="0">
+                {% endif %}
 
                 {% for quiz_question in quiz.quiz_questions.all %}
                     <fieldset class="quiz-question">
@@ -167,4 +183,5 @@
         {% endfor %}
     </div>
 </div>
+{% if quizzes %}<script src="{% static 'js/mock_exam_timer.js' %}" defer></script>{% endif %}
 {% endblock %}

@@ -65,6 +65,26 @@
     margin: 20px 0 0;
 }
 
+.mock-exam-timer {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 20px;
+    padding: 12px 14px;
+    color: var(--color-text-muted);
+    background: var(--color-bg-header);
+    border-left: 3px solid var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.mock-exam-countdown {
+    color: var(--color-accent);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+}
+
 .quiz-question {
     display: grid;
     gap: 10px;

@@ -6,6 +6,11 @@ from . import views
 app_name = "progress"
 
 urlpatterns = [
+    path(
+        "study-plan/<slug:subject_slug>/",
+        views.study_plan_view,
+        name="study-plan",
+    ),
     path("", 
         views.dashboard,
         name="dashboard"),

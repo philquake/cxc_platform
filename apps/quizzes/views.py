@@ -1,7 +1,7 @@
 from django.http import Http404
 from django.shortcuts import render
 from django.utils.text import slugify
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 
 from apps.subjects.models import Subject, Topic
 from apps.progress.models import QuizAttempt
@@ -21,13 +21,13 @@ def quiz_queryset(subject=None, topic=None):
     # on every render, instead of always following the fixed "order" field.
     quiz_questions = quiz_questions.order_by("?")
 
-    quiz_filters = {"is_active": True, "lesson__is_active": True}
+    quiz_filters = Q(is_active=True) & (Q(lesson__is_active=True) | Q(is_mock=True))
     if subject is not None:
-        quiz_filters["subject"] = subject
+        quiz_filters &= Q(subject=subject)
     if topic is not None:
-        quiz_filters["topic"] = topic
+        quiz_filters &= Q(topic=topic)
     return Quiz.objects.filter(
-        **quiz_filters,
+        quiz_filters,
     ).select_related(
         "lesson__subject",
         "subject",
@@ -109,13 +109,13 @@ def quiz_detail(request, quiz_id):
                 subject=quiz.subject,
                 is_active=True,
                 lesson_number__gt=quiz.lesson.lesson_number,
-            ).order_by("lesson_number", "section_number").first(),
+            ).order_by("lesson_number", "section_number").first() if quiz.lesson_id else None,
             "medium_quiz": Quiz.objects.filter(
                 subject=quiz.subject,
                 topic=quiz.topic,
                 is_active=True,
                 title__icontains="medium",
-            ).exclude(pk=quiz.pk).first(),
+            ).exclude(pk=quiz.pk).first() if quiz.topic_id else None,
         },
     )
 

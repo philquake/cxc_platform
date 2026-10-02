@@ -46,7 +46,16 @@ class DataAttrSelect(forms.Select):
 class QuizAdminForm(forms.ModelForm):
     class Meta:
         model = Quiz
-        fields = ("subject", "topic", "lesson", "title", "description", "is_active")
+        fields = (
+            "subject",
+            "topic",
+            "lesson",
+            "title",
+            "description",
+            "is_mock",
+            "time_limit_minutes",
+            "is_active",
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,12 +75,9 @@ class QuizQuestionInlineFormSet(BaseInlineFormSet):
         super().__init__(*args, **kwargs)
         quiz = self.instance
         if quiz and quiz.pk:
-            queryset = Question.objects.filter(
-                subject=quiz.subject,
-                topic=quiz.topic,
-                lesson=quiz.lesson,
-                is_active=True,
-            )
+            queryset = Question.objects.filter(subject=quiz.subject, is_active=True)
+            if not quiz.is_mock:
+                queryset = queryset.filter(topic=quiz.topic, lesson=quiz.lesson)
             self.form.base_fields["question"].queryset = queryset
 
             difficulty_map = dict(queryset.values_list("id", "difficulty"))
@@ -99,13 +105,24 @@ class QuizAdmin(admin.ModelAdmin):
         "subject",
         "topic",
         "lesson",
+        "is_mock",
+        "time_limit_minutes",
         "is_active",
         "created_at",
         "updated_at",
     )
     list_filter = ("subject", "topic", "lesson", "is_active")
     search_fields = ("title", "description")
-    fields = ("subject", "topic", "lesson", "title", "description", "is_active")
+    fields = (
+        "subject",
+        "topic",
+        "lesson",
+        "title",
+        "description",
+        "is_mock",
+        "time_limit_minutes",
+        "is_active",
+    )
     inlines = [QuizQuestionInline]
 
     class Media:

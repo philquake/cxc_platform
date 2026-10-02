@@ -333,6 +333,25 @@
     gap: 14px;
 }
 
+.progress-difficulty-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.progress-mock-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 5px;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent-dim);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-style: normal;
+    vertical-align: middle;
+}
+
 .progress-mastery-row,
 .progress-trend-row {
     min-width: 0;
@@ -991,5 +1010,245 @@
 
     .progress-score-trend {
         padding: 19px 16px;
+    }
+}
+
+.study-plan-header {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.study-plan-header .progress-header-links {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+    margin-top: 16px;
+}
+
+.study-plan-date-form {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) auto;
+    align-items: end;
+    gap: 10px 14px;
+    margin: 0 0 28px;
+    padding: 20px 22px;
+    background: linear-gradient(115deg, rgba(61, 220, 132, 0.07), var(--color-panel) 45%);
+    border: 1px solid var(--color-panel-border);
+    border-radius: 8px;
+}
+
+.study-plan-date-form label {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.study-plan-date-form input {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 10px 13px;
+    color: var(--color-white);
+    color-scheme: dark;
+    background: rgba(11, 15, 20, 0.8);
+    border: 1px solid #354151;
+    border-radius: 6px;
+    font: inherit;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.study-plan-date-form input:hover {
+    border-color: var(--color-accent-dim);
+}
+
+.study-plan-date-form input:focus-visible {
+    border-color: var(--color-accent);
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(61, 220, 132, 0.16);
+}
+
+.study-plan-date-form input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(0.85) sepia(0.15) saturate(0.65);
+}
+
+.study-plan-date-form > button {
+    width: fit-content;
+    min-height: 46px;
+    padding-inline: 18px;
+    white-space: nowrap;
+}
+
+.study-plan-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.study-plan-summary .progress-stat {
+    min-height: 132px;
+}
+
+.study-plan-day {
+    margin: 0 0 14px;
+    padding: 22px 24px;
+    background: linear-gradient(145deg, #151d26, #121820 68%);
+    border: 1px solid var(--color-panel-border);
+    border-radius: 8px;
+}
+
+.study-plan-day .progress-subject-heading {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-panel-border);
+}
+
+.study-plan-day .progress-subject-heading h2 {
+    margin-top: 8px;
+}
+
+.study-plan-day .progress-lessons {
+    margin-top: 14px;
+    padding-top: 0;
+    border: 0;
+}
+
+.study-plan-item {
+    align-items: center;
+    gap: 14px;
+    min-height: 74px;
+    padding: 14px 16px;
+}
+
+.study-plan-item:hover {
+    transform: none;
+}
+
+.study-plan-item.is-complete {
+    border-color: rgba(61, 220, 132, 0.32);
+    background: rgba(16, 38, 26, 0.55);
+}
+
+.study-plan-item .progress-lesson-status {
+    flex: 0 0 24px;
+    height: 24px;
+    line-height: 24px;
+    border: 1px solid var(--color-panel-border);
+    border-radius: 50%;
+    font-size: 13px;
+}
+
+.study-plan-item.is-complete .progress-lesson-status {
+    color: var(--color-bg-header);
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+.study-plan-item .progress-lesson-copy strong {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.study-plan-item .progress-lesson-copy small {
+    line-height: 1.5;
+}
+
+.study-plan-actions {
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px 12px;
+}
+
+.study-plan-actions form {
+    margin: 0;
+}
+
+.study-plan-actions button {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 11px;
+}
+
+.study-plan-actions a,
+.study-plan-actions > span {
+    font-family: var(--font-mono);
+    font-size: 11px;
+}
+
+.study-plan-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0 0 20px;
+    padding: 14px 16px;
+    color: var(--color-text);
+    background: rgba(42, 20, 20, 0.78);
+    border: 1px solid rgba(255, 107, 107, 0.28);
+    border-left: 3px solid var(--color-incorrect);
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.study-plan-warning::before {
+    color: var(--color-incorrect);
+    content: "!";
+    font-family: var(--font-mono);
+    font-weight: 700;
+}
+
+@media (max-width: 760px) {
+    .study-plan-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .study-plan-summary .progress-stat:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 560px) {
+    .study-plan-date-form {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 9px;
+        padding: 16px;
+    }
+
+    .study-plan-date-form label {
+        grid-column: auto;
+    }
+
+    .study-plan-date-form > button {
+        width: 100%;
+    }
+
+    .study-plan-summary {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .study-plan-summary .progress-stat:last-child {
+        grid-column: auto;
+    }
+
+    .study-plan-day {
+        padding: 18px 14px;
+    }
+
+    .study-plan-item {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 13px 12px;
+    }
+
+    .study-plan-item .progress-lesson-copy {
+        flex-basis: calc(100% - 36px);
+    }
+
+    .study-plan-actions {
+        width: 100%;
+        padding-left: 34px;
+        justify-content: flex-start;
     }
 }

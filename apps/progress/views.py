@@ -1,8 +1,9 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import OuterRef, Subquery, Sum
+from django.db.models import OuterRef, Q, Subquery, Sum
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -16,15 +17,17 @@ from apps.questions.models import Question
 from apps.quizzes.models import Quiz
 from apps.subjects.models import Subject, Topic
 
-from .analytics import estimated_readiness, topic_mastery
+from .analytics import difficulty_breakdown, estimated_readiness, mock_time_analytics, topic_mastery
 from .models import (
     FlashcardState,
     LessonProgress,
     QuizAnswer,
     QuizAttempt,
+	StudyPlanItem,
     UserProgress,
     XPTransaction,
 )
+from .study_plan import due_flashcard_count, generate_plan
 
 
 def _award_xp(user, topic, amount, reason, lesson_progress=None, quiz_attempt=None):
@@ -136,12 +139,13 @@ def dashboard(request):
 			(completed_count / len(lessons)) * 100
 		) if lessons else 0
 		subject.active_topics = active_topics
+		subject.difficulty_breakdown = difficulty_breakdown(request.user, subject)
+		subject.mock_time = mock_time_analytics(request.user, subject)
 		latest_mock = QuizAttempt.objects.filter(
 			user=request.user,
 			quiz__subject=subject,
-			quiz__title__icontains="mock",
+			quiz__is_mock=True,
 			quiz__is_active=True,
-			quiz__lesson__is_active=True,
 			completed_at__isnull=False,
 			total_questions__gt=0,
 		).select_related("quiz").order_by("-completed_at", "-started_at").first()
@@ -165,7 +169,8 @@ def dashboard(request):
 			user=request.user,
 			completed_at__isnull=False,
 			quiz__is_active=True,
-			quiz__lesson__is_active=True,
+		).filter(
+			Q(quiz__is_mock=True) | Q(quiz__lesson__is_active=True),
 			pk=Subquery(latest_attempt_for_quiz.values("pk")[:1]),
 		).select_related("quiz").order_by("-completed_at", "-started_at")
 	)
@@ -177,6 +182,124 @@ def dashboard(request):
 			"subjects": subjects,
 			"user_progress": user_progress,
 			"score_trend": score_trend,
+		},
+	)
+
+
+@login_required
+def study_plan_view(request, subject_slug):
+	subject = next(
+		(
+			item
+			for item in Subject.objects.filter(is_active=True)
+			if subject_slug in {slugify(item.name), slugify(item.code)}
+		),
+		None,
+	)
+	if subject is None:
+		raise Http404("Subject not found")
+
+	plan = subject.study_plans.filter(user=request.user, is_active=True).first()
+	if request.method == "POST":
+		if request.POST.get("complete_item"):
+			item = get_object_or_404(
+				StudyPlanItem,
+				pk=request.POST["complete_item"],
+				plan=plan,
+				plan__user=request.user,
+				plan__is_active=True,
+			)
+			if item.item_type not in {
+				StudyPlanItem.FLASHCARD_REVIEW,
+				StudyPlanItem.MISTAKE_REVIEW,
+			}:
+				messages.error(request, "Complete lessons and quizzes in their study flows.")
+			else:
+				item.completed = True
+				item.completed_at = timezone.now()
+				item.save(update_fields=["completed", "completed_at"])
+				messages.success(request, "Review marked complete.")
+			return redirect("progress:study-plan", subject_slug=subject_slug)
+
+		target_date_text = request.POST.get("target_date", "")
+		try:
+			target_date = date.fromisoformat(target_date_text)
+			plan = generate_plan(request.user, subject, target_date)
+		except (TypeError, ValueError):
+			messages.error(request, "Enter a valid target date in the future.")
+		else:
+			messages.success(request, "Your study plan has been generated.")
+		return redirect("progress:study-plan", subject_slug=subject_slug)
+
+	if plan is not None:
+		items = list(
+			plan.items.select_related("lesson", "topic").order_by(
+				"scheduled_date", "order"
+			)
+		)
+		completed_lesson_ids = set(
+			LessonProgress.objects.filter(
+				user=request.user,
+				completed=True,
+				lesson__in=[item.lesson_id for item in items if item.lesson_id],
+			).values_list("lesson_id", flat=True)
+		)
+		quiz_attempts = list(
+			QuizAttempt.objects.filter(
+				user=request.user,
+				quiz__subject=subject,
+				completed_at__isnull=False,
+			).values_list("quiz__topic_id", "completed_at")
+		)
+		quizzes_by_topic = {}
+		for quiz in Quiz.objects.filter(
+			subject=subject,
+			is_active=True,
+			lesson__is_active=True,
+		).select_related("topic").order_by("topic_id", "id"):
+			quizzes_by_topic.setdefault(quiz.topic_id, quiz)
+
+		for item in items:
+			if item.item_type == StudyPlanItem.LESSON:
+				item.completed = item.lesson_id in completed_lesson_ids
+				item.completed_at = None
+			elif item.item_type == StudyPlanItem.QUIZ:
+				item.quiz = quizzes_by_topic.get(item.topic_id)
+				item.completed = any(
+					topic_id == item.topic_id
+					and timezone.localtime(completed_at).date() >= item.scheduled_date
+					for topic_id, completed_at in quiz_attempts
+				)
+			elif item.item_type == StudyPlanItem.FLASHCARD_REVIEW:
+				item.due_card_count = due_flashcard_count(
+					request.user,
+					item.topic,
+					item.scheduled_date,
+				)
+
+		StudyPlanItem.objects.filter(
+			plan=plan,
+			item_type=StudyPlanItem.LESSON,
+			lesson_id__in=completed_lesson_ids,
+		).update(completed=True, completed_at=timezone.now())
+
+	return render(
+		request,
+		"progress/study_plan.html",
+		{
+			"subject": subject,
+			"plan": plan,
+			"items": items if plan is not None else [],
+			"today": timezone.localdate(),
+			"tomorrow": timezone.localdate() + timedelta(days=1),
+			"remaining_lessons": sum(
+				1 for item in items
+				if item.item_type == StudyPlanItem.LESSON and not item.completed
+			) if plan is not None else 0,
+			"items_after_target": sum(
+				1 for item in items
+				if plan is not None and item.scheduled_date >= plan.target_date
+			) if plan is not None else 0,
 		},
 	)
 
@@ -211,19 +334,30 @@ def _normalize_answer_text(value):
 @require_POST
 def complete_lesson(request, lesson_id):
 	lesson = get_object_or_404(Lesson, pk=lesson_id, is_active=True)
-	lesson_progress, _ = LessonProgress.objects.get_or_create(
-		user=request.user,
-		lesson=lesson,
-		defaults={"completed": True, "completed_at": timezone.now()},
-	)
-	if not hasattr(lesson_progress, "xp_transaction"):
-		_award_xp(
-			request.user,
-			_topic_for_lesson(lesson),
-			50,
-			"Completed lesson",
-			lesson_progress=lesson_progress,
+	with transaction.atomic():
+		lesson_progress, _ = LessonProgress.objects.get_or_create(
+			user=request.user,
+			lesson=lesson,
+			defaults={"completed": True, "completed_at": timezone.now()},
 		)
+		if not lesson_progress.completed:
+			lesson_progress.completed = True
+			lesson_progress.completed_at = timezone.now()
+			lesson_progress.save(update_fields=["completed", "completed_at", "updated_at"])
+		if not hasattr(lesson_progress, "xp_transaction"):
+			_award_xp(
+				request.user,
+				_topic_for_lesson(lesson),
+				50,
+				"Completed lesson",
+				lesson_progress=lesson_progress,
+			)
+		StudyPlanItem.objects.filter(
+			plan__user=request.user,
+			item_type=StudyPlanItem.LESSON,
+			lesson=lesson,
+			completed=False,
+		).update(completed=True, completed_at=timezone.now())
 	fallback = reverse(
 		"subjects:lesson-detail",
 		kwargs={
@@ -238,10 +372,11 @@ def complete_lesson(request, lesson_id):
 @require_POST
 def submit_quiz(request, quiz_id):
 	quiz = get_object_or_404(
-		Quiz.objects.prefetch_related("quiz_questions__question__answers"),
+		Quiz.objects.prefetch_related("quiz_questions__question__answers").filter(
+			Q(is_mock=True) | Q(lesson__is_active=True),
+		),
 		pk=quiz_id,
 		is_active=True,
-		lesson__is_active=True,
 	)
 	quiz_questions = list(quiz.quiz_questions.all())
 	selected_answers = {}
@@ -265,10 +400,21 @@ def submit_quiz(request, quiz_id):
 		elif value.isdigit():
 			selected_answers[question.id] = int(value)
 
+	time_taken = None
+	raw_time_taken = request.POST.get("time_taken_seconds")
+	if quiz.is_mock and raw_time_taken is not None:
+		try:
+			parsed_time_taken = int(raw_time_taken)
+		except (TypeError, ValueError):
+			parsed_time_taken = -1
+		if parsed_time_taken >= 0:
+			time_taken = parsed_time_taken
+
 	attempt = QuizAttempt.objects.create(
 		user=request.user,
 		quiz=quiz,
 		total_questions=len(quiz_questions),
+		time_taken_seconds=time_taken,
 		completed_at=timezone.now(),
 	)
 	score = 0
@@ -328,13 +474,14 @@ def submit_quiz(request, quiz_id):
 		)
 	attempt.score = score
 	attempt.save(update_fields=["score"])
-	_award_xp(
-		request.user,
-		quiz.topic,
-		25 + attempt.percentage // 5,
-		f"Completed quiz: {attempt.percentage}%",
-		quiz_attempt=attempt,
-	)
+	if quiz.topic_id:
+		_award_xp(
+			request.user,
+			quiz.topic,
+			25 + attempt.percentage // 5,
+			f"Completed quiz: {attempt.percentage}%",
+			quiz_attempt=attempt,
+		)
 
 	destination = _safe_next_url(request, reverse("quizzes:list"))
 	separator = "&" if "?" in destination else "?"

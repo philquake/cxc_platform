@@ -16,13 +16,10 @@ from apps.progress.models import (
 	QuizAttempt,
 	StudyPlan,
 	StudyPlanItem,
-	StudyPlan,
-	StudyPlanItem,
 	UserProgress,
 	XPTransaction,
 )
-from apps.progress.analytics import estimated_readiness, topic_mastery
-
+from apps.progress.analytics import difficulty_breakdown, estimated_readiness, topic_mastery
 
 class ProgressFlowTests(TestCase):
 	def setUp(self):
@@ -113,6 +110,83 @@ class ProgressFlowTests(TestCase):
 		self.assertEqual(mastery[question.topic_id]["n"], 2)
 		self.assertGreater(mastery[question.topic_id]["accuracy"], 0)
 		self.assertLess(mastery[question.topic_id]["accuracy"], 0.5)
+
+	def test_difficulty_breakdown_groups_answers_by_question_difficulty(self):
+		question = self.correct_answer.question
+		question.difficulty = "hard"
+		question.save(update_fields=["difficulty"])
+		attempt = QuizAttempt.objects.create(
+			user=self.user,
+			quiz=self.quiz,
+			total_questions=1,
+			completed_at=timezone.now(),
+		)
+		QuizAnswer.objects.create(
+			attempt=attempt,
+			question=question,
+			is_correct=True,
+		)
+
+		breakdown = difficulty_breakdown(self.user, question.subject)
+
+		self.assertEqual(breakdown["hard"]["accuracy_percent"], 100)
+		self.assertEqual(breakdown["hard"]["n"], 1)
+		self.assertIsNone(breakdown["easy"]["accuracy_percent"])
+
+	def test_dashboard_uses_explicit_mock_mode_for_readiness_and_trend(self):
+		mock = Quiz.objects.create(
+			subject=self.quiz.subject,
+			title="Practice paper",
+			is_mock=True,
+		)
+		attempt = QuizAttempt.objects.create(
+			user=self.user,
+			quiz=mock,
+			score=1,
+			total_questions=1,
+			time_taken_seconds=120,
+			completed_at=timezone.now(),
+		)
+		self.client.force_login(self.user)
+
+		response = self.client.get(reverse("progress:dashboard"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.context["score_trend"], [attempt])
+		self.assertEqual(response.context["subjects"][0].readiness["mock_attempt"], attempt)
+		self.assertContains(response, "MOCK")
+		self.assertContains(response, "AVG MOCK TIME")
+
+	def test_mock_submission_records_duration_and_wrong_answers(self):
+		question = Question.objects.create(
+			subject=self.quiz.subject,
+			topic=self.quiz.topic,
+			lesson=self.lesson,
+			text="Mock question",
+		)
+		correct = Answer.objects.create(question=question, text="yes", is_correct=True)
+		mock = Quiz.objects.create(
+			subject=self.quiz.subject,
+			title="Subject paper",
+			is_mock=True,
+			time_limit_minutes=30,
+		)
+		QuizQuestion.objects.create(quiz=mock, question=question)
+		self.client.force_login(self.user)
+
+		response = self.client.post(
+			reverse("progress:submit-quiz", args=[mock.id]),
+			{
+				f"question-{question.id}": "",
+				"time_taken_seconds": "75",
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		attempt = QuizAttempt.objects.get(user=self.user, quiz=mock)
+		self.assertEqual(attempt.time_taken_seconds, 75)
+		self.assertFalse(attempt.answers.get().is_correct)
+		self.assertTrue(FlashcardState.objects.filter(user=self.user, question=question).exists())
 
 	def test_readiness_excludes_topics_without_enough_answers_and_blends_mock(self):
 		topic = self.correct_answer.question.topic
@@ -428,6 +502,21 @@ class ProgressFlowTests(TestCase):
 		state.refresh_from_db()
 		self.assertEqual((state.reps, state.interval_days), (0, 1))
 
+	def test_flashcard_reviews_round_sm2_intervals_to_nearest_day(self):
+		state = FlashcardState.objects.create(
+			user=self.user,
+			question=self.correct_answer.question,
+			reps=2,
+			interval_days=5,
+			ease=2.5,
+		)
+
+		reviewed_at = timezone.now()
+		due_days = state.review("good", reviewed_at=reviewed_at)
+
+		self.assertEqual(due_days, 13)
+		self.assertEqual(state.due_at, timezone.localdate(reviewed_at) + timezone.timedelta(days=13))
+
 	def test_flashcard_review_rejects_unknown_rating(self):
 		self.client.force_login(self.user)
 
@@ -541,20 +630,24 @@ class ProgressFlowTests(TestCase):
 		plan = StudyPlan.objects.create(
 			user=self.user,
 			subject=self.lesson.subject,
-			title="Algebra review",
-			start_date=timezone.localdate(),
-			end_date=timezone.localdate() + timezone.timedelta(days=7),
+			target_date=timezone.localdate() + timezone.timedelta(days=7),
 		)
 		valid_item = StudyPlanItem(
 			plan=plan,
+			item_type=StudyPlanItem.LESSON,
 			lesson=self.lesson,
-			scheduled_date=plan.start_date,
+			topic=self.correct_answer.question.topic,
+			scheduled_date=timezone.localdate(),
 		)
 		valid_item.full_clean()
 		valid_item.save()
 
 		with self.assertRaises(Exception):
-			StudyPlanItem(plan=plan, scheduled_date=plan.start_date).full_clean()
+			StudyPlanItem(
+				plan=plan,
+				item_type=StudyPlanItem.LESSON,
+				scheduled_date=timezone.localdate(),
+			).full_clean()
 
 		other_subject = Subject.objects.create(name="Science", code="SCI")
 		other_lesson = Lesson.objects.create(
@@ -565,8 +658,10 @@ class ProgressFlowTests(TestCase):
 		with self.assertRaises(Exception):
 			StudyPlanItem(
 				plan=plan,
+				item_type=StudyPlanItem.LESSON,
+				topic=self.correct_answer.question.topic,
 				lesson=other_lesson,
-				scheduled_date=plan.start_date,
+				scheduled_date=timezone.localdate(),
 			).full_clean()
 
 	def test_short_answer_questions_are_scored_by_expected_text(self):

@@ -57,6 +57,9 @@
                 </div>
                 <p class="progress-summary">{{ subject.completed_count }} of {{ subject.lesson_count }} lessons complete</p>
                 <div class="progress-callouts">
+                    <a href="{% url 'progress:study-plan' subject.name|slugify %}" class="mistake-bank-link">
+                        Study plan →
+                    </a>
                     <a href="{% url 'progress:flashcards' subject.name|slugify %}" class="mistake-bank-link">
                         Practice flashcards →
                     </a>
@@ -109,6 +112,32 @@
                         {% empty %}
                             <p class="progress-empty">No active topics in this subject yet.</p>
                         {% endfor %}
+                    </div>
+                </section>
+
+                <section class="progress-mastery progress-exam-analytics" aria-label="{{ subject.name }} exam analytics">
+                    <h3>Exam analytics</h3>
+                    <div class="progress-difficulty-list">
+                        <div class="progress-stat">
+                            <span class="progress-stat-label">EASY</span>
+                            <strong>{% if subject.difficulty_breakdown.easy.accuracy_percent != None %}{{ subject.difficulty_breakdown.easy.accuracy_percent }}%{% else %}—{% endif %}</strong>
+                            <small>{{ subject.difficulty_breakdown.easy.n }} answers</small>
+                        </div>
+                        <div class="progress-stat">
+                            <span class="progress-stat-label">MEDIUM</span>
+                            <strong>{% if subject.difficulty_breakdown.medium.accuracy_percent != None %}{{ subject.difficulty_breakdown.medium.accuracy_percent }}%{% else %}—{% endif %}</strong>
+                            <small>{{ subject.difficulty_breakdown.medium.n }} answers</small>
+                        </div>
+                        <div class="progress-stat">
+                            <span class="progress-stat-label">HARD</span>
+                            <strong>{% if subject.difficulty_breakdown.hard.accuracy_percent != None %}{{ subject.difficulty_breakdown.hard.accuracy_percent }}%{% else %}—{% endif %}</strong>
+                            <small>{{ subject.difficulty_breakdown.hard.n }} answers</small>
+                        </div>
+                        <div class="progress-stat">
+                            <span class="progress-stat-label">AVG MOCK TIME</span>
+                            <strong>{% if subject.mock_time.average_seconds != None %}{{ subject.mock_time.average_seconds|floatformat:0 }} sec{% else %}—{% endif %}</strong>
+                            <small>{{ subject.mock_time.count }} timed attempts</small>
+                        </div>
                     </div>
                 </section>
 
@@ -169,7 +198,7 @@
         {% for attempt in score_trend %}
             <div class="progress-trend-row">
                 <div class="progress-trend-heading">
-                    <span><strong>{{ attempt.quiz.title }}</strong><small>{{ attempt.completed_at|date:"M j, Y" }}</small></span>
+                    <span><strong>{{ attempt.quiz.title }}{% if attempt.quiz.is_mock %} <em class="progress-mock-badge">MOCK</em>{% endif %}</strong><small>{{ attempt.completed_at|date:"M j, Y" }}</small></span>
                     <strong>{{ attempt.percentage }}%</strong>
                 </div>
                 <div class="progress-track" role="progressbar" aria-valuenow="{{ attempt.percentage }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ attempt.quiz.title }} score">

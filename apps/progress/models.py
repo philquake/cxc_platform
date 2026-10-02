@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 from apps.lessons.models import Lesson
@@ -84,6 +84,7 @@ class QuizAttempt(models.Model):
     )
     score = models.PositiveIntegerField(default=0)
     total_questions = models.PositiveIntegerField(default=0)
+    time_taken_seconds = models.PositiveIntegerField(null=True, blank=True)
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
@@ -207,7 +208,7 @@ class FlashcardState(models.Model):
             elif self.reps == 1:
                 self.interval_days = 6
             else:
-                self.interval_days = round(self.interval_days * self.ease)
+                self.interval_days = int(self.interval_days * self.ease + 0.5)
             self.reps += 1
 
         self.due_at = timezone.localdate(reviewed_at) + timedelta(days=self.interval_days)
@@ -235,33 +236,58 @@ class StudyPlan(models.Model):
         on_delete=models.CASCADE,
         related_name="study_plans",
     )
-    title = models.CharField(max_length=200)
-    start_date = models.DateField()
-    end_date = models.DateField(null=True, blank=True)
+    target_date = models.DateField()
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["start_date", "id"]
-        constraints = [
-            models.CheckConstraint(
-                condition=models.Q(end_date__isnull=True)
-                | models.Q(end_date__gte=models.F("start_date")),
-                name="study_plan_end_after_start",
-            ),
-        ]
+        ordering = ["target_date", "id"]
+
+    def clean(self):
+        super().clean()
+        if self.is_active and self.user_id and self.subject_id and StudyPlan.objects.filter(
+            user_id=self.user_id,
+            subject_id=self.subject_id,
+            is_active=True,
+        ).exclude(pk=self.pk).exists():
+            raise ValidationError("Only one active study plan is allowed per subject.")
+
+    def save(self, *args, **kwargs):
+        if self.is_active:
+            using = kwargs.get("using")
+            with transaction.atomic(using=using):
+                if self.user_id and self.subject_id:
+                    StudyPlan.objects.using(using).filter(
+                        user_id=self.user_id,
+                        subject_id=self.subject_id,
+                        is_active=True,
+                    ).exclude(pk=self.pk).update(is_active=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.user} - {self.title}"
+        return f"{self.user} - {self.subject} study plan"
 
 
 class StudyPlanItem(models.Model):
+    LESSON = "lesson"
+    QUIZ = "quiz"
+    FLASHCARD_REVIEW = "flashcard_review"
+    MISTAKE_REVIEW = "mistake_review"
+    ITEM_TYPE_CHOICES = [
+        (LESSON, "Lesson"),
+        (QUIZ, "Quiz"),
+        (FLASHCARD_REVIEW, "Flashcard review"),
+        (MISTAKE_REVIEW, "Mistake review"),
+    ]
+
     plan = models.ForeignKey(
         StudyPlan,
         on_delete=models.CASCADE,
         related_name="items",
     )
+    item_type = models.CharField(max_length=20, choices=ITEM_TYPE_CHOICES)
     lesson = models.ForeignKey(
         Lesson,
         on_delete=models.CASCADE,
@@ -269,8 +295,8 @@ class StudyPlanItem(models.Model):
         null=True,
         blank=True,
     )
-    quiz = models.ForeignKey(
-        Quiz,
+    topic = models.ForeignKey(
+        Topic,
         on_delete=models.CASCADE,
         related_name="study_plan_items",
         null=True,
@@ -278,17 +304,22 @@ class StudyPlanItem(models.Model):
     )
     scheduled_date = models.DateField()
     order = models.PositiveIntegerField(default=0)
+    completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        ordering = ["scheduled_date", "order", "id"]
+        ordering = ["scheduled_date", "order"]
         constraints = [
             models.CheckConstraint(
                 condition=(
-                    models.Q(lesson__isnull=False, quiz__isnull=True)
-                    | models.Q(lesson__isnull=True, quiz__isnull=False)
+                    models.Q(item_type="lesson", lesson__isnull=False)
+                    | (~models.Q(item_type="lesson") & models.Q(lesson__isnull=True))
                 ),
-                name="study_plan_item_one_target",
+                name="study_plan_item_lesson_target",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(item_type="lesson") | models.Q(topic__isnull=False),
+                name="study_plan_item_topic_target",
             ),
             models.UniqueConstraint(
                 fields=["plan", "scheduled_date", "order"],
@@ -298,14 +329,20 @@ class StudyPlanItem(models.Model):
 
     def clean(self):
         super().clean()
-        target = self.lesson or self.quiz
-        if self.plan_id and target and target.subject_id != self.plan.subject_id:
-            raise ValidationError("The study item must belong to the plan subject.")
-        if self.plan_id and (
-            self.scheduled_date < self.plan.start_date
-            or (self.plan.end_date and self.scheduled_date > self.plan.end_date)
-        ):
-            raise ValidationError("The scheduled date must fall within the plan dates.")
+        errors = {}
+        if self.item_type == self.LESSON:
+            if not self.lesson_id:
+                errors["lesson"] = "Lesson items need a lesson."
+        elif self.lesson_id:
+            errors["lesson"] = "Only lesson items can reference a lesson."
+        if self.item_type != self.LESSON and not self.topic_id:
+            errors["topic"] = "Review and quiz items need a topic."
+        if self.plan_id and self.lesson_id and self.lesson.subject_id != self.plan.subject_id:
+            errors["lesson"] = "The lesson must belong to the plan subject."
+        if self.plan_id and self.topic_id and self.topic.subject_id != self.plan.subject_id:
+            errors["topic"] = "The topic must belong to the plan subject."
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self):
-        return f"{self.plan.title} - {self.lesson or self.quiz}"
+        return f"{self.plan.subject} - {self.get_item_type_display()}"

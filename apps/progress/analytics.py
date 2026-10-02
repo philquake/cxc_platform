@@ -1,7 +1,7 @@
 # apps/progress/analytics.py
 from django.utils import timezone
 
-from .models import QuizAnswer
+from .models import QuizAnswer, QuizAttempt
 
 MIN_EVIDENCE = 5
 ANSWER_HALF_LIFE_DAYS = 14
@@ -45,6 +45,66 @@ def topic_mastery(user, subject):
             "enough_data": topic["n"] >= MIN_EVIDENCE,
         }
     return results
+
+
+def difficulty_breakdown(user, subject):
+    now = timezone.now()
+    answer_rows = QuizAnswer.objects.filter(
+        attempt__user=user,
+        attempt__completed_at__isnull=False,
+        question__subject=subject,
+    ).values_list(
+        "question__difficulty",
+        "is_correct",
+        "attempt__completed_at",
+    )
+    totals = {
+        difficulty: {"weighted_total": 0.0, "weighted_correct": 0.0, "n": 0}
+        for difficulty in ("easy", "medium", "hard")
+    }
+    for difficulty, is_correct, completed_at in answer_rows:
+        age_days = max((now - completed_at).total_seconds() / 86400, 0)
+        answer_weight = 0.5 ** (age_days / ANSWER_HALF_LIFE_DAYS)
+        band = totals.setdefault(
+            difficulty,
+            {"weighted_total": 0.0, "weighted_correct": 0.0, "n": 0},
+        )
+        band["weighted_total"] += answer_weight
+        band["weighted_correct"] += answer_weight * int(is_correct)
+        band["n"] += 1
+
+    results = {}
+    for difficulty, band in totals.items():
+        accuracy = (
+            band["weighted_correct"] / band["weighted_total"]
+            if band["weighted_total"]
+            else None
+        )
+        results[difficulty] = {
+            "accuracy": accuracy,
+            "accuracy_percent": round(accuracy * 100) if accuracy is not None else None,
+            "n": band["n"],
+            "enough_data": band["n"] >= MIN_EVIDENCE,
+        }
+    return results
+
+
+def mock_time_analytics(user, subject):
+    durations = list(
+        QuizAttempt.objects.filter(
+            user=user,
+            quiz__subject=subject,
+            quiz__is_mock=True,
+            completed_at__isnull=False,
+            time_taken_seconds__isnull=False,
+        ).values_list("time_taken_seconds", flat=True)
+    )
+    total_seconds = sum(durations)
+    return {
+        "count": len(durations),
+        "total_seconds": total_seconds,
+        "average_seconds": round(total_seconds / len(durations)) if durations else None,
+    }
 
 
 def estimated_readiness(topics, topic_results, mock_attempt=None):

@@ -471,9 +471,16 @@ class ProgressFlowTests(TestCase):
 		)
 		second_subject = Subject.objects.create(name="Biology", code="BIO")
 		second_topic = Topic.objects.create(subject=second_subject, name="Cells", slug="cells")
+		second_lesson = Lesson.objects.create(
+			subject=second_subject,
+			title="Cells",
+			slug="cells",
+			content="<p>Cells</p>",
+		)
 		second_question = Question.objects.create(
 			subject=second_subject,
 			topic=second_topic,
+			lesson=second_lesson,
 			text="What is a cell?",
 		)
 		Answer.objects.create(question=second_question, text="A basic unit of life", is_correct=True)
@@ -488,7 +495,7 @@ class ProgressFlowTests(TestCase):
 		self.assertContains(hub_response, reverse("progress:flashcards-all"))
 		self.assertContains(hub_response, reverse("progress:flashcards", args=["mathematics"]))
 		self.assertContains(hub_response, reverse("progress:flashcards", args=["biology"]))
-		self.assertContains(hub_response, "2 cards due")
+		self.assertContains(hub_response, "2 due cards")
 
 		all_cards_response = self.client.get(reverse("progress:flashcards-all"))
 		self.assertEqual(all_cards_response.status_code, 200)

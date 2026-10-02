@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Flashcards | Compile{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=1.2">
+<link rel="stylesheet" href="{% static 'css/flashcards.css' %}?v=1.2">
+{% endblock %}
+
+{% block content %}
+<div class="progress-page flashcard-page">
+    <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
+
+    <header class="progress-header">
+        <span class="content-card-label">REVIEW QUEUE</span>
+        <h1>Flashcards</h1>
+        <p>Choose a subject or review every card due today.</p>
+    </header>
+
+    <section class="progress-suggested-next" aria-label="All due flashcards">
+        <div>
+            <span class="content-card-label">ALL SUBJECTS</span>
+            <h2>{{ all_due_count }} due card{{ all_due_count|pluralize }}</h2>
+            {% if all_due_count %}
+                <a href="{% url 'progress:flashcards-all' %}">Review all due cards</a>
+            {% else %}
+                <p>No cards are due right now. Choose a subject to practice its review queue.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <section aria-label="Flashcards by subject">
+        <h2>By subject</h2>
+        <div class="progress-subjects">
+            {% for subject in subjects %}
+                <article class="progress-subject">
+                    <span class="content-card-label">{{ subject.code }}</span>
+                    <h3>{{ subject.name }}</h3>
+                    <p>{{ subject.due_count }} due card{{ subject.due_count|pluralize }}</p>
+                    <a href="{% url 'progress:flashcards' subject.name|slugify %}">
+                        {% if subject.due_count %}Review subject{% else %}Open subject queue{% endif %}
+                    </a>
+                </article>
+            {% empty %}
+                <p class="progress-empty">No active subjects are available.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

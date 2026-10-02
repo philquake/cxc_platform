@@ -667,37 +667,37 @@ def flashcard_session(request, subject_slug=None, topic_slug=None):
 		if subject is None:
 			raise Http404("Subject not found")
 
-    topic = None
-    if topic_slug:
-        topic = get_object_or_404(Topic, subject=subject, slug=topic_slug, is_active=True)
+	topic = None
+	if topic_slug:
+		topic = get_object_or_404(Topic, subject=subject, slug=topic_slug, is_active=True)
 
-    states = FlashcardState.objects.filter(
-        user=request.user,
-        question__is_active=True,
+	states = FlashcardState.objects.filter(
+		user=request.user,
+		question__is_active=True,
 		question__subject__is_active=True,
-        due_at__lte=timezone.localdate(),
-    )
+		due_at__lte=timezone.localdate(),
+	)
 	if subject is not None:
 		states = states.filter(question__subject=subject)
-    if topic is not None:
-        states = states.filter(question__topic=topic)
+	if topic is not None:
+		states = states.filter(question__topic=topic)
 
-    cards = list(
-        states.select_related("question", "question__subject", "question__topic")
-        .prefetch_related("question__answers")
-        .order_by("due_at", "question_id")
-    )
-    return render(
-        request,
-        "progress/flashcards.html",
-        {
-            "subject": subject,
-            "topic": topic,
-            "cards": cards,
-            "due_count": len(cards),
+	cards = list(
+		states.select_related("question", "question__subject", "question__topic")
+		.prefetch_related("question__answers")
+		.order_by("due_at", "question_id")
+	)
+	return render(
+		request,
+		"progress/flashcards.html",
+		{
+			"subject": subject,
+			"topic": topic,
+			"cards": cards,
+			"due_count": len(cards),
 			"is_all_subjects": subject is None,
-        },
-    )
+		},
+	)
 
 
 @login_required

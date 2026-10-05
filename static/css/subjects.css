@@ -319,6 +319,27 @@
     color: var(--color-white);
     font-size: 20px;
 }
+.lesson-body figure.table {
+    margin: 24px 0;
+    overflow-x: auto;
+}
+
+.lesson-body table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.lesson-body th,
+.lesson-body td {
+    padding: 10px 14px;
+    border: 1px solid var(--color-panel-border);
+    text-align: left;
+}
+
+.lesson-body th {
+    color: var(--color-white);
+    background: var(--color-bg-header);
+}
 
 /* Text alignment */
 .lesson-body .has-text-align-left    { text-align: left; }

@@ -53,31 +53,39 @@ CKEDITOR_5_CONFIGS = {
         "toolbar": [
             "heading", "|",
             "bold", "italic", "link", "|",
+            "fontColor", "fontBackgroundColor", "|",
             "alignment", "|",
-            "imageUpload", "bulletedList", "numberedList",
-            "blockQuote", "insertTable", "|",
+            "imageUpload", "bulletedList", "numberedList", "blockQuote", "|",
+            "insertTable", "|",
             "undo", "redo",
         ],
-        "image": {
-            "toolbar": [
-                "imageTextAlternative", "|",
-                "imageStyle:alignLeft",
-                "imageStyle:alignCenter",
-                "imageStyle:alignRight",
-                "imageStyle:side",
-                "|",
-                "toggleImageCaption",
+        "alignment": {
+            "options": ["left", "center", "right", "justify"],
+        },
+        "fontColor": {
+            "colors": [
+                {"color": "#ffffff", "label": "White"},
+                {"color": "#3ddc84", "label": "Green"},
+                {"color": "#f4c430", "label": "Amber"},
+                {"color": "#ff6b6b", "label": "Red"},
+                {"color": "#5ea8ff", "label": "Blue"},
+                {"color": "#c792ea", "label": "Purple"},
             ],
-            "styles": [
-                "full",
-                "side",
-                "alignLeft",
-                "alignCenter",
-                "alignRight",
+            "columns": 6,
+        },
+        "fontBackgroundColor": {
+            "colors": [
+                {"color": "#10261a", "label": "Dark green"},
+                {"color": "#2a1414", "label": "Dark red"},
+                {"color": "#1a222d", "label": "Slate"},
             ],
+            "columns": 3,
         },
         "table": {
-            "contentToolbar": ["tableColumn", "tableRow", "mergeTableCells"],
+            "contentToolbar": [
+                "tableColumn", "tableRow", "mergeTableCells",
+                "tableProperties", "tableCellProperties",
+            ],
         },
     },
 }

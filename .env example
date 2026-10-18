@@ -1,8 +1,11 @@
 DJANGO_SECRET_KEY=change-this-to-a-random-secret-key
-DJANGO_DEBUG=True
+DEBUG=True
 
-POSTGRES_DB=cxc_platform
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=Generator36@
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
+# Supabase: Project Settings > Database > Connection string > Session pooler.
+# Percent-encode special characters in the password (e.g. @ -> %40).
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+# DB_SSLMODE=disable  # only for a local Postgres without SSL
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=

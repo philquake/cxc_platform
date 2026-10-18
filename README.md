@@ -82,20 +82,19 @@ Create a `.env` file in the project root. Do not commit it.
 
 ```dotenv
 DJANGO_SECRET_KEY=replace-with-a-secure-secret-key
-DJANGO_DEBUG=true
+DEBUG=true
 
-POSTGRES_DB=cxc_platform
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your-password
-POSTGRES_HOST=127.0.0.1
-POSTGRES_PORT=5432
+# Supabase: Project Settings > Database > Connection string > Session pooler.
+# Percent-encode special characters in the password (e.g. @ -> %40).
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+# DB_SSLMODE=disable  # only for a local Postgres without SSL
 EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
 DEFAULT_FROM_EMAIL=noreply@example.com
 # For production SMTP, set EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 # and configure EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS.
 ```
 
-The settings module reads these values with `python-dotenv`. `ALLOWED_HOSTS` is currently empty, so add your development or production hostnames before deploying. Configure a Django SMTP email backend and its environment variables in production so password-reset messages can be delivered.
+The settings module reads these values with `django-environ`. `ALLOWED_HOSTS` is currently empty, so add your development or production hostnames before deploying. Configure a Django SMTP email backend and its environment variables in production so password-reset messages can be delivered.
 
 ### 4. Apply migrations
 

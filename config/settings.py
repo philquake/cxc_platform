@@ -123,11 +123,19 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 
+# DATABASE_URL points at Supabase (use the Session pooler string from Project Settings > Database).
 DATABASES = {
     "default": env.db("DATABASE_URL"),
 }
-DATABASES["default"]["CONN_MAX_AGE"] = 600
-DATABASES["default"]["OPTIONS"] = {"sslmode": "require"} if not DEBUG else {}
+# Supabase only accepts SSL connections; set DB_SSLMODE=disable for a local Postgres without SSL.
+DATABASES["default"]["OPTIONS"] = {"sslmode": env("DB_SSLMODE", default="require")}
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+if str(DATABASES["default"].get("PORT")) == "6543":
+    # Supabase's transaction pooler can't hold persistent connections or server-side cursors.
+    DATABASES["default"]["CONN_MAX_AGE"] = 0
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+else:
+    DATABASES["default"]["CONN_MAX_AGE"] = 600
 
 
 # Password validation

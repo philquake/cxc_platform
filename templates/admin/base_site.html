@@ -1,0 +1,54 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{# extrahead renders after every page's extrastyle (changelists.css, forms.css, ...), so the theme wins the cascade. #}
+{% block extrahead %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{% static 'admin/css/shadcn.css' %}">
+  {{ block.super }}
+{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+  <a href="{% url 'admin:index' %}" class="brand">
+    <span class="brand-mark" aria-hidden="true">c/</span>
+    <span class="brand-text">{{ site_header|default:_('Django administration') }}</span>
+  </a>
+</div>
+{% if user.is_anonymous %}
+  {% include "admin/color_theme_toggle.html" %}
+{% endif %}
+{% endblock %}
+
+{% block welcome-msg %}
+  <span class="user-chip" title="{% firstof user.get_full_name user.get_username %}">
+    <span class="user-avatar" aria-hidden="true">{% firstof user.get_short_name user.get_username as display_name %}{{ display_name|first|upper }}</span>
+    <span class="user-name">{{ display_name }}</span>
+  </span>
+{% endblock %}
+
+{% block userlinks %}
+  {% if site_url %}
+    <a class="btn-ghost" href="{{ site_url }}">{% translate 'View site' %}</a>
+  {% endif %}
+  {% if user.is_active and user.is_staff %}
+    {% url 'django-admindocs-docroot' as docsroot %}
+    {% if docsroot %}
+      <a class="btn-ghost" href="{{ docsroot }}">{% translate 'Documentation' %}</a>
+    {% endif %}
+  {% endif %}
+  {% if user.has_usable_password %}
+    <a class="btn-ghost" href="{% url 'admin:password_change' %}">{% translate 'Change password' %}</a>
+  {% endif %}
+  {% include "admin/color_theme_toggle.html" %}
+  <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn-outline">{% translate 'Log out' %}</button>
+  </form>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

@@ -19,6 +19,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
 
+admin.site.site_header = "compile/ admin"
+admin.site.site_title = "compile/ admin"
+admin.site.index_title = "Dashboard"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('ckeditor5/', include('django_ckeditor_5.urls')),

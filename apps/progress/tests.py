@@ -902,3 +902,61 @@ class ProgressFlowTests(TestCase):
 		self.assertIsNone(attempt.answers.get().selected_answer)
 
 # Create your tests here.
+
+
+class AdminDashboardTests(TestCase):
+	def setUp(self):
+		self.admin_user = get_user_model().objects.create_superuser(
+			username="admin",
+			password="admin-password",
+			email="admin@example.com",
+		)
+		student = get_user_model().objects.create_user(username="student")
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		topic = Topic.objects.create(subject=subject, name="Algebra", slug="algebra")
+		lesson = Lesson.objects.create(subject=subject, title="Algebra", slug="algebra", content="x")
+		self.hard = Question.objects.create(subject=subject, topic=topic, lesson=lesson, text="Too hard question")
+		Answer.objects.create(question=self.hard, text="4", is_correct=True)
+		self.unanswerable = Question.objects.create(
+			subject=subject, topic=topic, lesson=lesson, text="Missing answer question"
+		)
+		self.quiz = Quiz.objects.create(subject=subject, topic=topic, lesson=lesson, title="Algebra quiz")
+		attempt = QuizAttempt.objects.create(
+			user=student, quiz=self.quiz, score=0, total_questions=1, completed_at=timezone.now()
+		)
+		QuizAnswer.objects.create(attempt=attempt, question=self.hard, is_correct=False)
+
+	def test_dashboard_shows_stats_flags_and_recent_attempts(self):
+		self.client.force_login(self.admin_user)
+
+		response = self.client.get(reverse("admin:index"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "Active questions")
+		self.assertContains(response, "1 flagged for review")
+		self.assertContains(response, "Too hard question")
+		self.assertContains(response, "Missing answer question")
+		self.assertContains(response, "No answer")
+		self.assertContains(response, "0% average score")
+		self.assertContains(response, reverse("admin:progress_quizattempt_change", args=[QuizAttempt.objects.get().pk]))
+		self.assertContains(response, 'id="recent-actions-module"')
+		self.assertContains(response, 'id="nav-sidebar"')
+
+	def test_dashboard_hides_data_without_view_permissions(self):
+		staff = get_user_model().objects.create_user(username="staff", is_staff=True)
+		self.client.force_login(staff)
+
+		response = self.client.get(reverse("admin:index"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertNotContains(response, "Too hard question")
+		self.assertNotContains(response, "stat-card")
+		self.assertNotContains(response, "Recent quiz attempts")
+
+	def test_quiz_change_form_loads_quiz_admin_script(self):
+		self.client.force_login(self.admin_user)
+
+		response = self.client.get(reverse("admin:quizzes_quiz_change", args=[self.quiz.pk]))
+
+		self.assertContains(response, "admin/js/quiz_admin.js")
+		self.assertContains(response, 'data-difficulty="medium"')

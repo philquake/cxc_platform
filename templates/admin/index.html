@@ -1,0 +1,112 @@
+{% extends "admin/index.html" %}
+{% load i18n admin_dashboard %}
+
+{% block nav-sidebar %}{% include "admin/nav_sidebar.html" %}{% endblock %}
+
+{% block content_subtitle %}<p class="page-description">{% translate 'Overview of content health and student activity.' %}</p>{% endblock %}
+
+{% block content %}
+{% admin_dashboard as dash %}
+<div id="content-main" class="dash">
+
+  {% if dash.quick_actions %}
+  <div class="quick-actions">
+    {% for action in dash.quick_actions %}
+      <a class="button{% if forloop.first %} default{% endif %}" href="{{ action.url }}">{{ action.label }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if dash.stats %}
+  <div class="stat-grid">
+    {% for stat in dash.stats %}
+      <a class="card stat-card" href="{{ stat.url }}">
+        <span class="stat-label">{{ stat.label }}</span>
+        <span class="stat-value">{{ stat.value }}</span>
+        <span class="stat-hint">{{ stat.hint }}</span>
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="dash-grid">
+    {% if dash.chart %}
+    <section class="card">
+      <header class="card-header">
+        <h2 class="card-title">{% translate 'Completed quiz attempts' %}</h2>
+        <p class="card-description">{% blocktranslate count total=dash.chart.total %}{{ total }} attempt in the last 14 days{% plural %}{{ total }} attempts in the last 14 days{% endblocktranslate %}</p>
+      </header>
+      <div class="card-content">
+        <ol class="bar-chart" aria-label="{% translate 'Completed quiz attempts per day' %}">
+          {% for d in dash.chart.days %}
+            <li class="bar-col" tabindex="0" aria-label="{{ d.day|date:'D j M' }}: {{ d.count }}">
+              <span class="bar-tip" aria-hidden="true">{{ d.day|date:'D j M' }} · <strong>{{ d.count }}</strong></span>
+              <span class="bar" style="--h: {{ d.pct }}%"></span>
+              <span class="bar-label" aria-hidden="true">{% if forloop.first or forloop.last or forloop.counter == 7 %}{{ d.day|date:'j M' }}{% endif %}</span>
+            </li>
+          {% endfor %}
+        </ol>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if perms.questions.view_question %}
+    <section class="card">
+      <header class="card-header">
+        <h2 class="card-title">{% translate 'Needs attention' %}</h2>
+        <p class="card-description">{% translate 'Questions outside the 20–95% accuracy band, or missing a correct answer.' %}</p>
+      </header>
+      <div class="card-content">
+        {% if dash.attention %}
+          <ul class="item-list">
+            {% for item in dash.attention %}
+              <li>
+                <a href="{{ item.url }}">
+                  <span class="item-title">{{ item.title|truncatechars:90 }}</span>
+                  <span class="item-detail">{{ item.detail }}</span>
+                </a>
+                <span class="badge badge-{{ item.tone }}">{{ item.badge }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="empty-state">{% translate 'All clear. No questions are flagged.' %}</p>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if perms.progress.view_quizattempt %}
+    <section class="card card-span">
+      <header class="card-header">
+        <h2 class="card-title">{% translate 'Recent quiz attempts' %}</h2>
+      </header>
+      <div class="card-content flush">
+        {% if dash.recent_attempts %}
+        <table class="data-table">
+          <thead><tr><th scope="col">{% translate 'Student' %}</th><th scope="col">{% translate 'Quiz' %}</th><th scope="col" class="num">{% translate 'Score' %}</th><th scope="col" class="num">{% translate 'Completed' %}</th></tr></thead>
+          <tbody>
+            {% for attempt in dash.recent_attempts %}
+              <tr>
+                <td>{{ attempt.user.get_username }}</td>
+                <td><a href="{% url 'admin:progress_quizattempt_change' attempt.pk %}">{{ attempt.quiz.title }}</a>{% if attempt.quiz.is_mock %} <span class="badge badge-secondary">{% translate 'Mock' %}</span>{% endif %}</td>
+                <td class="num">{{ attempt.score }}/{{ attempt.total_questions }}</td>
+                <td class="num">{{ attempt.completed_at|timesince }} {% translate 'ago' %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+          <p class="empty-state">{% translate 'No completed attempts yet.' %}</p>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+  </div>
+
+  <h2 class="section-heading">{% translate 'All content' %}</h2>
+  <div class="app-list">
+    {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+  </div>
+</div>
+{% endblock %}

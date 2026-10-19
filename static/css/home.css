@@ -13,7 +13,7 @@
   --t-lead: 28px;
   --t-body: 17px;
   --t-small: 15px;
-  --frame-w: clamp(300px, 32vw, 540px);
+  --frame-w: 300px;
   --section-gap: 200px;
   --ease: cubic-bezier(0.22, 0.8, 0.24, 1);
   color: var(--ink);
@@ -62,25 +62,30 @@
   padding: 0 var(--gutter);
 }
 
-/* the question sits where a word would: a, card, b on one grid */
+/* the question sits where a word would: the heading's two halves and the card share one grid */
 .hero-centre {
   display: grid;
   flex: 1;
-  grid-template-columns: 1fr var(--frame-w) 1fr;
-  align-items: center;
+  grid-template-columns: auto minmax(var(--frame-w), 1fr) auto;
+  align-content: center;
   column-gap: 32px;
   padding: 48px 0;
 }
 
 .hero-sentence {
-  display: contents;
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  align-items: center;
+  margin: 0;
   font-size: var(--t-display);
   line-height: 0.95;
 }
 
-.hero-a { grid-column: 1; grid-row: 1; justify-self: end; white-space: nowrap; }
-.hero-b { grid-column: 3; grid-row: 1; justify-self: start; white-space: nowrap; }
-.reel { grid-column: 2; grid-row: 1; }
+.hero-a { grid-column: 1; grid-row: 1; white-space: nowrap; }
+.hero-b { grid-column: 3; grid-row: 1; white-space: nowrap; }
+.reel { position: relative; grid-column: 2; grid-row: 1; align-self: center; justify-self: center; width: 100%; max-width: 640px; }
 
 .q {
   display: flex;
@@ -277,7 +282,13 @@
 }
 
 .return-heading {
-  display: contents;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-column: 1;
+  grid-row: 1 / 4;
+  justify-items: center;
+  row-gap: inherit;
+  margin: 0;
   font-size: var(--t-display);
   line-height: 0.9;
   text-align: center;
@@ -287,6 +298,8 @@
 .return-b { grid-row: 3; }
 
 .return-frame {
+  position: relative;
+  grid-column: 1;
   grid-row: 2;
   width: calc(var(--rf-h) * 0.8);
   height: var(--rf-h);
@@ -405,6 +418,7 @@
 
 .home .subject-name {
   grid-column: 1;
+  text-wrap: balance;
   font-size: var(--t-lead);
   line-height: 1.05;
 }
@@ -512,9 +526,12 @@
 
   .hero-centre {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    justify-content: stretch;
     row-gap: 16px;
     padding: 32px 0 40px;
   }
+  .hero-sentence { grid-template-columns: none; grid-template-rows: subgrid; grid-row: 1 / 4; row-gap: inherit; }
   .hero-a { grid-column: 1; grid-row: 1; justify-self: start; }
   .reel { grid-column: 1; grid-row: 2; justify-self: center; width: min(100%, 560px); }
   .hero-b { grid-column: 1; grid-row: 3; justify-self: end; }
@@ -540,7 +557,7 @@
 
   .return { --rf-h: min(46svh, 87vw); }
   .return-body { grid-template-rows: auto var(--rf-h) auto auto; }
-  .return-caption { position: static; grid-row: 4; max-width: 36ch; margin-top: 8px; text-align: center; transform: none; }
+  .return-caption { position: static; grid-column: 1; grid-row: 4; max-width: 36ch; margin-top: 8px; text-align: center; transform: none; }
   .js .return-caption { transform: translateY(24px); }
   .js .s3 .return-caption { transform: none; }
 

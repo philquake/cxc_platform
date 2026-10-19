@@ -25,6 +25,23 @@ class CoreViewTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(list(response.context["subjects"]), [active])
 
+	def test_home_counts_only_active_lessons_and_questions(self):
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		topic = Topic.objects.create(subject=subject, name="Algebra", slug="algebra")
+		lesson = Lesson.objects.create(subject=subject, title="Linear equations", content="Solve")
+		Lesson.objects.create(subject=subject, title="Archived", content="Old", lesson_number=2, is_active=False)
+		for text, active in (("Solve for x", True), ("Solve for y", True), ("Old one", False)):
+			Question.objects.create(
+				subject=subject, topic=topic, lesson=lesson, text=text,
+				explanation="Use a linear equation", is_active=active,
+			)
+
+		response = self.client.get(reverse("home"))
+
+		listed = response.context["subjects"][0]
+		self.assertEqual((listed.lesson_count, listed.question_count), (1, 2))
+		self.assertContains(response, "1 lesson &middot; 2 questions", html=False)
+
 	def test_legal_pages_render(self):
 		for page_name in ("terms", "privacy"):
 			with self.subTest(page=page_name):

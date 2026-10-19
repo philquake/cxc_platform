@@ -1,16 +1,19 @@
 :root {
-    --auth-bg: #0b1220;
-    --auth-header: #080e19;
-    --auth-panel: #121c2e;
-    --auth-panel-hover: #19253a;
-    --auth-line: #2b3745;
-    --auth-control: #6a7d99;
-    --auth-text: #e8eef7;
-    --auth-muted: #a9b6ca;
-    --auth-faint: #8b9ab0;
-    --auth-accent: #f5b841;
-    --auth-accent-hover: #ffcb66;
-    --auth-danger: #ff9a8f;
+    --auth-bg: #f6f3ed;
+    --auth-header: #365c81;
+    --auth-panel: #fdfbf7;
+    --auth-panel-hover: #efebe1;
+    --auth-line: #dcd6c8;
+    --auth-control: #6f8397;
+    --auth-text: #2a4059;
+    --auth-strong: #1e3550;
+    --auth-muted: #4b6177;
+    --auth-faint: #5c6e82;
+    --auth-accent: #e4a16a;
+    --auth-accent-hover: #d98f50;
+    --auth-accent-ink: #94521b;
+    --auth-on-accent: #1e3550;
+    --auth-danger: #b3402f;
 }
 
 * {
@@ -26,11 +29,13 @@ body {
 }
 
 .auth-shell {
-    display: grid;
+    display: flex;
     min-height: 100vh;
-    place-items: center;
+    align-items: center;
+    justify-content: center;
+    gap: 72px;
     padding: 32px 18px;
-    background: radial-gradient(circle at 50% -10%, #16243b 0, transparent 42%), var(--auth-bg);
+    background: radial-gradient(circle at 50% -10%, #dfeaf2 0, transparent 46%), var(--auth-bg);
 }
 
 .auth-panel {
@@ -39,7 +44,7 @@ body {
     background: var(--auth-panel);
     border: 1px solid var(--auth-line);
     border-radius: 8px;
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 24px 70px rgba(39, 69, 102, 0.16);
 }
 
 .logo {
@@ -51,17 +56,19 @@ body {
 }
 
 .logo span {
-    color: var(--auth-accent);
+    color: var(--auth-accent-ink);
 }
 
 .eyebrow {
     margin: 42px 0 8px;
-    color: var(--auth-accent);
+    color: var(--auth-accent-ink);
     font-size: 15px;
     font-weight: 700;
 }
 
-h1 {
+h1,
+.auth-aside h2 {
+    font-family: "Bricolage Grotesque", "Atkinson Hyperlegible Next", system-ui, sans-serif;
     margin: 0;
     font-size: clamp(28px, 5vw, 38px);
     line-height: 1.15;
@@ -79,15 +86,16 @@ h1 {
 
 .auth-form label {
     margin-top: 8px;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
 }
 
 .auth-form input {
     width: 100%;
+    min-height: 48px;
     padding: 12px 13px;
     color: var(--auth-text);
-    background: var(--auth-header);
+    background: var(--auth-bg);
     border: 1px solid var(--auth-control);
     border-radius: 6px;
     font: inherit;
@@ -110,9 +118,10 @@ h1 {
 }
 
 .auth-form button {
+    min-height: 48px;
     margin-top: 18px;
     padding: 13px 18px;
-    color: var(--auth-header);
+    color: var(--auth-on-accent);
     background: var(--auth-accent);
     border: 0;
     border-radius: 6px;
@@ -142,11 +151,11 @@ h1 {
     margin: 24px 0 0;
     color: var(--auth-muted);
     text-align: center;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 .switch-link a {
-    color: var(--auth-accent);
+    color: var(--auth-accent-ink);
     font-weight: 700;
 }
 
@@ -178,7 +187,7 @@ h1 {
     margin-bottom: 8px;
     padding: 12px 14px;
     color: var(--auth-danger);
-    background: rgba(255, 141, 141, 0.08);
+    background: rgba(179, 64, 47, 0.08);
     border: 1px solid var(--auth-danger);
     border-radius: 6px;
     font-size: 14px;
@@ -191,4 +200,47 @@ h1 {
 
 .auth-form input[aria-invalid="true"] {
     border-color: var(--auth-danger);
+}
+
+/* ---------- side panel on sign in and sign up ---------- */
+.auth-aside {
+    display: none;
+    width: 340px;
+}
+
+.auth-aside h2 {
+    margin-bottom: 24px;
+    font-size: 1.75rem;
+    line-height: 1.2;
+}
+
+.auth-aside ul {
+    display: grid;
+    gap: 22px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.auth-aside li {
+    display: grid;
+    gap: 4px;
+    padding-left: 16px;
+    border-left: 3px solid var(--auth-accent);
+}
+
+.auth-aside li span {
+    color: var(--auth-muted);
+}
+
+@media (min-width: 960px) {
+    .auth-aside {
+        display: block;
+    }
+}
+
+@media (max-width: 959px) {
+    .auth-shell {
+        gap: 0;
+    }
 }

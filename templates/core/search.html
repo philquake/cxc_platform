@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}{% if query %}Results for "{{ query }}"{% else %}Search{% endif %} | Compile{% endblock %}
+
 {% block extra_css %}
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/subjects.css' %}">
@@ -10,25 +12,25 @@
     <header class="content-header">
         <span class="content-card-label">Search</span>
         <h1>{% if query %}Results for “{{ query }}”{% else %}Search{% endif %}</h1>
-        <p>Find lessons and questions across the platform.</p>
+        <p>Search every lesson and practice question.</p>
     </header>
 
     {% if not query %}
-        <p class="content-empty">Enter a search term to find lessons and practice questions.</p>
+        <p class="content-empty">Type a topic or term, such as "binary" or "spreadsheet", to find lessons and questions that cover it.</p>
     {% else %}
         <section aria-labelledby="lesson-results-heading">
             <h2 id="lesson-results-heading">Lessons</h2>
             <div class="content-grid">
                 {% for lesson in lesson_results %}
                     <a class="content-card" href="{% url 'subjects:lesson-detail' lesson.subject.name|slugify lesson.slug %}">
-                        <span class="content-card-label">{{ lesson.subject.code }} · lesson</span>
+                        <span class="content-card-label">{{ lesson.subject.code }}, lesson</span>
                         <h2>{{ lesson.title }}</h2>
                         {% if lesson.section_title %}<p>{{ lesson.section_title }}</p>{% endif %}
                         <p>{{ lesson.content|striptags|truncatewords:20 }}</p>
-                        <span class="content-card-meta">Open lesson <span aria-hidden="true">→</span></span>
+                        <span class="content-card-meta">Read lesson</span>
                     </a>
                 {% empty %}
-                    <p>No lesson matches found.</p>
+                    <p class="content-empty">No lessons match "{{ query }}". Try a shorter word or a different spelling.</p>
                 {% endfor %}
             </div>
         </section>
@@ -38,13 +40,13 @@
             <div class="content-grid">
                 {% for question in question_results %}
                     <a class="content-card" href="{% url 'subjects:lesson-detail' question.subject.name|slugify question.lesson.slug %}">
-                        <span class="content-card-label">{{ question.subject.code }} · question</span>
+                        <span class="content-card-label">{{ question.subject.code }}, question</span>
                         <h2>{{ question.text|truncatewords:12 }}</h2>
                         <p>{{ question.lesson.title }}</p>
-                        <span class="content-card-meta">Review lesson <span aria-hidden="true">→</span></span>
+                        <span class="content-card-meta">Read the lesson for this question</span>
                     </a>
                 {% empty %}
-                    <p>No question matches found.</p>
+                    <p class="content-empty">No questions match "{{ query }}". Try a shorter word or a different spelling.</p>
                 {% endfor %}
             </div>
         </section>

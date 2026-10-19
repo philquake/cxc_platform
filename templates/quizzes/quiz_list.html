@@ -24,7 +24,7 @@
                     {% for answer in result_attempt.answers.all %}
                         {% if not answer.is_correct %}
                             <div class="quiz-result-item is-incorrect">
-                                <p class="quiz-result-item-question">Question {{ forloop.counter }}</p>
+                                <p class="quiz-result-item-question">{{ forloop.counter }}. {{ answer.question.text }}</p>
                                 <p class="quiz-result-item-status">
                                     <span class="sr-only">Incorrect.</span><span aria-hidden="true">✗</span> Your answer: {% if answer.selected_answer %}{{ answer.selected_answer.text }}{% elif answer.selected_text %}{{ answer.selected_text }}{% else %}No answer selected{% endif %}
                                 </p>
@@ -39,7 +39,7 @@
                     {% endfor %}
                 </div>
                 {% if result_attempt.percentage >= 70 %}
-                    <p>You passed. Keep your momentum going.</p>
+                    <p>You passed. Keep going while it is fresh.</p>
                     <div class="quiz-result-actions">
                         {% if medium_quiz %}
                             <a class="btn btn-primary" href="{% url 'quizzes:detail' medium_quiz.id %}">Try the medium quiz</a>
@@ -49,12 +49,12 @@
                         {% endif %}
                     </div>
                 {% elif result_attempt.quiz.is_mock %}
-                    <p>Review the question breakdown, then try another exam paper when you are ready.</p>
+                    <p>Look through the questions you missed, then try another mock exam when you are ready.</p>
                     <div class="quiz-result-actions">
                         <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Try again</button>
                     </div>
                 {% else %}
-                    <p>Review the lesson once more, then try the quiz again.</p>
+                    <p>Read the lesson again, then retake the quiz. Missed questions are added to your flashcards.</p>
                     <div class="quiz-result-actions">
                         <a class="btn btn-secondary" href="{% url 'subjects:lesson-detail' result_attempt.quiz.lesson.subject.name|slugify result_attempt.quiz.lesson.slug %}">Review the lesson</a>
                         <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Try again</button>
@@ -94,14 +94,14 @@
         <header class="content-header">
             <span class="content-card-label">Practice</span>
             <h1>Practice quizzes</h1>
-            <p>Test your understanding with questions from every subject.</p>
+            <p>Check what you remember after a lesson. You get an explanation for every answer you miss.</p>
         </header>
     {% endif %}
 
     <div class="quiz-list">
         {% for quiz in quizzes %}
             <article class="quiz-card">
-                <form method="post" action="{% url 'progress:submit-quiz' quiz.id %}">
+                <form method="post" action="{% url 'progress:submit-quiz' quiz.id %}" class="quiz-form" data-quiz-form>
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <div class="quiz-card-heading">
@@ -172,25 +172,26 @@
                         {% endif %}
                     </fieldset>
                 {% empty %}
-                    <p class="quiz-empty">Questions will be added soon.</p>
+                    <p class="quiz-empty">This quiz has no questions yet. Try another quiz, or check back soon.</p>
                 {% endfor %}
                 {% if user.is_authenticated and quiz.quiz_questions.all %}
                     <div class="quiz-actions">
-                        <button type="reset" class="quiz-reset">Reset quiz</button>
-                        <button type="submit" class="quiz-submit">Save quiz result</button>
+                        <span class="quiz-answered" role="status" aria-live="polite" data-answered-status data-total="{{ quiz.quiz_questions.all|length }}">0 of {{ quiz.quiz_questions.all|length }} answered</span>
+                        <button type="reset" class="quiz-reset">Clear answers</button>
+                        <button type="submit" class="quiz-submit">Submit answers</button>
                     </div>
                 {% elif not user.is_authenticated %}
-                    <a class="progress-action-link" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Sign in to save quiz result</a>
+                    <a class="progress-action-link" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Sign in to submit your answers and earn XP</a>
                 {% endif %}
                 {% if quiz.latest_attempt %}
-                    <p class="quiz-result">Latest result: {{ quiz.latest_attempt.score }}/{{ quiz.latest_attempt.total_questions }} ({{ quiz.latest_attempt.percentage }}%)</p>
+                    <p class="quiz-result">Last attempt: {{ quiz.latest_attempt.score }} of {{ quiz.latest_attempt.total_questions }} correct ({{ quiz.latest_attempt.percentage }}%)</p>
                 {% endif %}
                 </form>
             </article>
         {% empty %}
-            <p>No quizzes are available{% if subject %} for {{ subject.name }}{% endif %} yet.</p>
+            <p class="content-empty">No quizzes{% if subject %} for {{ subject.name }}{% endif %} yet. Quizzes appear here as lessons are published.</p>
         {% endfor %}
     </div>
 </div>
-{% if quizzes %}<script src="{% static 'js/mock_exam_timer.js' %}" defer></script>{% endif %}
+{% if quizzes %}<script src="{% static 'js/quiz_progress.js' %}" defer></script><script src="{% static 'js/mock_exam_timer.js' %}" defer></script>{% endif %}
 {% endblock %}

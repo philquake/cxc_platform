@@ -4,7 +4,7 @@
 {% block title %}{{ subject.name }} Study Plan | Compile{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=2.0">
+<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=9.0">
 {% endblock %}
 
 {% block content %}
@@ -14,36 +14,36 @@
     <header class="progress-header study-plan-header">
         <span class="content-card-label">Exam preparation</span>
         <h1>{{ subject.name }} study plan</h1>
-        <p>Lessons are prioritized by topic weight and mastery. Reviews are scheduled alongside new material.</p>
+        <p>A day-by-day schedule that counts back from your exam. Topics worth more marks, and topics you find hard, come first.</p>
     </header>
 
     <form method="post" class="study-plan-date-form">
         {% csrf_token %}
-        <label for="target-date">Target exam date</label>
+        <label for="target-date">Exam date</label>
         <input id="target-date" type="date" name="target_date" min="{{ tomorrow|date:'Y-m-d' }}" value="{% if plan %}{{ plan.target_date|date:'Y-m-d' }}{% endif %}" required>
-        <button type="submit" class="btn-accent">{% if plan %}Regenerate plan{% else %}Generate plan{% endif %}</button>
+        <button type="submit" class="btn-accent">{% if plan %}Rebuild plan{% else %}Build my plan{% endif %}</button>
     </form>
 
     {% if plan %}
         <section class="progress-stats study-plan-summary" aria-label="Study plan summary">
             <div class="progress-stat">
-                <span class="progress-stat-label">TARGET DATE</span>
+                <span class="progress-stat-label">Exam date</span>
                 <strong>{{ plan.target_date|date:"M j, Y" }}</strong>
-                <small>Exam date</small>
+                <small>Your plan counts back from here</small>
             </div>
             <div class="progress-stat">
-                <span class="progress-stat-label">SCHEDULED ITEMS</span>
+                <span class="progress-stat-label">Planned sessions</span>
                 <strong>{{ items|length }}</strong>
-                <small>Lessons, quizzes and review sessions</small>
+                <small>Lessons, quizzes and reviews</small>
             </div>
             <div class="progress-stat">
-                <span class="progress-stat-label">LESSONS LEFT</span>
+                <span class="progress-stat-label">Lessons left</span>
                 <strong>{{ remaining_lessons }}</strong>
-                <small>Not yet completed</small>
+                <small>Still to complete</small>
             </div>
         </section>
         {% if items_after_target %}
-            <p class="study-plan-warning">The three-lessons-per-day limit means {{ items_after_target }} scheduled items fall on or after your target exam date.</p>
+            <p class="study-plan-warning">Plans cover at most three lessons a day, so {{ items_after_target }} session{{ items_after_target|pluralize }} land on or after your exam date. Choose a later date, or study ahead of schedule.</p>
         {% endif %}
 
         {% regroup items by scheduled_date as plan_days %}
@@ -51,7 +51,7 @@
             <section class="progress-subject study-plan-day" aria-label="Study plan for {{ day.grouper|date:'F j, Y' }}">
                 <header class="progress-subject-heading">
                     <div>
-                        <span class="content-card-label">{% if day.grouper == today %}today{% else %}study session{% endif %}</span>
+                        <span class="content-card-label">{% if day.grouper == today %}Today{% else %}Up next{% endif %}</span>
                         <h2>{{ day.grouper|date:"l, F j" }}</h2>
                     </div>
                 </header>
@@ -62,16 +62,16 @@
                             <span class="progress-lesson-copy">
                                 {% if item.item_type == "lesson" %}
                                     <strong>Lesson {{ item.lesson.lesson_number }}: {{ item.lesson.title }}</strong>
-                                    <small>{% if item.completed %}Completed through lesson progress{% else %}New lesson{% endif %}</small>
+                                    <small>{% if item.completed %}Completed{% else %}New lesson{% endif %}</small>
                                 {% elif item.item_type == "quiz" %}
                                     <strong>{{ item.topic.name }} quiz</strong>
-                                    <small>{% if item.completed %}Completed quiz attempt{% else %}Spaced practice{% endif %}</small>
+                                    <small>{% if item.completed %}Completed{% else %}Quiz to lock it in{% endif %}</small>
                                 {% elif item.item_type == "flashcard_review" %}
                                     <strong>{{ item.topic.name }} flashcard review</strong>
-                                    <small>{{ item.due_card_count }} cards due by this session</small>
+                                    <small>{{ item.due_card_count }} card{{ item.due_card_count|pluralize }} due by this session</small>
                                 {% else %}
                                     <strong>{{ item.topic.name }} mistake review</strong>
-                                    <small>Review incorrect answers and unresolved mistakes</small>
+                                    <small>Go back over questions you missed</small>
                                 {% endif %}
                             </span>
                             <div class="progress-weak-topic-links study-plan-actions">
@@ -89,7 +89,7 @@
                                         <form method="post">
                                             {% csrf_token %}
                                             <input type="hidden" name="complete_item" value="{{ item.id }}">
-                                            <button type="submit" class="btn-ghost">Mark done</button>
+                                            <button type="submit" class="btn-ghost">Mark as done</button>
                                         </form>
                                     {% endif %}
                                 {% elif item.item_type == "mistake_review" %}
@@ -98,7 +98,7 @@
                                         <form method="post">
                                             {% csrf_token %}
                                             <input type="hidden" name="complete_item" value="{{ item.id }}">
-                                            <button type="submit" class="btn-ghost">Mark done</button>
+                                            <button type="submit" class="btn-ghost">Mark as done</button>
                                         </form>
                                     {% endif %}
                                 {% endif %}
@@ -108,10 +108,10 @@
                 </div>
             </section>
         {% empty %}
-            <p class="progress-empty">All active lessons in this subject are complete. Your plan has no remaining lessons to schedule.</p>
+            <p class="progress-empty">You have completed every lesson in {{ subject.name }}. Use the mistake bank and flashcards to keep it fresh.</p>
         {% endfor %}
     {% else %}
-        <p class="progress-empty">Choose an exam date to build your first subject study plan.</p>
+        <p class="progress-empty">Set your exam date to get a plan. It schedules lessons, quizzes and reviews for you, up to three lessons a day.</p>
     {% endif %}
 </div>
 {% endblock %}

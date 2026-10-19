@@ -1,36 +1,44 @@
 :root {
-  /* Harbour navy surfaces */
-  --color-bg-header: #080e19;
-  --color-bg-hero-top: #101a2c;
-  --color-bg-hero-bottom: #0a111e;
-  --color-bg-body: #0b1220;
-  --color-panel: #121c2e;
-  --color-panel-border: #26344b;
-  --color-panel-hover: #19253a;
-  --color-control-border: #6a7d99;
+  /* Palette: navy #365C81, apricot #E4A16A, sky #A8C9DE, warm white #F6F3ED */
+  --color-navy: #365c81;
+  --color-navy-deep: #274566;
+  --color-sky: #a8c9de;
+  --color-sky-bg: #e4eef5;
 
-  /* Mango gold: primary actions, XP, focus */
-  --color-accent: #f5b841;
-  --color-accent-hover: #ffcb66;
-  --color-accent-dim: #b8862b;
+  --color-bg-header: #365c81;   /* navbar + footer surface */
+  --color-bg-body: #f6f3ed;
+  --color-bg-inset: #ece8de;    /* wells, tracks, table heads */
+  --color-panel: #fdfbf7;
+  --color-panel-border: #dcd6c8;
+  --color-panel-hover: #efebe1;
+  --color-control-border: #6f8397;
+
+  /* Apricot: fills (buttons, XP, focus). Use accent-ink for apricot-toned text. */
+  --color-accent: #e4a16a;
+  --color-accent-hover: #d98f50;
+  --color-accent-dim: #c4803f;
+  --color-accent-ink: #94521b;
+  --color-on-accent: #1e3550;
 
   /* Streaks and difficulty */
-  --color-amber: #ff9f43;
-  --color-amber-hover: #ffb36b;
+  --color-amber: #a65a12;
+  --color-amber-hover: #8a490c;
 
-  /* Reef teal: correct answers, progress, success */
-  --color-reef: #3ccfb0;
-  --color-reef-bg: #0e2a2e;
+  /* Success */
+  --color-reef: #2b7a60;
+  --color-reef-bg: #e1f0e8;
 
-  --color-white: #ffffff;
-  --color-text: #e8eef7;
-  --color-text-muted: #a9b6ca;
-  --color-text-faint: #8b9ab0;
+  --color-white: #1e3550;       /* strongest text (headings) */
+  --color-text: #2a4059;
+  --color-text-muted: #4b6177;
+  --color-text-faint: #5c6e82;
 
-  --color-correct: #3ccfb0;
-  --color-correct-bg: #0e2a2e;
-  --color-incorrect: #ff7a6b;
-  --color-incorrect-bg: #2d1a22;
+  --color-correct: #2b7a60;
+  --color-correct-bg: #e1f0e8;
+  --color-incorrect: #b3402f;
+  --color-incorrect-bg: #f8e3dd;
+
+  --color-shadow: rgba(39, 69, 102, 0.14);
 
   --font-display: "Bricolage Grotesque", "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, sans-serif;
@@ -55,7 +63,7 @@ body {
 }
 
 body::selection {
-  color: var(--color-bg-header);
+  color: var(--color-on-accent);
   background: var(--color-accent);
 }
 
@@ -73,7 +81,7 @@ main:focus {
   left: 8px;
   z-index: 2000;
   padding: 10px 16px;
-  color: var(--color-bg-header);
+  color: var(--color-on-accent);
   background: var(--color-accent);
   border-radius: var(--radius-sm);
   font-weight: 600;
@@ -125,13 +133,27 @@ p {
   line-height: 1.65;
 }
 
+/* ---------- NAVY SURFACES ---------- */
+.navbar,
+.footer {
+  --color-white: #f6f3ed;
+  --color-text: #f6f3ed;
+  --color-text-muted: #d3e2ed;
+  --color-text-faint: #b9cfe0;
+  --color-accent-ink: #f4c9a3;
+  --color-panel: #2b4c6e;
+  --color-panel-hover: #3d6489;
+  --color-panel-border: #5a7fa3;
+  --color-control-border: #a8c9de;
+}
+
 /* ---------- NAVBAR ---------- */
 .navbar {
   position: sticky;
   top: 0;
   z-index: 1000;
   background: var(--color-bg-header);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 16px var(--color-shadow);
   border-bottom: 1px solid var(--color-panel-border);
   padding: 0 32px;
   display: flex;
@@ -159,7 +181,7 @@ p {
 }
 
 .logo .slash {
-  color: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 
 .logo .cursor {
@@ -200,7 +222,7 @@ p {
 }
 
 .nav-links a.active {
-  color: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 
 .nav-links a.active {
@@ -305,13 +327,13 @@ p {
 }
 
 .btn-accent {
-  color: var(--color-bg-header);
+  color: var(--color-on-accent);
   background: var(--color-accent);
   border-color: var(--color-accent);
 }
 
 .btn-accent:hover {
-  color: var(--color-bg-header);
+  color: var(--color-on-accent);
   background: var(--color-accent-hover);
   border-color: var(--color-accent-hover);
   transform: translateY(-1px);
@@ -375,7 +397,7 @@ p {
 }
 
 .footer-col a:hover {
-  color: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 
 .footer-bottom {
@@ -571,19 +593,30 @@ p {
 
 .messages {
   list-style: none;
-  margin: 0;
-  padding: 14px 32px;
+  width: min(100% - 40px, 1120px);
+  margin: 0 auto;
+  padding: 16px 0 0;
 }
 
 .message {
-  padding: 10px 16px;
+  padding: 12px 16px;
   margin-bottom: 8px;
-  color: var(--color-accent);
-  background: var(--color-correct-bg);
-  border: 1px solid var(--color-accent-dim);
+  color: var(--color-text);
+  background: var(--color-reef-bg);
+  border: 1px solid var(--color-reef);
+  border-left-width: 4px;
   border-radius: var(--radius-sm);
-  font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 16px;
+}
+
+.message-error {
+  background: var(--color-incorrect-bg);
+  border-color: var(--color-incorrect);
+}
+
+.message-warning {
+  background: var(--color-panel);
+  border-color: var(--color-amber);
 }
 
 /* ---------- buttons shared across pages ---------- */
@@ -610,7 +643,7 @@ p {
 }
 
 .btn-primary {
-  color: var(--color-bg-header);
+  color: var(--color-on-accent);
   background: var(--color-accent);
 }
 
@@ -626,7 +659,7 @@ p {
 
 .btn-secondary:hover {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 
 .btn.btn-ghost {

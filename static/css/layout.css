@@ -67,7 +67,7 @@
 .content-card-label,
 .progress-topic-label {
   display: inline-block;
-  color: var(--color-accent);
+  color: var(--color-accent-ink);
   font-size: 15px;
   font-weight: 700;
 }
@@ -90,7 +90,7 @@
 }
 
 .content-back:hover {
-  color: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 
 /* ---------- panels ---------- */
@@ -241,4 +241,34 @@ a.content-card,
   .progress-subject-heading {
     align-items: flex-start;
   }
+}
+
+/* ---------- empty states and flash messages ---------- */
+.content-empty,
+.progress-empty {
+  max-width: 40em;
+  padding: var(--space-3);
+  color: var(--color-text-muted);
+  background: var(--color-panel);
+  border: 1px dashed var(--color-control-border);
+  border-radius: var(--radius-md);
+}
+
+.subject-progress-line {
+  color: var(--color-reef);
+  font-weight: 700;
+}
+
+.lesson-card .content-card-label {
+  color: var(--color-text-muted);
+}
+
+.lesson-card-status {
+  margin-top: auto;
+  color: var(--color-reef);
+  font-weight: 700;
+}
+
+.lesson-card.is-complete {
+  border-color: var(--color-reef);
 }

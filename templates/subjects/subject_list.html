@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}Subjects | Compile{% endblock %}
+
 {% block extra_css %}
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/subjects.css' %}">
@@ -11,7 +13,7 @@
     <header class="content-header">
         <span class="content-card-label">CXC subjects</span>
         <h1>Choose a subject</h1>
-        <p>Explore structured topics and lessons built for your exam preparation.</p>
+        <p>Pick the course you are studying. Lessons are grouped by topic, in syllabus order.</p>
     </header>
 
     <div class="content-grid">
@@ -22,12 +24,12 @@
             <span class="content-card-label">{{ subject.code }}</span>
             <h2>{{ subject.name }}</h2>
             {% if subject.description %}<p>{{ subject.description }}</p>{% endif %}
-            <span class="content-card-meta">View subject <span aria-hidden="true">→</span></span>
+            <span class="content-card-meta">See lessons</span>
         </a>
 
         {% empty %}
 
-        <p>No subjects available.</p>
+        <p class="content-empty">No subjects are open yet. Check back soon.</p>
 
         {% endfor %}
 

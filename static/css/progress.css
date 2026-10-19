@@ -24,7 +24,7 @@
 
 .progress-track {
     overflow: hidden;
-    background: var(--color-bg-header);
+    background: var(--color-bg-inset);
     border: 1px solid var(--color-panel-border);
     border-radius: var(--radius-pill);
 }
@@ -194,7 +194,7 @@
 }
 
 .progress-weak-topic-links a {
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     font-weight: 700;
     text-underline-offset: 4px;
 }
@@ -226,7 +226,7 @@
 }
 
 .progress-topic-links a:hover {
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     border-color: var(--color-accent);
 }
 
@@ -328,7 +328,7 @@
 .progress-mock-badge {
     margin-left: 8px;
     padding: 1px 8px;
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     border: 1px solid var(--color-accent-dim);
     border-radius: var(--radius-pill);
     font-size: 13px;
@@ -391,7 +391,7 @@
     min-height: 40px;
     margin-bottom: 28px;
     padding: 9px 14px;
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     background: var(--color-panel);
     border: 1px solid var(--color-accent-dim);
     border-radius: var(--radius-sm);
@@ -400,7 +400,7 @@
 }
 
 .leaderboard-page > .content-back:hover {
-    color: var(--color-bg-header);
+    color: var(--color-on-accent);
     background: var(--color-accent);
     border-color: var(--color-accent);
 }
@@ -410,7 +410,7 @@
 }
 
 .leaderboard-you strong {
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
 }
 
 .leaderboard-list {
@@ -438,7 +438,7 @@
 
 .leaderboard-rank,
 .leaderboard-xp {
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     font-family: var(--font-body);
 }
 
@@ -447,7 +447,7 @@
 }
 
 .leaderboard-user small {
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     font-family: var(--font-body);
 }
 
@@ -469,7 +469,7 @@
 }
 
 .mistake-topic {
-    background: var(--color-bg-header);
+    background: var(--color-bg-inset);
 }
 
 .mistake-subject > summary,
@@ -491,7 +491,7 @@
 .mistake-subject > summary::before,
 .mistake-topic > summary::before {
     flex: 0 0 12px;
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     content: ">";
     font-family: var(--font-body);
     transition: transform var(--transition-fast);
@@ -577,7 +577,7 @@
     align-items: center;
     min-height: 38px;
     padding: 8px 13px;
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     background: var(--color-panel);
     border: 1px solid var(--color-accent-dim);
     border-radius: var(--radius-sm);
@@ -587,7 +587,7 @@
 }
 
 .mistake-bank-link:hover {
-    color: var(--color-bg-header);
+    color: var(--color-on-accent);
     background: var(--color-accent);
     border-color: var(--color-accent);
 }
@@ -599,7 +599,7 @@
     align-items: start;
     margin-top: 20px;
     padding: 18px 20px;
-    background: rgba(255, 255, 255, 0.025);
+    background: rgba(54, 92, 129, 0.05);
     border: 1px solid var(--color-panel-border);
     border-left: 3px solid var(--color-accent);
     border-radius: 0 6px 6px 0;
@@ -634,7 +634,7 @@
 }
 
 .progress-suggested-actions a {
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     font-size: 14px;
     font-weight: 700;
 }
@@ -692,9 +692,9 @@
     min-height: 46px;
     padding: 10px 13px;
     color: var(--color-white);
-    color-scheme: dark;
-    background: rgba(8, 14, 25, 0.8);
-    border: 1px solid #354151;
+    color-scheme: light;
+    background: var(--color-panel);
+    border: 1px solid var(--color-control-border);
     border-radius: 6px;
     font: inherit;
     font-family: var(--font-body);
@@ -765,8 +765,8 @@
 }
 
 .study-plan-item.is-complete {
-    border-color: rgba(245, 184, 65, 0.32);
-    background: rgba(16, 40, 58, 0.55);
+    border-color: rgba(228, 161, 106, 0.6);
+    background: var(--color-sky-bg);
 }
 
 .study-plan-item .progress-lesson-status {
@@ -779,7 +779,7 @@
 }
 
 .study-plan-item.is-complete .progress-lesson-status {
-    color: var(--color-bg-header);
+    color: var(--color-on-accent);
     background: var(--color-accent);
     border-color: var(--color-accent);
 }
@@ -822,8 +822,8 @@
     margin: 0 0 20px;
     padding: 14px 16px;
     color: var(--color-text);
-    background: rgba(45, 26, 34, 0.78);
-    border: 1px solid rgba(255, 122, 107, 0.28);
+    background: var(--color-incorrect-bg);
+    border: 1px solid rgba(179, 64, 47, 0.3);
     border-left: 3px solid var(--color-incorrect);
     border-radius: 0 6px 6px 0;
     font-size: 14px;

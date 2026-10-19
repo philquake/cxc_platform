@@ -41,12 +41,12 @@
     background: var(--color-panel);
     border: 1px solid var(--color-panel-border);
     border-radius: var(--radius-md);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 24px 60px var(--color-shadow);
 }
 
 .sample-kicker {
     margin: 0 0 14px;
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     font-size: 15px;
     font-weight: 700;
 }
@@ -167,7 +167,7 @@
 .loop-steps li::before {
     display: block;
     margin-bottom: 14px;
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     font-family: var(--font-display);
     font-size: 2.6rem;
     font-weight: 700;
@@ -217,7 +217,7 @@
 }
 
 .subject-code {
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     font-weight: 700;
 }
 
@@ -249,7 +249,7 @@
 }
 
 .subject-row:hover .subject-go {
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
 }
 
 .subject-empty {

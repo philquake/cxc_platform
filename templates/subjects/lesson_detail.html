@@ -1,11 +1,10 @@
 {% extends "base.html" %}
+{% load static lesson_extra %}
 
 {% block title %}{{ lesson.title }} | Compile{% endblock %}
 
 {% block extra_css %}
-{% load static %}
-{% load lesson_extra %}
-<link rel="stylesheet" href="{% static 'css/subjects.css' %}">
+<link rel="stylesheet" href="{% static 'css/subjects.css' %}?v=9.0">
 <link rel="stylesheet" href="{% static 'css/quizzes.css' %}">
 {% endblock %}
 
@@ -13,49 +12,69 @@
 <div class="content-column lesson-page">
     <a href="{% url 'subjects:detail' subject.name|slugify %}" class="content-back">&larr; {{ subject.name }} lessons</a>
 
-    <article class="lesson-content">
-        <span class="content-card-label">
-            {{ subject.code }} / Lesson {{ lesson.lesson_number }} / Section {{ lesson.section_number }}
-        </span>
+    <header class="content-header lesson-header">
+        <span class="content-card-label">{{ subject.code }}{% if lesson_position %}, lesson {{ lesson_position }} of {{ lesson_total }}{% endif %}</span>
         <h1>{{ lesson.title }}</h1>
-        {% if lesson.section_title %}
-            <section class="lesson-section">
-                <h2>{{ lesson.section_title }}</h2>
-                <div class="lesson-body">{{ lesson.content|optimize_images }}</div>
-            </section>
-        {% else %}
-            <div class="lesson-body">{{ lesson.content|optimize_images }}</div>
-        {% endif %}
+        {% if lesson.section_title %}<p>{{ lesson.section_title }}</p>{% endif %}
+    </header>
+
+    <article class="lesson-content">
+        <div class="lesson-body">{{ lesson.content|optimize_images }}</div>
+    </article>
+
+    <section class="lesson-finish" aria-label="Finish this lesson">
         {% if user.is_authenticated %}
-            <form method="post" action="{% url 'progress:complete-lesson' lesson.id %}" class="progress-action">
+            <form method="post" action="{% url 'progress:complete-lesson' lesson.id %}" class="lesson-finish-form">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.path }}">
-                <button type="submit" class="{% if lesson_progress %}is-complete{% endif %}">
-                    {% if lesson_progress %}Completed{% else %}Mark lesson complete{% endif %}
+                <button type="submit" class="btn btn-large {% if lesson_progress %}btn-secondary is-complete{% else %}btn-primary{% endif %}">
+                    {% if lesson_progress %}Lesson completed{% else %}Mark lesson complete (+50 XP){% endif %}
                 </button>
             </form>
         {% else %}
-            <a class="progress-action-link" href="{% url 'login' %}?next={{ request.path|urlencode }}">Sign in to save progress</a>
+            <a class="btn btn-primary btn-large" href="{% url 'login' %}?next={{ request.path|urlencode }}">Sign in to track progress and earn XP</a>
         {% endif %}
-    </article>
+    </section>
 
     {% if quizzes %}
         <section class="related-quiz-actions" aria-labelledby="related-quizzes-title">
             <span class="content-card-label">Next step</span>
-            <h2 id="related-quizzes-title">Test what you learned</h2>
-            <p>Take the quiz related to this lesson.</p>
+            <h2 id="related-quizzes-title">Check what stuck</h2>
+            <p>Take the quiz for this lesson. Anything you miss comes back as a flashcard.</p>
             <div class="related-quiz-list">
                 {% for quiz in quizzes %}
                     <a class="quiz-link" href="{% url 'quizzes:detail' quiz.id %}">
                         <span>
                             <strong>{{ quiz.title }}</strong>
-                            <small>{{ quiz.topic.name }} · {{ quiz.quiz_questions.count }} questions</small>
+                            <small>{{ quiz.topic.name }}, {{ quiz.quiz_questions.count }} questions</small>
                         </span>
-                        <span class="lesson-arrow" aria-hidden="true">→</span>
+                        <span class="lesson-arrow" aria-hidden="true">&rarr;</span>
                     </a>
                 {% endfor %}
             </div>
         </section>
     {% endif %}
+
+    <nav class="lesson-pager" aria-label="Lesson navigation">
+        {% if previous_lesson %}
+            <a class="lesson-pager-link is-previous" href="{% url 'subjects:lesson-detail' subject.name|slugify previous_lesson.slug %}" rel="prev">
+                <span class="lesson-pager-direction">Previous lesson</span>
+                <span class="lesson-pager-title">{{ previous_lesson.title }}</span>
+            </a>
+        {% else %}
+            <span></span>
+        {% endif %}
+        {% if next_lesson %}
+            <a class="lesson-pager-link is-next" href="{% url 'subjects:lesson-detail' subject.name|slugify next_lesson.slug %}" rel="next">
+                <span class="lesson-pager-direction">Next lesson</span>
+                <span class="lesson-pager-title">{{ next_lesson.title }}</span>
+            </a>
+        {% else %}
+            <a class="lesson-pager-link is-next" href="{% url 'subjects:detail' subject.name|slugify %}">
+                <span class="lesson-pager-direction">That is the last lesson</span>
+                <span class="lesson-pager-title">Back to all {{ subject.name }} lessons</span>
+            </a>
+        {% endif %}
+    </nav>
 </div>
 {% endblock %}

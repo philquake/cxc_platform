@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", function () {
             timeField.value = String(Math.min(elapsed, duration));
             countdown.textContent = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
+            timer.classList.toggle("is-urgent", remaining <= 60);
+
             if (warning) {
                 milestones.forEach(function (mark) {
                     if (remaining <= mark && !announced.has(mark)) {
@@ -38,6 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (remaining === 0) {
                 window.clearInterval(intervalId);
+                form.dataset.autosubmit = "1";
                 form.requestSubmit();
             }
         }

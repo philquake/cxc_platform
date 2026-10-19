@@ -4,7 +4,7 @@
 {% block title %}Mistake bank | Compile{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=2.0">
+<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=9.0">
 <link rel="stylesheet" href="{% static 'css/quizzes.css' %}">
 <link rel="stylesheet" href="{% static 'css/mistake_bank.css' %}">
 {% endblock %}
@@ -16,7 +16,7 @@
     <header class="progress-header">
         <span class="content-card-label">Review</span>
         <h1>Mistake bank</h1>
-        <p>Every question you've missed, with the correct answer and explanation — so you don't miss it twice.</p>
+        <p>Every question you have missed, with the right answer and why. Go through these before an exam.</p>
     </header>
 
     <div class="mistake-groups">
@@ -66,17 +66,20 @@
                             {% if answer.is_correct %}<small>Correct answer</small>{% endif %}
                             {% if mistake.selected_answer_id == answer.id and not answer.is_correct %}<small>You picked this</small>{% endif %}
                         </label>
+                    {% empty %}
+                        {% if mistake.selected_text %}<p class="mistake-answer mistake-answer-wrong"><span aria-hidden="true">✗</span> {{ mistake.selected_text }} <small>You answered this</small></p>{% endif %}
+                        {% if mistake.question.correct_answer_text %}<p class="mistake-answer mistake-answer-correct"><span aria-hidden="true">✓</span> {{ mistake.question.correct_answer_text }} <small>Correct answer</small></p>{% endif %}
                     {% endfor %}
                 </fieldset>
 
                 {% if mistake.question.explanation %}
                     <p class="quiz-card-description mistake-explanation">
-                        <strong>Why:</strong> {{ mistake.question.explanation }}
+                        <strong>Why this is the answer:</strong> {{ mistake.question.explanation }}
                     </p>
                 {% endif %}
 
                 <a class="progress-action-link" href="{% url 'subjects:lesson-detail' mistake.question.subject.name|slugify mistake.question.lesson.slug %}">
-                    Review the lesson →
+                    Review the lesson
                 </a>
             </article>
                                 {% endfor %}
@@ -86,7 +89,7 @@
                 </div>
             </details>
         {% empty %}
-            <p class="progress-empty">No mistakes recorded yet — keep practicing, and anything you miss will show up here for review.</p>
+            <p class="progress-empty">No mistakes to review. When you get a quiz question wrong, it appears here with the explanation.</p>
         {% endfor %}
     </div>
 </div>

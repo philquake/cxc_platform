@@ -1,0 +1,3 @@
+[submodule ".claude/plugins/design-system-ops"]
+	path = .claude/plugins/design-system-ops
+	url = https://github.com/murphytrueman/design-system-ops.git

@@ -10,9 +10,10 @@ Owner: Phil (IT/CS teacher, Jamaica). Repo: `github.com/philquake/cxc_platform`.
 
 ## Stack
 
-- Django 6.1, Python, PostgreSQL (`DATABASE_URL`, `sslmode=require` when not DEBUG)
+- Django 6.1, Python, PostgreSQL on Supabase (`DATABASE_URL`; `sslmode` comes from `DB_SSLMODE`, default `require`, set `disable` for local Postgres without SSL). Port 6543 (transaction pooler) switches to `CONN_MAX_AGE=0` and no server-side cursors; otherwise `CONN_MAX_AGE=600`
 - Templates in top-level `templates/`, static in `static/` (plain CSS, no build step)
-- django-bootstrap5 (base CSS/JS only; most styling is custom in `static/css/`)
+- django-bootstrap5 (base CSS/JS only; most styling is custom in `static/css/`), django-browser-reload (dev)
+- Django admin is restyled with `static/admin/css/shadcn.css` and `templates/admin/` (custom index with a stats dashboard)
 - django-ckeditor-5 for lesson content (config name `extends`)
 - Cloudinary for media via `apps.core.storage.SeekSafeCloudinaryStorage`
 - WhiteNoise (`CompressedManifestStaticFilesStorage`) for static files
@@ -22,7 +23,7 @@ Owner: Phil (IT/CS teacher, Jamaica). Repo: `github.com/philquake/cxc_platform`.
 ## Environment variables
 
 Required: `DJANGO_SECRET_KEY`, `DATABASE_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
-Optional: `DEBUG`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `EMAIL_BACKEND` (defaults to console), `DEFAULT_FROM_EMAIL`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`.
+Optional: `DEBUG`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `EMAIL_BACKEND` (defaults to console), `DEFAULT_FROM_EMAIL`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DB_SSLMODE`.
 Loaded from `.env` at the repo root via django-environ. Never commit it.
 
 ## Common commands
@@ -41,15 +42,15 @@ python manage.py collectstatic --noinput
 ```
 config/            settings, root urls, wsgi/asgi
 apps/
-  core/            home, search, terms/privacy, ads.txt, Cloudinary storage (no models)
-  accounts/        signup/login/logout, profile edit, password reset/change (Profile model is unused so far)
+  core/            home, search, terms/privacy, ads.txt, Cloudinary storage (empty models.py)
+  accounts/        signup/login/logout, account edit, password reset/change, Profile model + admin inline (never created by views), `auth_extras` templatetags
   subjects/        Subject, Topic (exam_weight), subject/lesson views
   lessons/         Lesson (CKEditor5 content), LessonImage, `optimize_images` template filter
   questions/       Question (5 formats), Answer
   quizzes/         Quiz (practice or mock), QuizQuestion, mock exam generator service
-  progress/        XP, streaks, attempts, flashcards (SM-2), mistake bank, study plans, analytics
-templates/         base.html + per-app folders (accounts, core, legal, progress, quizzes, subjects)
-static/css|js|admin/js
+  progress/        XP, streaks, attempts, flashcards (SM-2), mistake bank, study plans, analytics, `admin_dashboard` templatetag (admin index stats)
+templates/         base.html, 404/500 + per-app folders (accounts, admin, core, legal, progress, quizzes, subjects)
+static/css|js|admin/css|admin/js
 ```
 
 ## Data model (key relationships)
@@ -87,12 +88,12 @@ static/css|js|admin/js
 
 - Keep structure lean: reuse existing models, views and CSS classes before adding new ones.
 - Pedagogy first: every question should carry a real explanation.
-- Dark theme with a green accent. Use the CSS variables in `static/css/base.css` (`--color-accent`, `--color-panel`, ...). Don't hard-code colors.
-- Mobile breakpoints in use: 900px, 760px, 560px. New components need at least the 560px rule.
-- Page CSS lives in `static/css/<feature>.css` and is loaded through `{% block extra_css %}`. Bump the `?v=` query string when a cached stylesheet changes.
+- Light theme: navy (`--color-navy`, header/footer), apricot accent (`--color-accent`; use `--color-accent-ink` for apricot-toned text), sky, warm-white body (`--color-bg-body`, `--color-panel`). Use the CSS variables in `static/css/base.css`. Don't hard-code colors.
+- Mobile breakpoints in use: 900px, 760px, 560px (a few pages also use 959px, 680px, 640px, 480px, 420px). New components need at least the 560px rule.
+- Page CSS lives in `static/css/<feature>.css` and is loaded through `{% block extra_css %}`. Bump the `?v=` query string when a cached stylesheet changes (currently `3.0` for `base.css` and `layout.css`).
 - Views use function-based style. Many files indent with tabs (progress/views, quizzes/views, tests). Match the file you're editing; don't reformat whole files.
 - Auth templates (`templates/accounts/*.html`) are standalone pages using `auth.css`, not `base.html`.
-- Admin customisation matters: question analytics, quiz question filtering by subject/topic/lesson (`static/admin/js/quiz_admin.js`), lesson image picker (`static/admin/js/lesson_media.js`).
+- Admin customisation matters: dashboard on the admin index (`templates/admin/index.html`, gated per view permission), question analytics, quiz question filtering by subject/topic/lesson (`static/admin/js/quiz_admin.js`), lesson image picker (`static/admin/js/lesson_media.js`).
 
 ## Deployment gotchas
 
@@ -106,12 +107,13 @@ static/css|js|admin/js
 
 - `apps.core` is not in `INSTALLED_APPS`. It works because it has no models, but add it if you introduce any.
 - `quizzes/admin.py` defines `QuizQuestionInlineFormSet` twice; the second definition wins and the first is dead code. `DataAttrSelect` is defined after its first use.
-- `progress/tests.py` has duplicated test methods (later definitions shadow earlier ones) and includes a stale study-plan test using removed fields (`title`, `start_date`, `end_date`). It will be shadowed by the newer version of the same name, but delete the old one.
-- `StudyPlanItem` ordering and constraints changed in migration 0006; the admin for `progress` does not register `StudyPlan`/`StudyPlanItem`/`FlashcardState`/`MistakeReview`.
-- Branding is inconsistent: "compile/" in `base.html` and legal pages, "CXCStudy" in auth templates, the home page and password-reset emails.
-- `Profile` model exists but nothing creates or uses it.
+- `progress/tests.py` still has duplicated test methods (`test_flashcard_reviews_apply_sm2_growth_ease_and_reset`, `test_flashcard_review_rejects_unknown_rating`, `test_study_plan_items_require_one_same_subject_target_and_valid_date`); later definitions shadow earlier ones, so delete the first copies.
+- `StudyPlanItem` ordering and constraints changed in migration 0006; the admin for `progress` registers only `UserProgress`, `XPTransaction`, `LessonProgress`, `QuizAttempt` and `QuizAnswer`, not `StudyPlan`/`StudyPlanItem`/`FlashcardState`/`MistakeReview`.
+- Templates now use "compile/" consistently; the repo name and README title still say "CXC Platform".
+- `Profile` model is in the admin (inline on User) but no view or signal creates it.
 - `templates/subjects/lesson_detail.html` calls `quiz.quiz_questions.count()` per quiz (extra queries).
 - `dashboard` and the study plan view run several queries per subject. Watch performance as content grows.
+- `AGENTS.md` holds separate agent-behaviour guidance ("lazy senior dev" style); keep it consistent with this file.
 - `ads.txt` is read from the repo root; the test expects `google.com` in it.
 
 ## Testing notes

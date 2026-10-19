@@ -11,7 +11,7 @@
     {% bootstrap_css %}
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v=3.0">
     <link rel="stylesheet" href="{% static 'css/layout.css' %}?v=3.0">
-    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=1.0">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=1.1">
 
     {% block extra_css %}{% endblock %}
     <script>document.documentElement.classList.add("js");</script>
@@ -54,25 +54,30 @@
   </main>
   <footer class="footer">
     <div class="footer-top">
-      <p class="footer-note">CSEC IT and CAPE Computer Science practice for Caribbean students. Every answer comes with an explanation.</p>
-      <nav aria-label="Study">
+      <div class="footer-about">
+        <a href="{% url 'home' %}" class="footer-brand">compile/</a>
+        <p class="footer-note">Exam prep for CSEC Information Technology and CAPE Computer Science. Lessons, quizzes, mock exams and flashcards, with an explanation for every answer.</p>
+      </div>
+      <nav aria-labelledby="footer-study">
+        <h2 id="footer-study" class="footer-heading">Study</h2>
         <a href="{% url 'subjects:list' %}">Subjects and lessons</a>
         <a href="{% url 'quizzes:list' %}">Practice quizzes</a>
-        <a href="{% url 'progress:flashcard-hub' %}">Flashcards</a>
+        <a href="{% url 'progress:flashcard-hub' %}">Flashcard review</a>
         <a href="{% url 'progress:dashboard' %}">Your progress</a>
       </nav>
-      <nav aria-label="About">
+      <nav aria-labelledby="footer-help">
+        <h2 id="footer-help" class="footer-heading">Help and legal</h2>
         <a href="https://github.com/philquake/cxc_platform/issues" target="_blank" rel="noopener">Report a problem<span class="sr-only"> (opens in a new tab)</span></a>
-        <a href="{% url 'terms' %}">Terms</a>
-        <a href="{% url 'privacy' %}">Privacy</a>
-        <a href="#main">Back to top</a>
+        <a href="{% url 'terms' %}">Terms of use</a>
+        <a href="{% url 'privacy' %}">Privacy policy</a>
+        <a href="#main">Back to top &uarr;</a>
       </nav>
     </div>
-    <a href="{% url 'home' %}" class="footer-name" aria-label="compile/ home">compile/</a>
+    <p class="footer-name" aria-hidden="true">compile/</p>
+    {% block credits %}{% endblock %}
     <div class="footer-meta">
-      <span>Built in Jamaica</span>
-      {% block credits %}<span></span>{% endblock %}
-      <span>&copy; 2026 compile/</span>
+      <span>&copy; 2026 compile/. Built in Jamaica for Caribbean students.</span>
+      <span>Not affiliated with CXC.</span>
     </div>
   </footer>
   <script src="{% static 'js/site.js' %}?v=1.0" defer></script>

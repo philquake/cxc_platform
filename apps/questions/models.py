@@ -82,8 +82,14 @@ class Question(models.Model):
         if self.is_open_ended:
             return self.expected_answer.strip() or None
 
-        correct = next((answer for answer in self.answers.all() if answer.is_correct), None)
-        return correct.text if correct else None
+        answers = list(self.answers.all())
+        if self.format == self.FORMAT_MATCHING and answers:
+            return "; ".join(f"{answer.text} \u2192 {answer.match_text}" for answer in answers)
+
+        correct = next((answer for answer in answers if answer.is_correct), None)
+        if correct:
+            return correct.text
+        return self.expected_answer.strip() or None
 
 
 class Answer(models.Model):

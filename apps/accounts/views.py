@@ -38,7 +38,7 @@ def signup(request):
 		login(request, user)
 		messages.success(
 			request,
-			f"You're signed up, {user.username}! Welcome to compile/.",
+			f"Welcome to compile/, {user.username}. Pick a subject to start your first lesson.",
 		)
 		return _redirect_after_auth(request)
 
@@ -54,7 +54,7 @@ def account(request):
 	form = AccountProfileForm(request.POST or None, instance=request.user)
 	if request.method == "POST" and form.is_valid():
 		form.save()
-		messages.success(request, "Your account details have been updated.")
+		messages.success(request, "Account details saved.")
 		return redirect("account")
 
 	return render(request, "accounts/account.html", {"form": form})

@@ -234,12 +234,12 @@ def study_plan_view(request, subject_slug):
 				StudyPlanItem.FLASHCARD_REVIEW,
 				StudyPlanItem.MISTAKE_REVIEW,
 			}:
-				messages.error(request, "Complete lessons and quizzes in their study flows.")
+				messages.error(request, "Lessons and quizzes are marked done automatically when you finish them.")
 			else:
 				item.completed = True
 				item.completed_at = timezone.now()
 				item.save(update_fields=["completed", "completed_at"])
-				messages.success(request, "Review marked complete.")
+				messages.success(request, "Marked as done.")
 			return redirect("progress:study-plan", subject_slug=subject_slug)
 
 		target_date_text = request.POST.get("target_date", "")
@@ -247,9 +247,9 @@ def study_plan_view(request, subject_slug):
 			target_date = date.fromisoformat(target_date_text)
 			plan = generate_plan(request.user, subject, target_date)
 		except (TypeError, ValueError):
-			messages.error(request, "Enter a valid target date in the future.")
+			messages.error(request, "Choose an exam date after today.")
 		else:
-			messages.success(request, "Your study plan has been generated.")
+			messages.success(request, "Your study plan is ready.")
 		return redirect("progress:study-plan", subject_slug=subject_slug)
 
 	if plan is not None:

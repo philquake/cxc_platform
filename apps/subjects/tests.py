@@ -131,3 +131,76 @@ class SubjectViewTests(TestCase):
         self.assertEqual(response.context["lesson_progress"], progress)
         self.assertEqual(list(response.context["quizzes"]), [quiz])
         self.assertEqual(response.context["quizzes"][0].latest_attempt, attempt)
+
+
+class SubjectDetailProgressTests(TestCase):
+    def setUp(self):
+        self.subject = Subject.objects.create(name="Mathematics", code="MATH")
+        self.first = Lesson.objects.create(
+            subject=self.subject, title="Number sense", slug="number-sense", lesson_number=1, content="x"
+        )
+        self.second = Lesson.objects.create(
+            subject=self.subject, title="Algebra", slug="algebra", lesson_number=2, content="x"
+        )
+        self.url = reverse("subjects:detail", args=["mathematics"])
+
+    def test_signed_in_student_sees_progress_and_next_lesson(self):
+        user = User.objects.create_user("student", password="A-strong-password-123")
+        LessonProgress.objects.create(user=user, lesson=self.first, completed=True, completed_at=timezone.now())
+        self.client.force_login(user)
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "1 of 2 lessons complete")
+        self.assertContains(response, "Continue with lesson 2")
+        self.assertEqual(response.context["next_lesson"], self.second)
+
+    def test_anonymous_visitor_sees_lessons_without_progress(self):
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "Number sense")
+        self.assertNotContains(response, "lessons complete")
+
+    def test_missing_page_shows_helpful_404(self):
+        response = self.client.get("/definitely-not-a-page/")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, "We can't find that page", status_code=404)
+
+
+class LessonPagerTests(TestCase):
+    def setUp(self):
+        self.subject = Subject.objects.create(name="Mathematics", code="MATH")
+        self.lessons = [
+            Lesson.objects.create(
+                subject=self.subject, title=title, slug=slug, lesson_number=number, content="x"
+            )
+            for number, (title, slug) in enumerate(
+                [("Number sense", "number-sense"), ("Algebra", "algebra"), ("Geometry", "geometry")],
+                start=1,
+            )
+        ]
+
+    def _get(self, slug):
+        return self.client.get(reverse("subjects:lesson-detail", args=["mathematics", slug]))
+
+    def test_middle_lesson_links_to_previous_and_next(self):
+        response = self._get("algebra")
+
+        self.assertEqual(response.context["previous_lesson"], self.lessons[0])
+        self.assertEqual(response.context["next_lesson"], self.lessons[2])
+        self.assertEqual(response.context["lesson_position"], 2)
+        self.assertContains(response, "Next lesson")
+        self.assertContains(response, "Geometry")
+
+    def test_first_lesson_has_no_previous_link(self):
+        response = self._get("number-sense")
+
+        self.assertIsNone(response.context["previous_lesson"])
+        self.assertNotContains(response, "Previous lesson")
+
+    def test_last_lesson_points_back_to_the_subject(self):
+        response = self._get("geometry")
+
+        self.assertIsNone(response.context["next_lesson"])
+        self.assertContains(response, "That is the last lesson")

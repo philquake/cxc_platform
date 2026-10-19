@@ -4,7 +4,7 @@
 {% block title %}compile/ | CSEC and CAPE practice that explains every answer{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=11.0">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=12.0">
     <script>document.documentElement.classList.add("js");</script>
 {% endblock %}
 
@@ -17,13 +17,11 @@
             <div class="hero-centre">
                 <h1 id="hero-title" class="hero-sentence">
                     <span class="hero-a">Get it wrong,</span>
-                    <span class="hero-gap" aria-hidden="true"></span>
                     <span class="hero-b">read why.</span>
                 </h1>
 
                 <div class="reel" id="reel" aria-label="Sample question, answer it to see the explanation">
                     <form class="q" data-ui aria-labelledby="q1">
-                        <p class="q-meta">CSEC IT</p>
                         <fieldset>
                             <legend id="q1">Which device converts a computer's digital signal into an analogue signal for a telephone line?</legend>
                             <div class="q-options">
@@ -38,6 +36,7 @@
                             <p class="q-why">A modem modulates digital data into an analogue signal to send it, and demodulates it at the other end. The name is short for modulator-demodulator. A router forwards packets between networks; switches and hubs connect devices inside one network.</p>
                             <button type="button" class="q-next">Try again</button>
                         </div>
+                        <p class="q-meta">A real CSEC IT question. Pick one.</p>
                     </form>
                 </div>
             </div>
@@ -71,7 +70,7 @@
             <p class="line">Then count back from exam day.</p>
             <p class="note">Set the date and get a day-by-day plan that puts your weakest, highest-weighted topics first.</p>
         </div>
-        <figure class="steps-picture" data-reveal>
+        <figure class="steps-picture print" data-reveal>
             <img src="{% static 'img/found/view-of-port-royal-and-kingston-harbours.jpg' %}" width="1920" height="1425" alt="Engraved view of Port Royal and Kingston harbours, with ships on the water and mountains behind" loading="lazy" decoding="async">
         </figure>
     </section>
@@ -81,32 +80,30 @@
         <div class="return-stage"><div class="return-body">
             <h2 id="return-title" class="return-heading">
                 <span class="return-a">What you miss</span>
-                <span class="return-gap" aria-hidden="true"></span>
                 <span class="return-b">comes back.</span>
             </h2>
             <div class="return-frame">
-                <img src="{% static 'img/found/punchcarddecks-agr.jpg' %}" width="1401" height="1554" alt="A box of punched-card decks, each deck labelled by hand in marker pen" loading="lazy" decoding="async">
-            </div></div>
+                <img src="{% static 'img/found/punchcarddecks-agr.jpg' %}" width="1401" height="1554" alt="A box of punched-card decks, each deck labelled by hand in marker pen" decoding="async">
+            </div>
             <p class="return-caption">Programmers once handed in a deck of cards and waited for the compiler's verdict. You get yours in a second, with the reason, and the question returns on a schedule until you stop missing it.</p>
-        </div>
+        </div></div>
     </section>
 
     {# One deliberate rest: a placed picture #}
     <figure class="rest">
-        <div class="rest-clip"><img src="{% static 'img/found/jamaica-palisadoes-kingston-harbor-view-photo-katinka.jpg' %}" width="1920" height="1286" alt="Kingston Harbour from the Palisadoes under heavy cloud, with the Blue Mountains beyond the water" loading="lazy" decoding="async"></div>
+        <div class="rest-clip print"><img src="{% static 'img/found/jamaica-palisadoes-kingston-harbor-view-photo-katinka.jpg' %}" width="1920" height="1286" alt="Kingston Harbour from the Palisadoes under heavy cloud, with the Blue Mountains beyond the water" loading="lazy" decoding="async"></div>
         <figcaption>Kingston Harbour from the Palisadoes. Built in Jamaica for students across the Caribbean.</figcaption>
     </figure>
 
     {# Subjects #}
     <section class="subjects" id="subjects" aria-labelledby="subjects-title">
         <h2 id="subjects-title" class="subjects-heading" data-reveal>Pick your exam.<br>Start there.</h2>
-        <p class="subjects-word">Subjects</p>
         <ul class="subject-list" data-reveal>
             {% for subject in subjects %}
                 <li>
                     <a href="{% url 'subjects:detail' subject.name|slugify %}" class="subject-row">
-                        <span class="subject-code">{{ subject.code }}</span>
                         <span class="subject-name">{{ subject.name }}</span>
+                        <span class="subject-meta">{{ subject.code }} &middot; {{ subject.lesson_count }} lesson{{ subject.lesson_count|pluralize }} &middot; {{ subject.question_count }} question{{ subject.question_count|pluralize }}</span>
                         <span class="subject-go">Open <span aria-hidden="true">&rarr;</span></span>
                     </a>
                 </li>
@@ -114,7 +111,7 @@
                 <li class="subject-empty">Subjects are being added. Check back soon.</li>
             {% endfor %}
         </ul>
-        <figure class="subjects-picture" data-reveal>
+        <figure class="subjects-picture print" data-reveal>
             <img src="{% static 'img/found/map-showing-the-harbours-of-port-royal.jpg' %}" width="1920" height="1566" alt="Old engraved map of Port Royal and Kingston harbours" loading="lazy" decoding="async">
         </figure>
     </section>

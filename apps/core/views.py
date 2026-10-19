@@ -1,5 +1,5 @@
 from django.db import connection
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import render
 
 from apps.lessons.models import Lesson
@@ -13,7 +13,10 @@ except ImportError:  # pragma: no cover
 
 
 def home(request):
-    subjects = Subject.objects.filter(is_active=True)
+    subjects = Subject.objects.filter(is_active=True).annotate(
+        lesson_count=Count("lessons", filter=Q(lessons__is_active=True), distinct=True),
+        question_count=Count("questions", filter=Q(questions__is_active=True), distinct=True),
+    )
 
     return render(
         request,

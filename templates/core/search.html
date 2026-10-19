@@ -8,7 +8,7 @@
 {% block content %}
 <div class="content-column">
     <header class="content-header">
-        <span class="content-card-label">SEARCH</span>
+        <span class="content-card-label">Search</span>
         <h1>{% if query %}Results for “{{ query }}”{% else %}Search{% endif %}</h1>
         <p>Find lessons and questions across the platform.</p>
     </header>
@@ -21,7 +21,7 @@
             <div class="content-grid">
                 {% for lesson in lesson_results %}
                     <a class="content-card" href="{% url 'subjects:lesson-detail' lesson.subject.name|slugify lesson.slug %}">
-                        <span class="content-card-label">{{ lesson.subject.code }} · LESSON</span>
+                        <span class="content-card-label">{{ lesson.subject.code }} · lesson</span>
                         <h2>{{ lesson.title }}</h2>
                         {% if lesson.section_title %}<p>{{ lesson.section_title }}</p>{% endif %}
                         <p>{{ lesson.content|striptags|truncatewords:20 }}</p>
@@ -38,7 +38,7 @@
             <div class="content-grid">
                 {% for question in question_results %}
                     <a class="content-card" href="{% url 'subjects:lesson-detail' question.subject.name|slugify question.lesson.slug %}">
-                        <span class="content-card-label">{{ question.subject.code }} · QUESTION</span>
+                        <span class="content-card-label">{{ question.subject.code }} · question</span>
                         <h2>{{ question.text|truncatewords:12 }}</h2>
                         <p>{{ question.lesson.title }}</p>
                         <span class="content-card-meta">Review lesson <span aria-hidden="true">→</span></span>

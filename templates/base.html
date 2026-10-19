@@ -5,8 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="google-adsense-account" content="ca-pub-1230806752235689">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,500;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@600&display=swap">
     {% bootstrap_css %}
-    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=1.6">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=2.0">
+    <link rel="stylesheet" href="{% static 'css/layout.css' %}?v=1.0">
 
     {% block extra_css %}{% endblock %}
     <title>{% block title %}{% endblock %}</title>
@@ -14,14 +18,15 @@
      crossorigin="anonymous"></script>
 </head>
 <body>
-  <nav class="navbar">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <nav class="navbar" aria-label="Primary">
     <div class="navbar-left">
       <a href="{% url 'home' %}" class="logo" aria-label="Compile home"><span>compile</span><span class="slash">/</span><span class="cursor"></span></a>
       <ul class="nav-links">
-        <li><a href="{% url 'home' %}" class="active">Dashboard</a></li>
-        <li><a href="{% url 'subjects:list' %}">Subjects</a></li>
+        <li><a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} class="active" aria-current="page"{% endif %}>Home</a></li>
+        <li><a href="{% url 'subjects:list' %}"{% if request.resolver_match.namespace == 'subjects' %} class="active" aria-current="page"{% endif %}>Subjects</a></li>
         {% comment %} <li><a href="{% url 'quizzes:list' %}">Quiz</a></li> add Quiz-> SUbjects -> Topic -> Difficulty{% endcomment %}
-        <li><a href="{% url 'progress:dashboard' %}">Progress</a></li>
+        <li><a href="{% url 'progress:dashboard' %}"{% if request.resolver_match.namespace == 'progress' %} class="active" aria-current="page"{% endif %}>Progress</a></li>
       </ul>
     </div>
     <div class="navbar-right">
@@ -43,9 +48,9 @@
     </div>
   </nav>
 
-  <main>
+  <main id="main" tabindex="-1">
     {% if messages %}
-      <ul class="messages">
+      <ul class="messages" role="status">
         {% for message in messages %}
           <li class="message message-{{ message.tags }}">{{ message }}</li>
         {% endfor %}
@@ -57,45 +62,29 @@
       <div class="footer-grid">
         <div class="footer-brand">
           <a href="{% url 'home' %}" class="logo" aria-label="Compile home"><span>compile</span><span class="slash">/</span></a>
-          <p class="footer-tagline">CSEC and CAPE exam prep built for Caribbean students — every answer comes with a real explanation.</p>
+          <p class="footer-tagline">CSEC and CAPE exam prep for Caribbean students. Every answer comes with an explanation.</p>
         </div>
-        <div class="footer-col">
-          <h4>Subjects</h4>
+        <nav class="footer-col" aria-label="Study">
+          <h2>Study</h2>
           <ul>
-            <li><a href="{% url 'subjects:list' %}">CSEC IT</a></li>
-            <li><a href="{% url 'subjects:list' %}">CAPE Unit 1</a></li>
-            <li><a href="{% url 'subjects:list' %}">CAPE Unit 2</a></li>
-            <li><a href="{% url 'subjects:list' %}">All tracks</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h4>Platform</h4>
-          <ul>
+            <li><a href="{% url 'subjects:list' %}">Subjects and lessons</a></li>
             <li><a href="{% url 'quizzes:list' %}">Practice quizzes</a></li>
-            <li><a href="{% url 'subjects:list' %}">Notes library</a></li>
-            <li><a href="{% url 'home' %}#features">Mock exams</a></li>
-            <li><a href="{% url 'login' %}">Bookmarks</a></li>
+            <li><a href="{% url 'progress:flashcard-hub' %}">Flashcards</a></li>
+            <li><a href="{% url 'progress:dashboard' %}">Your progress</a></li>
           </ul>
-        </div>
-        <div class="footer-col">
-          <h4>About</h4>
+        </nav>
+        <nav class="footer-col" aria-label="About">
+          <h2>About</h2>
           <ul>
-            <li><a href="{% url 'home' %}#features">Our story</a></li>
-            <li><a href="https://github.com/philquake/cxc_platform/issues" target="_blank" rel="noopener">Contact</a></li>
+            <li><a href="https://github.com/philquake/cxc_platform/issues" target="_blank" rel="noopener">Report a problem<span class="sr-only"> (opens in a new tab)</span></a></li>
             <li><a href="{% url 'terms' %}">Terms</a></li>
             <li><a href="{% url 'privacy' %}">Privacy</a></li>
           </ul>
-        </div>
+        </nav>
       </div>
 
       <div class="footer-bottom">
-        <span class="footer-copy">© 2026 compile - built in the Caribbean, for the Caribbean.</span>
-        <div class="footer-status">
-          <span class="status-dot"></span>
-          <span>all systems operational</span>
-        </div>
-        <div class="footer-social">
-        </div>
+        <span class="footer-copy">© 2026 compile/. Built in Jamaica for students across the Caribbean.</span>
       </div>
   </footer>
   {% bootstrap_javascript %}

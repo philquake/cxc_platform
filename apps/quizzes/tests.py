@@ -281,3 +281,39 @@ class QuizModelTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.context["result_attempt"], attempt)
+
+
+class MockExamTimeMultiplierTests(TestCase):
+	def setUp(self):
+		self.subject = Subject.objects.create(name="Mathematics", code="MATH")
+		self.mock = Quiz.objects.create(
+			title="Timed mock",
+			subject=self.subject,
+			is_mock=True,
+			time_limit_minutes=60,
+		)
+		self.user = User.objects.create_user("student", password="A-strong-password-123")
+
+	def _timer_minutes(self):
+		response = self.client.get(reverse("quizzes:detail", args=[self.mock.id]))
+		self.assertEqual(response.status_code, 200)
+		return response
+
+	def test_default_multiplier_keeps_time_limit(self):
+		self.client.force_login(self.user)
+		response = self._timer_minutes()
+		self.assertContains(response, 'data-time-limit-minutes="60"')
+
+	def test_profile_multiplier_extends_time_limit(self):
+		from decimal import Decimal
+		from apps.accounts.models import Profile
+
+		Profile.objects.create(user=self.user, time_multiplier=Decimal("1.25"))
+		self.client.force_login(self.user)
+		response = self._timer_minutes()
+		self.assertContains(response, 'data-time-limit-minutes="75"')
+		self.assertContains(response, "includes your extra time")
+
+	def test_anonymous_user_gets_base_time_limit(self):
+		response = self._timer_minutes()
+		self.assertContains(response, 'data-time-limit-minutes="60"')

@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}{{ lesson.title }} | Compile{% endblock %}
+
 {% block extra_css %}
 {% load static %}
 {% load lesson_extra %}
@@ -39,7 +41,7 @@
 
     {% if quizzes %}
         <section class="related-quiz-actions" aria-labelledby="related-quizzes-title">
-            <span class="content-card-label">NEXT STEP</span>
+            <span class="content-card-label">Next step</span>
             <h2 id="related-quizzes-title">Test what you learned</h2>
             <p>Take the quiz related to this lesson.</p>
             <div class="related-quiz-list">

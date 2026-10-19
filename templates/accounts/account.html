@@ -4,23 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Account settings | CXCStudy</title>
-    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+    <title>Account settings | compile/</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;700&family=IBM+Plex+Mono:wght@600&display=swap">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}?v=2">
 </head>
 <body>
     <main class="auth-shell">
         <section class="auth-panel" aria-labelledby="account-title">
-            <a href="{% url 'home' %}" class="logo">CXC<span>Study</span></a>
-            <p class="eyebrow">YOUR PROFILE</p>
+            <a href="{% url 'home' %}" class="logo">compile<span>/</span></a>
+            <p class="eyebrow">Your profile</p>
             <h1 id="account-title">Account settings</h1>
             <p class="intro">Update the details connected to your study account.</p>
             <form method="post" class="auth-form">
                 {% csrf_token %}
-                {% for field in form %}
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {{ field.errors }}
-                {% endfor %}
+                {% include "accounts/_form_fields.html" %}
                 <button type="submit">Save changes</button>
             </form>
             <p class="switch-link"><a href="{% url 'password_change' %}">Change password</a></p>

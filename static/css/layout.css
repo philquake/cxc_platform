@@ -1,0 +1,244 @@
+/* Shared page layout: one shell, one page header, one panel, one stat tile.
+   Page stylesheets add only what is specific to their feature. */
+
+:root {
+  --page-width: 1120px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+}
+
+/* ---------- page shell ---------- */
+.content-column,
+.progress-page {
+  width: min(100% - 40px, var(--page-width));
+  margin: 0 auto;
+  padding: var(--space-5) 0 88px;
+}
+
+/* ---------- page header ---------- */
+.content-header,
+.progress-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px var(--space-4);
+  align-items: end;
+  max-width: none;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-panel-border);
+}
+
+.content-header > *,
+.progress-header > * {
+  grid-column: 1;
+}
+
+.content-header h1,
+.progress-header h1,
+.lesson-content h1 {
+  margin: 4px 0 8px;
+  color: var(--color-white);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.content-header p,
+.progress-header p {
+  max-width: 40em;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+}
+
+.progress-header-links {
+  grid-column: 2;
+  grid-row: 1 / span 4;
+  align-self: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* the small coloured label above a heading */
+.content-card-label,
+.progress-topic-label {
+  display: inline-block;
+  color: var(--color-accent);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.progress-stat-label {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.content-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.content-back:hover {
+  color: var(--color-accent);
+}
+
+/* ---------- panels ---------- */
+.content-card,
+.lesson-content,
+.lesson-link,
+.quiz-card,
+.progress-subject,
+.progress-stat {
+  color: var(--color-text);
+  background: var(--color-panel);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius-md);
+}
+
+a.content-card,
+.lesson-link {
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.content-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3);
+  text-decoration: none;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-2);
+}
+
+/* ---------- dashboard ---------- */
+.progress-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.progress-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 22px;
+}
+
+.progress-stat strong {
+  color: var(--color-white);
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  line-height: 1.1;
+}
+
+.progress-stat small {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.progress-stat .progress-track {
+  margin-top: 4px;
+}
+
+.progress-stat-level {
+  border-color: var(--color-accent-dim);
+}
+
+.progress-subjects {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.progress-subject {
+  padding: var(--space-3);
+}
+
+.progress-subject-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.progress-subject h2 {
+  margin: 4px 0 0;
+  color: var(--color-white);
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.progress-subject-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-percent {
+  color: var(--color-reef);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+
+.progress-track {
+  height: 8px;
+  margin-top: 16px;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 900px) {
+  .progress-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .content-column,
+  .progress-page {
+    width: min(100% - 32px, var(--page-width));
+    padding: var(--space-3) 0 64px;
+  }
+
+  .content-header,
+  .progress-header {
+    grid-template-columns: 1fr;
+    margin-bottom: var(--space-3);
+  }
+
+  .progress-header-links {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: var(--space-2);
+  }
+
+  .progress-header-links .btn {
+    flex: 1 1 100%;
+  }
+
+  .progress-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-subject,
+  .content-card {
+    padding: 18px;
+  }
+
+  .progress-subject-heading {
+    align-items: flex-start;
+  }
+}

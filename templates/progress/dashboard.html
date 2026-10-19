@@ -4,39 +4,35 @@
 {% block title %}Progress | Compile{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=1.2">
+<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=2.0">
 {% endblock %}
 
 {% block content %}
 <div class="progress-page">
     <header class="progress-header">
-        <span class="content-card-label">YOUR LEARNING PATH</span>
+        <span class="content-card-label">Your learning path</span>
         <h1>Progress</h1>
         <p>See how far you have moved through each subject and lesson.</p>
         <div class="progress-header-links">
-            <a href="{% url 'progress:flashcard-hub' %}" class="mistake-bank-link">
-                Review flashcards →
-            </a>
-            <a href="{% url 'progress:mistake-bank' %}" class="mistake-bank-link">
-                Review your mistakes →
-            </a>
+            <a href="{% url 'progress:flashcard-hub' %}" class="btn btn-secondary">Review flashcards</a>
+            <a href="{% url 'progress:mistake-bank' %}" class="btn btn-secondary">Review mistakes</a>
         </div>
     </header>
 
     <section class="progress-stats" aria-label="Your progression stats">
         <div class="progress-stat progress-stat-level">
-            <span class="progress-stat-label">LEVEL</span>
+            <span class="progress-stat-label">Level</span>
             <strong>{{ user_progress.level }}</strong>
             <div class="progress-track"><span style="width: {{ user_progress.level_progress }}%"></span></div>
             <small>{{ user_progress.level_xp }} / {{ user_progress.level_xp_required }} XP to next level</small>
         </div>
         <div class="progress-stat">
-            <span class="progress-stat-label">TOTAL XP</span>
+            <span class="progress-stat-label">Total XP</span>
             <strong>{{ user_progress.total_xp }}</strong>
             <small>earned across lessons and quizzes</small>
         </div>
         <div class="progress-stat">
-            <span class="progress-stat-label">CURRENT STREAK</span>
+            <span class="progress-stat-label">Current streak</span>
             <strong>{{ user_progress.current_streak }} days</strong>
             <small>longest: {{ user_progress.longest_streak }} days</small>
         </div>
@@ -45,7 +41,7 @@
     <div class="progress-subjects">
         {% for subject in subjects %}
             <details class="progress-subject" {% if forloop.first %}open{% endif %}>
-                <summary class="progress-subject-heading" aria-labelledby="subject-{{ subject.id }}">
+                <summary class="progress-subject-heading">
                     <div>
                         <span class="content-card-label">{{ subject.code }}</span>
                         <h2 id="subject-{{ subject.id }}">{{ subject.name }}</h2>
@@ -59,39 +55,33 @@
                     <span style="width: {{ subject.progress_percentage }}%"></span>
                 </div>
                 <p class="progress-summary">{{ subject.completed_count }} of {{ subject.lesson_count }} lessons complete</p>
-                <section class="progress-suggested-next" aria-label="{{ subject.name }} suggested next">
+                <section class="progress-block progress-next" aria-label="{{ subject.name }} suggested next">
                     <h3>Suggested next</h3>
-                    <div class="progress-suggested-actions">
-                        <div>
-                            <span class="content-card-label">FLASHCARDS</span>
+                    <div class="progress-next-grid">
+                        <div class="progress-next-item">
+                            <h4>Flashcards</h4>
                             {% if subject.due_flashcard_count %}
-                                <a href="{% url 'progress:flashcards' subject.name|slugify %}">Review {{ subject.due_flashcard_count }} due card{{ subject.due_flashcard_count|pluralize }}</a>
+                                <p>{{ subject.due_flashcard_count }} card{{ subject.due_flashcard_count|pluralize }} due for review.</p>
+                                <a class="btn btn-primary" href="{% url 'progress:flashcards' subject.name|slugify %}">Review {{ subject.due_flashcard_count }} due card{{ subject.due_flashcard_count|pluralize }}</a>
                             {% else %}
                                 <p>No cards due yet. Take a lesson quiz to add cards to your review queue.</p>
-                                <a href="{% url 'subjects:detail' subject.name|slugify %}">Browse lessons</a>
+                                <a class="btn btn-secondary" href="{% url 'subjects:detail' subject.name|slugify %}">Browse lessons</a>
                             {% endif %}
                         </div>
-                        <div>
-                            <span class="content-card-label">STUDY PLAN</span>
+                        <div class="progress-next-item">
+                            <h4>Study plan</h4>
                             {% if subject.active_study_plan %}
-                                <a href="{% url 'progress:study-plan' subject.name|slugify %}">Continue your active plan</a>
+                                <p>Your plan is active.</p>
+                                <a class="btn btn-primary" href="{% url 'progress:study-plan' subject.name|slugify %}">Continue your active plan</a>
                             {% else %}
                                 <p>No active plan yet. Set your exam date to build a schedule.</p>
-                                <a href="{% url 'progress:study-plan' subject.name|slugify %}">Create a study plan</a>
+                                <a class="btn btn-secondary" href="{% url 'progress:study-plan' subject.name|slugify %}">Create a study plan</a>
                             {% endif %}
                         </div>
                     </div>
                 </section>
-                <div class="progress-callouts">
-                    <a href="{% url 'progress:study-plan' subject.name|slugify %}" class="mistake-bank-link">
-                        Study plan →
-                    </a>
-                    <a href="{% url 'progress:flashcards' subject.name|slugify %}" class="mistake-bank-link">
-                        Practice flashcards →
-                    </a>
-                </div>
 
-                <section class="progress-readiness" aria-label="{{ subject.name }} estimated readiness">
+                <section class="progress-block progress-readiness" aria-label="{{ subject.name }} estimated readiness">
                     <div class="progress-readiness-heading">
                         <div>
                             <h3>Estimated readiness</h3>
@@ -116,7 +106,7 @@
                     </p>
                 </section>
 
-                <section class="progress-mastery" aria-label="{{ subject.name }} topic mastery">
+                <section class="progress-block progress-mastery" aria-label="{{ subject.name }} topic mastery">
                     <h3>Topic mastery</h3>
                     <div class="progress-mastery-list">
                         {% for topic in subject.active_topics %}
@@ -141,26 +131,26 @@
                     </div>
                 </section>
 
-                <section class="progress-mastery progress-exam-analytics" aria-label="{{ subject.name }} exam analytics">
+                <section class="progress-block progress-exam-analytics" aria-label="{{ subject.name }} exam analytics">
                     <h3>Exam analytics</h3>
                     <div class="progress-difficulty-list">
-                        <div class="progress-stat">
-                            <span class="progress-stat-label">EASY</span>
+                        <div class="progress-metric">
+                            <span class="progress-metric-label">Easy</span>
                             <strong>{% if subject.difficulty_breakdown.easy.accuracy_percent != None %}{{ subject.difficulty_breakdown.easy.accuracy_percent }}%{% else %}—{% endif %}</strong>
                             <small>{{ subject.difficulty_breakdown.easy.n }} answers</small>
                         </div>
-                        <div class="progress-stat">
-                            <span class="progress-stat-label">MEDIUM</span>
+                        <div class="progress-metric">
+                            <span class="progress-metric-label">Medium</span>
                             <strong>{% if subject.difficulty_breakdown.medium.accuracy_percent != None %}{{ subject.difficulty_breakdown.medium.accuracy_percent }}%{% else %}—{% endif %}</strong>
                             <small>{{ subject.difficulty_breakdown.medium.n }} answers</small>
                         </div>
-                        <div class="progress-stat">
-                            <span class="progress-stat-label">HARD</span>
+                        <div class="progress-metric">
+                            <span class="progress-metric-label">Hard</span>
                             <strong>{% if subject.difficulty_breakdown.hard.accuracy_percent != None %}{{ subject.difficulty_breakdown.hard.accuracy_percent }}%{% else %}—{% endif %}</strong>
                             <small>{{ subject.difficulty_breakdown.hard.n }} answers</small>
                         </div>
-                        <div class="progress-stat">
-                            <span class="progress-stat-label">AVG MOCK TIME</span>
+                        <div class="progress-metric">
+                            <span class="progress-metric-label">Average mock time</span>
                             <strong>{% if subject.mock_time.average_seconds != None %}{{ subject.mock_time.average_seconds|floatformat:0 }} sec{% else %}—{% endif %}</strong>
                             <small>{{ subject.mock_time.count }} timed attempts</small>
                         </div>
@@ -168,7 +158,7 @@
                 </section>
 
                 {% if subject.weakest_topics %}
-                    <section class="progress-weak-topics" aria-label="{{ subject.name }} weakest topics">
+                    <section class="progress-block progress-weak-topics" aria-label="{{ subject.name }} weakest topics">
                         <h3>Weakest topics</h3>
                         <ul>
                             {% for topic in subject.weakest_topics %}
@@ -190,8 +180,8 @@
                 {% endif %}
 
                 {% if subject.active_topics %}
-                    <div class="progress-topic-links">
-                        <span class="progress-topic-label">TOPIC LEADERBOARDS</span>
+                    <div class="progress-block progress-topic-links">
+                        <span class="progress-topic-label">Topic leaderboards</span>
                         <a href="{% url 'progress:subject-leaderboard' subject.name|slugify %}"><strong>All of {{ subject.code }}</strong></a>
                         {% for topic in subject.active_topics %}
                             <a href="{% url 'progress:leaderboard' subject.name|slugify topic.slug %}">{{ topic.name }}</a>
@@ -199,7 +189,7 @@
                     </div>
                 {% endif %}
 
-                <div class="progress-lessons">
+                <div class="progress-block"><h3>Lessons</h3><div class="progress-lessons">
                     {% for lesson in subject.progress_lessons %}
                         <a class="progress-lesson {% if lesson.is_completed %}is-complete{% endif %}" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
                             <span class="progress-lesson-status" aria-hidden="true">{% if lesson.is_completed %}✓{% else %}○{% endif %}</span>
@@ -212,7 +202,7 @@
                     {% empty %}
                         <p class="progress-empty">No active lessons in this subject yet.</p>
                     {% endfor %}
-                </div>
+                </div></div>
             </details>
         {% empty %}
             <p class="progress-empty">No subjects are available yet.</p>
@@ -224,7 +214,7 @@
         {% for attempt in score_trend %}
             <div class="progress-trend-row">
                 <div class="progress-trend-heading">
-                    <span><strong>{{ attempt.quiz.title }}{% if attempt.quiz.is_mock %} <em class="progress-mock-badge">MOCK</em>{% endif %}</strong><small>{{ attempt.completed_at|date:"M j, Y" }}</small></span>
+                    <span><strong>{{ attempt.quiz.title }}{% if attempt.quiz.is_mock %} <em class="progress-mock-badge">Mock</em>{% endif %}</strong><small>{{ attempt.completed_at|date:"M j, Y" }}</small></span>
                     <strong>{{ attempt.percentage }}%</strong>
                 </div>
                 <div class="progress-track" role="progressbar" aria-valuenow="{{ attempt.percentage }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ attempt.quiz.title }} score">

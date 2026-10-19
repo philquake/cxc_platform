@@ -4,31 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log in | CXCStudy</title>
-    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+    <title>Log in | compile/</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;700&family=IBM+Plex+Mono:wght@600&display=swap">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}?v=2">
 </head>
 <body>
     <main class="auth-shell">
         <section class="auth-panel" aria-labelledby="login-title">
-            <a href="{% url 'home' %}" class="logo">CXC<span>Study</span></a>
-            <p class="eyebrow">WELCOME BACK</p>
+            <a href="{% url 'home' %}" class="logo">compile<span>/</span></a>
+            <p class="eyebrow">Welcome back</p>
             <h1 id="login-title">Log in to your account</h1>
             <p class="intro">Pick up where you left off and keep your CXC preparation moving.</p>
 
             <form method="post" class="auth-form">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ next }}">
-                {{ form.non_field_errors }}
-                {% for field in form %}
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {{ field.errors }}
-                {% endfor %}
+                {% include "accounts/_form_fields.html" %}
                 <button type="submit">Log in</button>
             </form>
 
             <p class="switch-link"><a href="{% url 'password_reset' %}">Forgot your password?</a></p>
-            <p class="switch-link">New to CXCStudy? <a href="{% url 'signup' %}">Create an account</a></p>
+            <p class="switch-link">New to compile/? <a href="{% url 'signup' %}">Create an account</a></p>
         </section>
     </main>
 </body>

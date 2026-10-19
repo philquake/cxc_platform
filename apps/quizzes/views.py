@@ -1,8 +1,11 @@
+import math
+
 from django.http import Http404
 from django.shortcuts import render
 from django.utils.text import slugify
 from django.db.models import Prefetch, Q
 
+from apps.accounts.models import Profile
 from apps.subjects.models import Subject, Topic
 from apps.progress.models import QuizAttempt
 
@@ -154,7 +157,26 @@ def topic_quizzes(request, subject_slug, topic_slug):
     )
 
 
+def _add_time_limits(request, quizzes):
+    """Set quiz.effective_time_limit_minutes, applying the student's time multiplier."""
+    multiplier = 1
+    if request.user.is_authenticated:
+        multiplier = (
+            Profile.objects.filter(user=request.user)
+            .values_list("time_multiplier", flat=True)
+            .first()
+            or 1
+        )
+    for quiz in quizzes:
+        minutes = quiz.time_limit_minutes
+        quiz.effective_time_limit_minutes = (
+            math.ceil(minutes * multiplier) if minutes else minutes
+        )
+        quiz.has_extra_time = bool(minutes) and quiz.effective_time_limit_minutes > minutes
+
+
 def _add_latest_attempts(request, quizzes):
+    _add_time_limits(request, quizzes)
     if not request.user.is_authenticated:
         return
     latest_attempts = {}

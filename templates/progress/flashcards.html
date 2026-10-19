@@ -4,7 +4,7 @@
 {% block title %}{{ topic.name|default:"Flashcards" }} | Compile{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=1.2">
+<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=2.0">
 <link rel="stylesheet" href="{% static 'css/flashcards.css' %}?v=1.3">
 {% endblock %}
 
@@ -13,7 +13,7 @@
     <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
 
     <header class="progress-header">
-        <span class="content-card-label">{% if is_all_subjects %}ALL SUBJECTS{% else %}{{ subject.code }}{% endif %}{% if topic %} / {{ topic.name }}{% endif %} FLASHCARDS</span>
+        <span class="content-card-label">{% if is_all_subjects %}all subjects{% else %}{{ subject.code }}{% endif %}{% if topic %} / {{ topic.name }}{% endif %} flashcards</span>
         <h1>Review</h1>
         <p>{{ due_count }} card{{ due_count|pluralize }} due today.</p>
     </header>
@@ -21,20 +21,20 @@
     {% if cards %}
         <div class="flashcard-shell" data-total="{{ cards|length }}">
             <div class="flashcard-progress">
-                <span id="fc-position">1</span> / {{ cards|length }}
+                <span aria-live="polite" aria-atomic="true"><span class="sr-only">Card </span><span id="fc-position">1</span> / {{ cards|length }}</span>
             </div>
 
             {% for card in cards %}
-                <article class="flashcard {% if not forloop.first %}is-hidden{% endif %}"
+                <article class="flashcard {% if not forloop.first %}is-hidden{% endif %}" aria-label="Card {{ forloop.counter }} of {{ cards|length }}"
                           data-index="{{ forloop.counter0 }}"
                           data-question-id="{{ card.question.id }}">
                     <div class="flashcard-inner">
-                        <div class="flashcard-face flashcard-front">
+                        <div class="flashcard-face flashcard-front" data-face="front">
                             <span class="content-card-label">{{ card.question.difficulty|upper }}</span>
                             <p class="flashcard-text">{{ card.question.text }}</p>
                             <button type="button" class="flashcard-flip-btn">Show answer</button>
                         </div>
-                        <div class="flashcard-face flashcard-back">
+                        <div class="flashcard-face flashcard-back" data-face="back" aria-hidden="true" inert>
                             <p class="flashcard-answer">
                                 {% for answer in card.question.answers.all %}
                                     {% if answer.is_correct %}{{ answer.text }}{% endif %}
@@ -54,8 +54,8 @@
                 </article>
             {% endfor %}
 
-            <div class="flashcard-done is-hidden">
-                <p class="content-card-label">SESSION COMPLETE</p>
+            <div class="flashcard-done is-hidden" tabindex="-1">
+                <p class="content-card-label">Session complete</p>
                 <h2>Nice work.</h2>
                 <p>You reviewed {{ cards|length }} card{{ cards|length|pluralize }}.</p>
                 <a class="btn btn-primary" href="{% url 'progress:flashcard-hub' %}">Back to flashcards</a>
@@ -69,7 +69,7 @@
         </form>
     {% else %}
         <section class="flashcard-empty-state" role="status" aria-label="Flashcard session status">
-            <span class="content-card-label">SESSION CLEAR</span>
+            <span class="content-card-label">Session clear</span>
             <h2>No cards due</h2>
             <p>No cards are due right now. Check back later.</p>
         </section>
@@ -89,8 +89,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     cards.forEach(function (card) {
         const flipBtn = card.querySelector(".flashcard-flip-btn");
+        const front = card.querySelector('[data-face="front"]');
+        const back = card.querySelector('[data-face="back"]');
         flipBtn.addEventListener("click", function () {
             card.classList.add("is-flipped");
+            front.setAttribute("aria-hidden", "true");
+            front.setAttribute("inert", "");
+            back.removeAttribute("aria-hidden");
+            back.removeAttribute("inert");
+            const firstRating = back.querySelector(".rate-btn");
+            if (firstRating) { firstRating.focus(); }
         });
 
         card.querySelectorAll(".rate-btn").forEach(function (btn) {
@@ -116,9 +124,12 @@ document.addEventListener("DOMContentLoaded", function () {
         if (current < cards.length) {
             cards[current].classList.remove("is-hidden");
             positionEl.textContent = current + 1;
+            cards[current].querySelector(".flashcard-flip-btn").focus();
         } else {
             shell.querySelector(".flashcard-progress").classList.add("is-hidden");
             doneEl.classList.remove("is-hidden");
+            doneEl.setAttribute("role", "status");
+            doneEl.focus();
         }
     }
 });

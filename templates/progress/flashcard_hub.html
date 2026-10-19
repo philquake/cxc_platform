@@ -4,7 +4,7 @@
 {% block title %}Flashcards | Compile{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=1.2">
+<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=2.0">
 <link rel="stylesheet" href="{% static 'css/flashcards.css' %}?v=1.3">
 {% endblock %}
 
@@ -13,14 +13,14 @@
     <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
 
     <header class="progress-header">
-        <span class="content-card-label">REVIEW QUEUE</span>
+        <span class="content-card-label">Review queue</span>
         <h1>Flashcards</h1>
         <p>Choose a subject or review every card due today.</p>
     </header>
 
     <section class="progress-suggested-next" aria-label="All due flashcards">
         <div>
-            <span class="content-card-label">ALL SUBJECTS</span>
+            <span class="content-card-label">All subjects</span>
             <h2>{{ all_due_count }} due card{{ all_due_count|pluralize }}</h2>
             {% if all_due_count %}
                 <a href="{% url 'progress:flashcards-all' %}">Review all due cards</a>

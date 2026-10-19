@@ -11,11 +11,11 @@
 {% block content %}
 <div class="content-column">
     {% if result_attempt %}
-        <dialog id="quiz-result-dialog" class="quiz-result-dialog" aria-labelledby="quiz-result-title" oncancel="event.preventDefault()">
+        <dialog id="quiz-result-dialog" class="quiz-result-dialog" aria-labelledby="quiz-result-title">
             <div class="quiz-result-dialog-content">
                 <button type="button" class="quiz-result-close" onclick="this.closest('dialog').close()" aria-label="Close result dialog">&times;</button>
-                <p class="content-card-label">QUIZ COMPLETE</p>
-                <h2 id="quiz-result-title">{{ result_attempt.score }}/{{ result_attempt.total_questions }} correct</h2>
+                <p class="content-card-label">Quiz complete</p>
+                <h2 id="quiz-result-title" tabindex="-1">{{ result_attempt.score }}/{{ result_attempt.total_questions }} correct</h2>
                 <p class="quiz-result-score">{{ result_attempt.percentage }}%</p>
                 {% if result_attempt.xp_transaction %}
                     <p class="quiz-result-xp">+{{ result_attempt.xp_transaction.amount }} XP earned</p>
@@ -26,7 +26,7 @@
                             <div class="quiz-result-item is-incorrect">
                                 <p class="quiz-result-item-question">Question {{ forloop.counter }}</p>
                                 <p class="quiz-result-item-status">
-                                    ✗ Your answer: {% if answer.selected_answer %}{{ answer.selected_answer.text }}{% elif answer.selected_text %}{{ answer.selected_text }}{% else %}No answer selected{% endif %}
+                                    <span class="sr-only">Incorrect.</span><span aria-hidden="true">✗</span> Your answer: {% if answer.selected_answer %}{{ answer.selected_answer.text }}{% elif answer.selected_text %}{{ answer.selected_text }}{% else %}No answer selected{% endif %}
                                 </p>
                                 {% if answer.question.correct_answer_text %}
                                     <p class="quiz-result-item-correct">✓ Correct answer: {{ answer.question.correct_answer_text }}</p>
@@ -67,6 +67,8 @@
                 const resultDialog = document.getElementById("quiz-result-dialog");
                 if (resultDialog && !resultDialog.open) {
                     resultDialog.showModal();
+                    const title = document.getElementById("quiz-result-title");
+                    if (title) { title.focus(); }
                 }
             });
         </script>
@@ -74,7 +76,7 @@
     {% if subject %}
         <a href="{% url 'quizzes:list' %}" class="content-back">&larr; All quizzes</a>
         <header class="content-header">
-            <span class="content-card-label">{{ subject.code }}{% if topic %} / {{ topic.name }}{% endif %} QUIZZES</span>
+            <span class="content-card-label">{{ subject.code }}{% if topic %} / {{ topic.name }}{% endif %} quizzes</span>
             <h1>{% if topic %}{{ topic.name }} quizzes{% else %}{{ subject.name }} quizzes{% endif %}</h1>
             {% if subject.description %}<p>{{ subject.description }}</p>{% endif %}
             {% if topic.description %}<p>{{ topic.description }}</p>{% endif %}
@@ -90,7 +92,7 @@
         </header>
     {% else %}
         <header class="content-header">
-            <span class="content-card-label">PRACTICE</span>
+            <span class="content-card-label">Practice</span>
             <h1>Practice quizzes</h1>
             <p>Test your understanding with questions from every subject.</p>
         </header>
@@ -104,23 +106,24 @@
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <div class="quiz-card-heading">
                     <div>
-                        <span class="content-card-label">{{ quiz.subject.code }}{% if quiz.topic %} / {{ quiz.topic.name }}{% elif quiz.is_mock %} / MOCK EXAM{% endif %}</span>
+                        <span class="content-card-label">{{ quiz.subject.code }}{% if quiz.topic %} / {{ quiz.topic.name }}{% elif quiz.is_mock %} / mock exam{% endif %}</span>
                         <h2>{{ quiz.title }}</h2>
                     </div>
                     <span class="quiz-card-meta">
                         {% if quiz.is_mock %}
-                            Mock exam{% if quiz.time_limit_minutes %} · {{ quiz.time_limit_minutes }} minutes{% endif %}
+                            Mock exam{% if quiz.effective_time_limit_minutes %} · {{ quiz.effective_time_limit_minutes }} minutes{% if quiz.has_extra_time %} (includes your extra time){% endif %}{% endif %}
                         {% elif quiz.lesson %}
                             Lesson {{ quiz.lesson.lesson_number }} / Section {{ quiz.lesson.section_number }}
                         {% endif %}
                     </span>
                 </div>
                 {% if quiz.description %}<p class="quiz-card-description">{{ quiz.description }}</p>{% endif %}
-                {% if quiz.is_mock and quiz.time_limit_minutes %}
-                    <div class="mock-exam-timer" data-time-limit-minutes="{{ quiz.time_limit_minutes }}">
+                {% if quiz.is_mock and quiz.effective_time_limit_minutes %}
+                    <div class="mock-exam-timer" data-time-limit-minutes="{{ quiz.effective_time_limit_minutes }}">
                         <span>Time remaining</span>
-                        <strong class="mock-exam-countdown" role="timer">{{ quiz.time_limit_minutes }}:00</strong>
+                        <strong class="mock-exam-countdown" role="timer">{{ quiz.effective_time_limit_minutes }}:00</strong>
                     </div>
+                    <p class="mock-exam-warning" role="status" aria-live="polite"></p>
                     <input type="hidden" name="time_taken_seconds" value="0">
                 {% endif %}
 
@@ -142,10 +145,10 @@
                         {% elif quiz_question.question.is_open_ended %}
                             <label>
                                 {% if quiz_question.question.format == 'worded' %}
-                                    <span class="sr-only">Your answer</span>
+                                    <span class="sr-only">Answer to question {{ forloop.counter }}</span>
                                     <textarea name="question-{{ quiz_question.question.id }}" rows="4" placeholder="Write your answer"></textarea>
                                 {% else %}
-                                    <span class="sr-only">Your answer</span>
+                                    <span class="sr-only">Answer to question {{ forloop.counter }}</span>
                                     <input type="text" name="question-{{ quiz_question.question.id }}" placeholder="Type your answer" autocomplete="off">
                                 {% endif %}
                             </label>

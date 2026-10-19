@@ -1,307 +1,125 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}CXCStudy — Learn. Practice. Succeed.{% endblock %}
+{% block title %}compile/ | CSEC and CAPE practice that explains every answer{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=2.0">
 {% endblock %}
 
 {% block content %}
+<div class="home">
 
-<main>
-    <div class="home-column">
-        <!-- HERO -->
-
-        <section class="hero">
-            <div class="hero-container">
-                <div class="hero-content">
-                <div class="eyebrow">
-                    BUILT FOR CXC STUDENTS
-                </div>
-
-                <h1>
-                    Learn smarter.
-                    <span>Pass with confidence.</span>
-                </h1>
-
-                <p class="hero-text">
-                    A complete learning platform for CXC students.
-                    Study lessons, practice exam-style questions,
-                    take quizzes and track your progress - all in one place.
-                </p>
-
-                <div class="hero-actions">
-                    <a href="{% url 'signup' %}"
-                        class="btn btn-primary btn-large">
-                        Start Learning Free
-                    </a>
-
-                    <a href="#subjects"
-                        class="btn btn-secondary btn-large">
-                        Explore Subjects
-                    </a>
-                </div>
-
-                <div class="hero-note">
-                    ✓ Free account &nbsp;&nbsp;
-                    ✓ Learn at your own pace
-                </div>
-                </div>
+    <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+            <h1 id="hero-title">Exam practice that tells you why you got it wrong.</h1>
+            <p class="hero-text">
+                Lessons, quizzes and mock exams for CSEC IT and CAPE Computer Science.
+                Every question has a written explanation, and the ones you miss come back until you know them.
+            </p>
+            <div class="hero-actions">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'progress:dashboard' %}" class="btn btn-primary btn-large">Continue studying</a>
+                {% else %}
+                    <a href="{% url 'signup' %}" class="btn btn-primary btn-large">Create a free account</a>
+                {% endif %}
+                <a href="#subjects" class="btn btn-secondary btn-large">Browse subjects</a>
             </div>
-        </section>
-
-            
-
-        <!-- FEATURES -->
-
-        <section class="features" id="features">
-
-        <div class="container">
-
-            <div class="section-heading">
-
-                <div class="eyebrow">
-                    EVERYTHING YOU NEED
-                </div>
-
-                <h2>
-                    One platform for your entire CXC journey.
-                </h2>
-
-                <p>
-                    Stop jumping between notes, websites and practice papers.
-                    Keep your learning organized in one place.
-                </p>
-
-            </div>
-
-
-            <div class="feature-grid">
-
-                <article class="feature-card">
-
-                    <div class="feature-icon">📚</div>
-
-                    <h3>Structured Lessons</h3>
-
-                    <p>
-                        Break every subject into clear topics and lessons
-                        so you always know what to study next.
-                    </p>
-
-                </article>
-
-
-                <article class="feature-card">
-
-                    <div class="feature-icon">📝</div>
-
-                    <h3>Practice Questions</h3>
-
-                    <p>
-                        Reinforce your knowledge with questions designed
-                        around the types of concepts tested in CXC exams.
-                    </p>
-
-                </article>
-
-
-                <article class="feature-card">
-
-                    <div class="feature-icon">🧠</div>
-
-                    <h3>Interactive Quizzes</h3>
-
-                    <p>
-                        Test yourself immediately and identify the areas
-                        where you need more practice.
-                    </p>
-
-                </article>
-
-
-                <article class="feature-card">
-
-                    <div class="feature-icon">📈</div>
-
-                    <h3>Track Your Progress</h3>
-
-                    <p>
-                        See lessons completed, quiz scores and subject
-                        progress from your personal dashboard.
-                    </p>
-
-                </article>
-
-            </div>
-
         </div>
 
-        </section>
-
-
-    <!-- SUBJECTS -->
-
-        <section class="subjects" id="subjects">
-
-        <div class="container">
-
-            <div class="section-heading">
-
-                <div class="eyebrow">
-                    CXC SUBJECTS
-                </div>
-
-                <h2>
-                    Learn the subjects that matter.
-                </h2>
-
-                <p>
-                    Start with a subject and work through the curriculum
-                    at your own pace.
+        <form class="sample-question" id="sample-question" aria-labelledby="sample-title" onsubmit="return false">
+            <p class="sample-kicker">Try one now &middot; CSEC IT</p>
+            <fieldset>
+                <legend id="sample-title">Which device converts a computer's digital signal into an analogue signal for a telephone line?</legend>
+                <label class="sample-option"><input type="radio" name="sample" value="router"><span>Router</span></label>
+                <label class="sample-option"><input type="radio" name="sample" value="modem" data-correct><span>Modem</span></label>
+                <label class="sample-option"><input type="radio" name="sample" value="switch"><span>Switch</span></label>
+                <label class="sample-option"><input type="radio" name="sample" value="hub"><span>Hub</span></label>
+            </fieldset>
+            <div class="sample-result" id="sample-result" role="status" aria-live="polite" hidden>
+                <p class="sample-verdict"></p>
+                <p class="sample-explanation">
+                    A modem modulates digital data into an analogue signal to send it, and demodulates it at the other end.
+                    The name is short for modulator-demodulator. A router forwards packets between networks, and switches and hubs connect devices inside one network.
                 </p>
-
             </div>
-
-
-            <div class="subject-grid">
-
-                {% for subject in subjects %}
-
-                <a href="{% url 'subjects:detail' subject.name|slugify %}" class="subject-card">
-
-                    <div class="subject-code">
-                        {{ subject.code }}
-                    </div>
-
-                    <div>
-                        <h3>{{ subject.name }}</h3>
-
-                        <p>
-                            {{ subject.description }}
-                        </p>
-                    </div>
-
-                    <span class="arrow">
-                        →
-                    </span>
-
-                </a>
-
-                {% endfor %}
-
-            </div>
-
-        </div>
-
-        </section>
-
-    <!-- HOW IT WORKS -->
-
-    <section class="how-it-works" id="how-it-works">
-
-        <div class="container">
-
-            <div class="section-heading">
-
-                <div class="eyebrow">
-                    HOW IT WORKS
-                </div>
-
-                <h2>
-                    Study at your own pace.
-                </h2>
-
-            </div>
-
-
-            <div class="steps">
-
-                <div class="step">
-
-                    <div class="step-number">1</div>
-
-                    <h3>Choose a Subject</h3>
-
-                    <p>
-                        Select the CXC subject you want to study.
-                    </p>
-
-                </div>
-
-
-                <div class="step">
-
-                    <div class="step-number">2</div>
-
-                    <h3>Learn the Material</h3>
-
-                    <p>
-                        Work through structured lessons and topics.
-                    </p>
-
-                </div>
-
-
-                <div class="step">
-
-                    <div class="step-number">3</div>
-
-                    <h3>Practice</h3>
-
-                    <p>
-                        Test your knowledge with questions and quizzes.
-                    </p>
-
-                </div>
-
-
-                <div class="step">
-
-                    <div class="step-number">4</div>
-
-                    <h3>Track Your Progress</h3>
-
-                    <p>
-                        Identify weak areas and keep improving.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </div>
-
+        </form>
     </section>
 
+    <section class="study-loop" aria-labelledby="loop-title">
+        <h2 id="loop-title">A study loop, not a pile of notes</h2>
+        <ol class="loop-steps">
+            <li>
+                <h3>Read a lesson</h3>
+                <p>Each subject is split into topics and lessons, so you always know what to study next.</p>
+            </li>
+            <li>
+                <h3>Take its quiz</h3>
+                <p>Multiple choice, true or false, short answer, matching and worded questions, all with explanations.</p>
+            </li>
+            <li>
+                <h3>Revisit what you missed</h3>
+                <p>Wrong answers become flashcards on a spaced schedule and collect in your mistake bank.</p>
+            </li>
+            <li>
+                <h3>Plan back from your exam date</h3>
+                <p>Set the date and get a day-by-day plan that puts your weakest, highest-weighted topics first.</p>
+            </li>
+        </ol>
+    </section>
 
-    <!-- CTA -->
+    <section class="subjects" id="subjects" aria-labelledby="subjects-title">
+        <h2 id="subjects-title">Subjects</h2>
+        <ul class="subject-list">
+            {% for subject in subjects %}
+                <li>
+                    <a href="{% url 'subjects:detail' subject.name|slugify %}" class="subject-row">
+                        <span class="subject-code">{{ subject.code }}</span>
+                        <span class="subject-main">
+                            <span class="subject-name">{{ subject.name }}</span>
+                            {% if subject.description %}<span class="subject-desc">{{ subject.description }}</span>{% endif %}
+                        </span>
+                        <span class="subject-go" aria-hidden="true">Open</span>
+                    </a>
+                </li>
+            {% empty %}
+                <li class="subject-empty">Subjects are being added. Check back soon.</li>
+            {% endfor %}
+        </ul>
+    </section>
 
-    <section class="cta">
+    <section class="cta" aria-labelledby="cta-title">
+        <h2 id="cta-title">Know where you stand before exam day.</h2>
+        <p>Your progress, streak and readiness score update as you study. It is free to start.</p>
+        {% if user.is_authenticated %}
+            <a href="{% url 'progress:dashboard' %}" class="btn btn-primary btn-large">Go to your progress</a>
+        {% else %}
+            <a href="{% url 'signup' %}" class="btn btn-primary btn-large">Create a free account</a>
+        {% endif %}
+    </section>
 
-        <div class="container cta-content">
+</div>
 
-            <h2>
-                Your CXC success starts here.
-            </h2>
-
-            <p>
-                Build better study habits, practice consistently
-                and walk into your exams prepared.
-            </p>
-
-            <a href="{% url 'signup' %}"
-                class="btn btn-primary btn-large">
-                Create Your Free Account
-            </a>
-
-        </div>
-
-    </section>  
-
-    </div>
-
-</main>
-
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var form = document.getElementById("sample-question");
+    var result = document.getElementById("sample-result");
+    if (!form || !result) { return; }
+    var verdict = result.querySelector(".sample-verdict");
+    form.addEventListener("change", function (event) {
+        if (event.target.name !== "sample") { return; }
+        var options = form.querySelectorAll(".sample-option");
+        var right = event.target.hasAttribute("data-correct");
+        options.forEach(function (label) {
+            var input = label.querySelector("input");
+            label.classList.remove("is-correct", "is-wrong");
+            if (input.hasAttribute("data-correct")) { label.classList.add("is-correct"); }
+            else if (input === event.target) { label.classList.add("is-wrong"); }
+        });
+        verdict.textContent = right ? "Correct. It's a modem." : "Not quite. The answer is modem.";
+        verdict.className = "sample-verdict " + (right ? "is-correct" : "is-wrong");
+        result.hidden = false;
+    });
+});
+</script>
 {% endblock %}

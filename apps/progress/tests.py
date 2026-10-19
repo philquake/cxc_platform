@@ -154,8 +154,8 @@ class ProgressFlowTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.context["score_trend"], [attempt])
 		self.assertEqual(response.context["subjects"][0].readiness["mock_attempt"], attempt)
-		self.assertContains(response, "MOCK")
-		self.assertContains(response, "AVG MOCK TIME")
+		self.assertContains(response, "Mock")
+		self.assertContains(response, "Average mock time")
 
 	def test_mock_submission_records_duration_and_wrong_answers(self):
 		question = Question.objects.create(

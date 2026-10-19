@@ -143,3 +143,22 @@ class AccountFlowTests(TestCase):
 		)
 
 		self.assertRedirects(response, reverse("progress:dashboard"))
+
+
+class AuthFormAccessibilityTests(TestCase):
+	def test_invalid_signup_links_errors_to_fields(self):
+		response = self.client.post(
+			reverse("signup"),
+			{"username": "x", "password1": "a", "password2": "b"},
+		)
+
+		self.assertContains(response, 'role="alert"')
+		self.assertContains(response, 'aria-invalid="true"')
+		self.assertContains(response, 'aria-describedby="id_password2-help id_password2-errors"')
+		self.assertContains(response, 'id="id_password2-errors"')
+
+	def test_valid_form_has_no_error_summary(self):
+		response = self.client.get(reverse("signup"))
+
+		self.assertNotContains(response, 'role="alert"')
+		self.assertNotContains(response, 'aria-invalid')

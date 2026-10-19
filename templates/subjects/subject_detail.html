@@ -9,13 +9,16 @@
 <div class="content-column">
     <a href="{% url 'subjects:list' %}" class="content-back">&larr; All subjects</a>
 
-    <header class="mt-4 mb-5">
+    <header class="content-header">
+        <span class="content-card-label">{{ subject.code }}</span>
         <h1>{{ subject.name }}</h1>
         {% if subject.description %}
-            <p class="lead">{{ subject.description }}</p>
+            <p>{{ subject.description }}</p>
         {% endif %}
         {% if user.is_authenticated %}
-            <a class="mistake-bank-link" href="{% url 'progress:study-plan' subject.name|slugify %}">Build a study plan →</a>
+            <div class="progress-header-links">
+                <a class="btn btn-secondary" href="{% url 'progress:study-plan' subject.name|slugify %}">Build a study plan</a>
+            </div>
         {% endif %}
     </header>
 

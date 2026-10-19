@@ -1,6 +1,11 @@
-.legal-page {
-    max-width: 820px;
+.legal-body {
+    max-width: 760px;
 }
+
+.legal-page .content-header {
+    grid-template-columns: 1fr;
+}
+
 
 .legal-body {
     color: var(--color-text);
@@ -52,8 +57,8 @@
     padding-top: 24px;
     border-top: 1px solid var(--color-panel-border);
     color: var(--color-text-muted);
-    font-family: var(--font-mono);
-    font-size: 13px;
+    font-family: var(--font-body);
+    font-size: 14px;
 }
 
 @media (max-width: 560px) {

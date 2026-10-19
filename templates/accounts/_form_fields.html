@@ -1,0 +1,27 @@
+{% load auth_extras %}
+{% if form.errors %}
+    <div class="auth-error-summary" id="form-error-summary" role="alert" tabindex="-1">
+        <strong>Please fix the problems below.</strong>
+        {% if form.non_field_errors %}
+            <ul>
+                {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var summary = document.getElementById("form-error-summary");
+            if (summary) { summary.focus(); }
+        });
+    </script>
+{% endif %}
+{% for field in form %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {% a11y_field field %}
+    {% if field.help_text %}<small id="{{ field.auto_id }}-help">{{ field.help_text }}</small>{% endif %}
+    {% if field.errors %}
+        <ul class="errorlist" id="{{ field.auto_id }}-errors">
+            {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+{% endfor %}

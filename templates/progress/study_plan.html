@@ -4,18 +4,17 @@
 {% block title %}{{ subject.name }} Study Plan | Compile{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=1.3">
+<link rel="stylesheet" href="{% static 'css/progress.css' %}?v=2.0">
 {% endblock %}
 
 {% block content %}
 <div class="progress-page">
+    <a href="{% url 'subjects:detail' subject.name|slugify %}" class="content-back">&larr; {{ subject.name }}</a>
+
     <header class="progress-header study-plan-header">
-        <span class="content-card-label">EXAM PREPARATION</span>
-        <h1>{{ subject.name }} Study Plan</h1>
+        <span class="content-card-label">Exam preparation</span>
+        <h1>{{ subject.name }} study plan</h1>
         <p>Lessons are prioritized by topic weight and mastery. Reviews are scheduled alongside new material.</p>
-        <div class="progress-header-links">
-            <a href="{% url 'subjects:detail' subject.name|slugify %}" class="mistake-bank-link">Back to {{ subject.name }} →</a>
-        </div>
     </header>
 
     <form method="post" class="study-plan-date-form">
@@ -52,7 +51,7 @@
             <section class="progress-subject study-plan-day" aria-label="Study plan for {{ day.grouper|date:'F j, Y' }}">
                 <header class="progress-subject-heading">
                     <div>
-                        <span class="content-card-label">{% if day.grouper == today %}TODAY{% else %}STUDY SESSION{% endif %}</span>
+                        <span class="content-card-label">{% if day.grouper == today %}today{% else %}study session{% endif %}</span>
                         <h2>{{ day.grouper|date:"l, F j" }}</h2>
                     </div>
                 </header>

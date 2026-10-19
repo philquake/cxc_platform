@@ -1,15 +1,16 @@
 :root {
-    --auth-bg: #0d1117;
-    --auth-header: #0b0f14;
-    --auth-panel: #131a23;
-    --auth-panel-hover: #1a222d;
+    --auth-bg: #0b1220;
+    --auth-header: #080e19;
+    --auth-panel: #121c2e;
+    --auth-panel-hover: #19253a;
     --auth-line: #2b3745;
-    --auth-text: #e2e6ea;
-    --auth-muted: #9aa4b2;
-    --auth-faint: #626d7d;
-    --auth-accent: #3ddc84;
-    --auth-accent-hover: #5ef0a0;
-    --auth-danger: #ff8d8d;
+    --auth-control: #6a7d99;
+    --auth-text: #e8eef7;
+    --auth-muted: #a9b6ca;
+    --auth-faint: #8b9ab0;
+    --auth-accent: #f5b841;
+    --auth-accent-hover: #ffcb66;
+    --auth-danger: #ff9a8f;
 }
 
 * {
@@ -21,7 +22,7 @@ body {
     min-height: 100vh;
     color: var(--auth-text);
     background: var(--auth-bg);
-    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    font-family: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, sans-serif;
 }
 
 .auth-shell {
@@ -29,7 +30,7 @@ body {
     min-height: 100vh;
     place-items: center;
     padding: 32px 18px;
-    background: radial-gradient(circle at 50% -10%, #173322 0, transparent 42%), var(--auth-bg);
+    background: radial-gradient(circle at 50% -10%, #16243b 0, transparent 42%), var(--auth-bg);
 }
 
 .auth-panel {
@@ -56,9 +57,8 @@ body {
 .eyebrow {
     margin: 42px 0 8px;
     color: var(--auth-accent);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
+    font-size: 15px;
+    font-weight: 700;
 }
 
 h1 {
@@ -88,14 +88,25 @@ h1 {
     padding: 12px 13px;
     color: var(--auth-text);
     background: var(--auth-header);
-    border: 1px solid var(--auth-line);
+    border: 1px solid var(--auth-control);
     border-radius: 6px;
     font: inherit;
 }
 
-.auth-form input:focus {
-    outline: 3px solid rgba(61, 220, 132, 0.16);
+.auth-form input:focus-visible,
+.auth-form button:focus-visible,
+.auth a:focus-visible {
+    outline: 2px solid var(--auth-accent);
+    outline-offset: 2px;
     border-color: var(--auth-accent);
+}
+
+.auth-form ul.errorlist {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--auth-danger);
+    font-size: 14px;
 }
 
 .auth-form button {
@@ -119,12 +130,12 @@ h1 {
     padding: 0;
     color: var(--auth-danger);
     list-style: none;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .auth-form small {
     color: var(--auth-faint);
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .switch-link {
@@ -161,4 +172,23 @@ h1 {
     .switch-link {
         line-height: 1.6;
     }
+}
+
+.auth-error-summary {
+    margin-bottom: 8px;
+    padding: 12px 14px;
+    color: var(--auth-danger);
+    background: rgba(255, 141, 141, 0.08);
+    border: 1px solid var(--auth-danger);
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.auth-error-summary ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+}
+
+.auth-form input[aria-invalid="true"] {
+    border-color: var(--auth-danger);
 }

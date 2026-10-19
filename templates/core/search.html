@@ -10,9 +10,13 @@
 {% block content %}
 <div class="content-column">
     <header class="content-header">
-        <span class="content-card-label">Search</span>
         <h1>{% if query %}Results for “{{ query }}”{% else %}Search{% endif %}</h1>
         <p>Search every lesson and practice question.</p>
+        <form method="get" action="{% url 'search' %}" class="search-form" role="search">
+            <label class="sr-only" for="search-q">Search lessons and questions</label>
+            <input id="search-q" type="search" name="q" value="{{ query }}" placeholder="Try binary or spreadsheet">
+            <button type="submit" class="btn-accent">Search</button>
+        </form>
     </header>
 
     {% if not query %}

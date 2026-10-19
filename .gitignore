@@ -57,3 +57,6 @@ media/
 *.db
 tmp/
 temp/
+
+### Design tooling scratch output
+.taste-skill/

@@ -1,0 +1,209 @@
+/* Content pages: subject list, subject detail, lesson. Same grammar as the home page:
+   a large statement on the left, its proof as plain rows on the right. */
+
+.page {
+  padding: 56px var(--gutter) 160px;
+  color: var(--color-white);
+}
+
+.page-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 24px;
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.page-back:hover { color: var(--color-accent-ink); text-decoration: underline; text-underline-offset: 4px; }
+
+.page-head {
+  max-width: 62rem;
+  margin-bottom: 96px;
+}
+
+.page-head h1,
+.lesson-page .content-header h1 {
+  margin: 0 0 24px;
+  color: var(--color-white);
+  font-family: var(--font-masthead);
+  font-size: clamp(2.75rem, 7vw, 7.5rem);
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.page-head p {
+  max-width: 44ch;
+  margin: 0 0 12px;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.page-progress { font-weight: 700; }
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 28px;
+  margin-top: 24px;
+}
+
+.page-link {
+  color: var(--color-white);
+  font-size: 17px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+.page-link:hover { color: var(--color-accent-ink); }
+
+/* groups: heading on the left, rows on the right */
+.group {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  margin-bottom: 96px;
+}
+
+.group h2 {
+  grid-column: 1 / span 5;
+  margin: 0 0 24px;
+  color: var(--color-white);
+  font-family: var(--font-masthead);
+  font-size: clamp(1.75rem, 3vw, 3rem);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.group .row-list { grid-column: 6 / -1; }
+
+.row-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr) auto;
+  gap: 8px 20px;
+  align-items: baseline;
+  padding: 16px 0;
+  color: var(--color-white);
+  font-size: 17px;
+  text-decoration: none;
+}
+
+.page > .row-list .row { grid-template-columns: 10rem minmax(0, 1fr) auto; padding: 24px 0; }
+
+.row-kind { color: var(--color-text-muted); font-size: 15px; }
+.row-main { display: flex; flex-direction: column; gap: 6px; }
+.row-title { font-weight: 500; }
+.page > .row-list .row-title { font-family: var(--font-masthead); font-size: clamp(1.75rem, 3.4vw, 3.25rem); font-weight: 400; line-height: 1; text-transform: uppercase; }
+.row-text { max-width: 52ch; color: var(--color-text); font-size: 17px; line-height: 1.5; }
+.row-go { color: var(--color-accent-ink); font-size: 15px; font-weight: 700; white-space: nowrap; transition: transform var(--transition-fast); }
+.row:hover .row-title { text-decoration: underline; text-underline-offset: 5px; }
+.row:hover .row-go { transform: translateX(4px); }
+.row.is-complete .row-go { color: var(--color-reef); }
+.row-empty { color: var(--color-text); font-size: 17px; }
+
+/* lesson page */
+.lesson-page {
+  width: auto;
+  max-width: none;
+  padding: 56px var(--gutter) 160px;
+}
+
+.lesson-page .content-header {
+  display: block;
+  margin: 0 0 72px;
+  padding: 0;
+  border: 0;
+}
+
+.lesson-page .content-header p { font-size: 17px; color: var(--color-text); }
+
+.lesson-page .lesson-content,
+.lesson-page .lesson-finish,
+.lesson-page .related-quiz-actions,
+.lesson-page .lesson-pager { margin-left: calc((100% - var(--gutter) * 11) / 12 * 3 + var(--gutter) * 3); max-width: 46rem; }
+
+.lesson-page .lesson-body { color: var(--color-text); }
+
+.lesson-finish { border-top: 0; padding-top: 0; }
+
+.lesson-page .related-quiz-actions { margin-top: 72px; padding: 0; background: none; border: 0; }
+.lesson-page .related-quiz-actions h2 { color: var(--color-white); font-family: var(--font-masthead); font-size: clamp(1.75rem, 3vw, 3rem); font-weight: 400; text-transform: uppercase; }
+
+.lesson-page .quiz-link {
+  background: var(--color-bg-inset);
+  border: 0;
+  border-radius: var(--radius-site);
+}
+
+.lesson-page .quiz-link:hover { background: var(--color-sky-bg); }
+
+.lesson-page .lesson-pager-link {
+  background: var(--color-bg-inset);
+  border: 0;
+  border-radius: var(--radius-site);
+}
+
+.lesson-page .lesson-pager-link:hover { background: var(--color-sky-bg); border: 0; }
+
+.lesson-page .btn,
+.lesson-page .btn-primary {
+  min-height: 56px;
+  padding: 0 28px;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border: 0;
+  border-radius: var(--radius-site);
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.lesson-page .btn-primary:hover { background: var(--color-accent-hover); }
+.lesson-page .btn-secondary { color: var(--color-white); background: var(--color-bg-inset); }
+
+@media (max-width: 900px) {
+  .group h2,
+  .group .row-list { grid-column: 1 / -1; }
+  .lesson-page .lesson-content,
+  .lesson-page .lesson-finish,
+  .lesson-page .related-quiz-actions,
+  .lesson-page .lesson-pager { margin-left: 0; }
+}
+
+@media (max-width: 560px) {
+  .page { padding-top: 32px; padding-bottom: 96px; }
+  .page-head { margin-bottom: 56px; }
+  .page-head h1,
+  .lesson-page .content-header h1 { font-size: 13vw; }
+  .group { margin-bottom: 64px; }
+  .row,
+  .page > .row-list .row { grid-template-columns: minmax(0, 1fr) auto; }
+  .row-kind { grid-column: 1 / -1; }
+  .page-actions .btn-big { width: 100%; justify-content: center; }
+}
+
+.page-split { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 0 var(--gutter); align-items: end; margin-bottom: 96px; }
+.page-split .page-head { margin-bottom: 0; }
+.page-picture { margin: 0; overflow: hidden; }
+.page-picture img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; transform: scale(1.18); transform-origin: 50% 72%; }
+.page-progress-links { margin-top: 16px; }
+.page > .row-list + .row-list { margin-top: 0; }
+
+@media (max-width: 900px) {
+  .page-split { grid-template-columns: 1fr; row-gap: 40px; margin-bottom: 56px; }
+}

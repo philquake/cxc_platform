@@ -4,122 +4,138 @@
 {% block title %}compile/ | CSEC and CAPE practice that explains every answer{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=9.0">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=11.0">
+    <script>document.documentElement.classList.add("js");</script>
 {% endblock %}
 
 {% block content %}
 <div class="home">
 
-    <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-            <h1 id="hero-title">Exam practice that tells you why you got it wrong.</h1>
-            <p class="hero-text">
-                Lessons, quizzes and mock exams for CSEC IT and CAPE Computer Science.
-                Every question has a written explanation, and the ones you miss come back until you know them.
-            </p>
-            <div class="hero-actions">
+    {# Hero: one sentence, split around a working question. #}
+    <section class="hero" id="hero" aria-label="Try a question">
+        <div class="hero-stage">
+            <div class="hero-centre">
+                <h1 id="hero-title" class="hero-sentence">
+                    <span class="hero-a">Get it wrong,</span>
+                    <span class="hero-gap" aria-hidden="true"></span>
+                    <span class="hero-b">read why.</span>
+                </h1>
+
+                <div class="reel" id="reel" aria-label="Sample question, answer it to see the explanation">
+                    <form class="q" data-ui aria-labelledby="q1">
+                        <p class="q-meta">CSEC IT</p>
+                        <fieldset>
+                            <legend id="q1">Which device converts a computer's digital signal into an analogue signal for a telephone line?</legend>
+                            <div class="q-options">
+                                <button type="button" class="q-option" data-value="Router">Router</button>
+                                <button type="button" class="q-option" data-value="Modem" data-correct>Modem</button>
+                                <button type="button" class="q-option" data-value="Switch">Switch</button>
+                                <button type="button" class="q-option" data-value="Hub">Hub</button>
+                            </div>
+                        </fieldset>
+                        <div class="q-result" role="status" aria-live="polite">
+                            <pre class="q-console"><code></code></pre>
+                            <p class="q-why">A modem modulates digital data into an analogue signal to send it, and demodulates it at the other end. The name is short for modulator-demodulator. A router forwards packets between networks; switches and hubs connect devices inside one network.</p>
+                            <button type="button" class="q-next">Try again</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="hero-foot">
+                <p class="hero-text">Lessons, quizzes and mock exams for CSEC IT and CAPE Computer Science. Every question has a written explanation, and the ones you miss come back until you know them.</p>
                 {% if user.is_authenticated %}
-                    <a href="{% url 'progress:dashboard' %}" class="btn btn-primary btn-large">Continue studying</a>
+                    <a href="{% url 'progress:dashboard' %}" class="btn-accent btn-big">Continue studying</a>
                 {% else %}
-                    <a href="{% url 'signup' %}" class="btn btn-primary btn-large">Create a free account</a>
+                    <a href="{% url 'signup' %}" class="btn-accent btn-big">Create a free account</a>
                 {% endif %}
-                <a href="#subjects" class="btn btn-secondary btn-large">Browse subjects</a>
             </div>
         </div>
-
-        <form class="sample-question" id="sample-question" aria-labelledby="sample-title" onsubmit="return false">
-            <p class="sample-kicker">Try one now &middot; CSEC IT</p>
-            <fieldset>
-                <legend id="sample-title">Which device converts a computer's digital signal into an analogue signal for a telephone line?</legend>
-                <label class="sample-option"><input type="radio" name="sample" value="router"><span>Router</span></label>
-                <label class="sample-option"><input type="radio" name="sample" value="modem" data-correct><span>Modem</span></label>
-                <label class="sample-option"><input type="radio" name="sample" value="switch"><span>Switch</span></label>
-                <label class="sample-option"><input type="radio" name="sample" value="hub"><span>Hub</span></label>
-            </fieldset>
-            <div class="sample-result" id="sample-result" role="status" aria-live="polite" hidden>
-                <p class="sample-verdict"></p>
-                <p class="sample-explanation">
-                    A modem modulates digital data into an analogue signal to send it, and demodulates it at the other end.
-                    The name is short for modulator-demodulator. A router forwards packets between networks, and switches and hubs connect devices inside one network.
-                </p>
-            </div>
-        </form>
     </section>
 
-    <section class="study-loop" aria-labelledby="loop-title">
-        <h2 id="loop-title">A study loop, not a pile of notes</h2>
-        <ol class="loop-steps">
-            <li>
-                <h3>Read a lesson</h3>
-                <p>Each subject is split into topics and lessons, so you always know what to study next.</p>
-            </li>
-            <li>
-                <h3>Take its quiz</h3>
-                <p>Multiple choice, true or false, short answer, matching and worded questions, all with explanations.</p>
-            </li>
-            <li>
-                <h3>Revisit what you missed</h3>
-                <p>Wrong answers become flashcards on a spaced schedule and collect in your mistake bank.</p>
-            </li>
-            <li>
-                <h3>Plan back from your exam date</h3>
-                <p>Set the date and get a day-by-day plan that puts your weakest, highest-weighted topics first.</p>
-            </li>
-        </ol>
+    {# How it works: four clauses that step across the page #}
+    <section class="steps" aria-labelledby="steps-title">
+        <div class="stage st1" data-reveal>
+            <h2 id="steps-title" class="line">First, read a lesson.</h2>
+            <p class="note">Each subject is split into topics and lessons, in syllabus order, so you always know what to study next.</p>
+        </div>
+        <div class="stage st2" data-reveal>
+            <p class="line">Then take its quiz.</p>
+            <p class="note">Multiple choice, true or false, short answer, matching and worded questions. Every one has a written explanation.</p>
+        </div>
+        <div class="stage st3" data-reveal>
+            <p class="line">Then fix what you missed.</p>
+            <p class="note">Wrong answers become flashcards on a spaced schedule and collect in your mistake bank.</p>
+        </div>
+        <div class="stage st4" data-reveal>
+            <p class="line">Then count back from exam day.</p>
+            <p class="note">Set the date and get a day-by-day plan that puts your weakest, highest-weighted topics first.</p>
+        </div>
+        <figure class="steps-picture" data-reveal>
+            <img src="{% static 'img/found/view-of-port-royal-and-kingston-harbours.jpg' %}" width="1920" height="1425" alt="Engraved view of Port Royal and Kingston harbours, with ships on the water and mountains behind" loading="lazy" decoding="async">
+        </figure>
     </section>
 
+    {# Showcase: one picture at three distances, pinned while the sentence arrives #}
+    <section class="return" id="return" aria-labelledby="return-title">
+        <div class="return-stage"><div class="return-body">
+            <h2 id="return-title" class="return-heading">
+                <span class="return-a">What you miss</span>
+                <span class="return-gap" aria-hidden="true"></span>
+                <span class="return-b">comes back.</span>
+            </h2>
+            <div class="return-frame">
+                <img src="{% static 'img/found/punchcarddecks-agr.jpg' %}" width="1401" height="1554" alt="A box of punched-card decks, each deck labelled by hand in marker pen" loading="lazy" decoding="async">
+            </div></div>
+            <p class="return-caption">Programmers once handed in a deck of cards and waited for the compiler's verdict. You get yours in a second, with the reason, and the question returns on a schedule until you stop missing it.</p>
+        </div>
+    </section>
+
+    {# One deliberate rest: a placed picture #}
+    <figure class="rest">
+        <div class="rest-clip"><img src="{% static 'img/found/jamaica-palisadoes-kingston-harbor-view-photo-katinka.jpg' %}" width="1920" height="1286" alt="Kingston Harbour from the Palisadoes under heavy cloud, with the Blue Mountains beyond the water" loading="lazy" decoding="async"></div>
+        <figcaption>Kingston Harbour from the Palisadoes. Built in Jamaica for students across the Caribbean.</figcaption>
+    </figure>
+
+    {# Subjects #}
     <section class="subjects" id="subjects" aria-labelledby="subjects-title">
-        <h2 id="subjects-title">Subjects</h2>
-        <ul class="subject-list">
+        <h2 id="subjects-title" class="subjects-heading" data-reveal>Pick your exam.<br>Start there.</h2>
+        <p class="subjects-word">Subjects</p>
+        <ul class="subject-list" data-reveal>
             {% for subject in subjects %}
                 <li>
                     <a href="{% url 'subjects:detail' subject.name|slugify %}" class="subject-row">
                         <span class="subject-code">{{ subject.code }}</span>
-                        <span class="subject-main">
-                            <span class="subject-name">{{ subject.name }}</span>
-                            {% if subject.description %}<span class="subject-desc">{{ subject.description }}</span>{% endif %}
-                        </span>
-                        <span class="subject-go" aria-hidden="true">Open</span>
+                        <span class="subject-name">{{ subject.name }}</span>
+                        <span class="subject-go">Open <span aria-hidden="true">&rarr;</span></span>
                     </a>
                 </li>
             {% empty %}
                 <li class="subject-empty">Subjects are being added. Check back soon.</li>
             {% endfor %}
         </ul>
+        <figure class="subjects-picture" data-reveal>
+            <img src="{% static 'img/found/map-showing-the-harbours-of-port-royal.jpg' %}" width="1920" height="1566" alt="Old engraved map of Port Royal and Kingston harbours" loading="lazy" decoding="async">
+        </figure>
     </section>
 
-    <section class="cta" aria-labelledby="cta-title">
-        <h2 id="cta-title">Know where you stand before exam day.</h2>
-        <p>Your progress, streak and readiness score update as you study. It is free to start.</p>
-        {% if user.is_authenticated %}
-            <a href="{% url 'progress:dashboard' %}" class="btn btn-primary btn-large">Go to your progress</a>
-        {% else %}
-            <a href="{% url 'signup' %}" class="btn btn-primary btn-large">Create a free account</a>
-        {% endif %}
+    {# Close: the idea again, inverted #}
+    <section class="close" aria-labelledby="close-title">
+        <h2 id="close-title" class="close-heading">Fail here.<br>Pass there.</h2>
+        <div class="close-foot">
+            <p>Your progress, streak and readiness score update as you study. It is free to start.</p>
+            {% if user.is_authenticated %}
+                <a href="{% url 'progress:dashboard' %}" class="btn-accent btn-big">Go to your progress</a>
+            {% else %}
+                <a href="{% url 'signup' %}" class="btn-accent btn-big">Create a free account</a>
+            {% endif %}
+        </div>
     </section>
 
 </div>
+<script src="{% static 'js/home.js' %}?v=2.0" defer></script>
+{% endblock %}
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    var form = document.getElementById("sample-question");
-    var result = document.getElementById("sample-result");
-    if (!form || !result) { return; }
-    var verdict = result.querySelector(".sample-verdict");
-    form.addEventListener("change", function (event) {
-        if (event.target.name !== "sample") { return; }
-        var options = form.querySelectorAll(".sample-option");
-        var right = event.target.hasAttribute("data-correct");
-        options.forEach(function (label) {
-            var input = label.querySelector("input");
-            label.classList.remove("is-correct", "is-wrong");
-            if (input.hasAttribute("data-correct")) { label.classList.add("is-correct"); }
-            else if (input === event.target) { label.classList.add("is-wrong"); }
-        });
-        verdict.textContent = right ? "Correct. It's a modem." : "Not quite. The answer is modem.";
-        verdict.className = "sample-verdict " + (right ? "is-correct" : "is-wrong");
-        result.hidden = false;
-    });
-});
-</script>
+{% block credits %}
+<p class="credits">Pictures: <a href="https://commons.wikimedia.org/w/index.php?curid=36224649">Port Royal and Kingston Harbours</a> and <a href="https://commons.wikimedia.org/w/index.php?curid=36224622">harbour map</a> (Wellcome Collection, CC BY 4.0); <a href="https://commons.wikimedia.org/w/index.php?curid=775176">punched-card decks</a> by ArnoldReinhold (CC BY-SA 2.5); <a href="https://commons.wikimedia.org/w/index.php?curid=10344317">the Palisadoes</a> by Katinka Zuchowicz Photography (CC BY-SA 3.0). All via Wikimedia Commons.</p>
 {% endblock %}

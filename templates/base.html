@@ -7,12 +7,14 @@
     <meta name="google-adsense-account" content="ca-pub-1230806752235689">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,500;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@600&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Imbue:wght@400&family=IBM+Plex+Mono:wght@500;600&display=swap"> <!-- taste-skill-ignore: Plex Mono is for literal code only -->
     {% bootstrap_css %}
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v=3.0">
     <link rel="stylesheet" href="{% static 'css/layout.css' %}?v=3.0">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=1.0">
 
     {% block extra_css %}{% endblock %}
+    <script>document.documentElement.classList.add("js");</script>
     <title>{% block title %}compile/ | CSEC and CAPE exam prep{% endblock %}</title>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1230806752235689"
      crossorigin="anonymous"></script>
@@ -20,30 +22,22 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <nav class="navbar" aria-label="Primary">
-    <div class="navbar-left">
-      <a href="{% url 'home' %}" class="logo" aria-label="Compile home"><span>compile</span><span class="slash">/</span><span class="cursor"></span></a>
-      <ul class="nav-links">
-        <li><a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} class="active" aria-current="page"{% endif %}>Home</a></li>
-        <li><a href="{% url 'subjects:list' %}"{% if request.resolver_match.namespace == 'subjects' %} class="active" aria-current="page"{% endif %}>Subjects</a></li>
-        {% comment %} <li><a href="{% url 'quizzes:list' %}">Quiz</a></li> add Quiz-> SUbjects -> Topic -> Difficulty{% endcomment %}
-        <li><a href="{% url 'progress:dashboard' %}"{% if request.resolver_match.namespace == 'progress' %} class="active" aria-current="page"{% endif %}>Progress</a></li>
-      </ul>
-    </div>
-    <div class="navbar-right">
-      <form method="get" action="{% url 'search' %}" class="navbar-search" role="search">
-        <label class="sr-only" for="global-search">Search lessons and questions</label>
-        <input id="global-search" type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search lessons & questions" aria-label="Search lessons and questions">
-        <button type="submit" class="btn-ghost">Search</button>
-      </form>
+    <a href="{% url 'home' %}" class="logo" aria-label="compile/ home">compile/</a>
+    <ul class="nav-links">
+      <li><a href="{% url 'subjects:list' %}"{% if request.resolver_match.namespace == 'subjects' %} class="active" aria-current="page"{% endif %}>Subjects</a></li>
+      <li><a href="{% url 'progress:dashboard' %}"{% if request.resolver_match.namespace == 'progress' %} class="active" aria-current="page"{% endif %}>Progress</a></li>
+      <li><a href="{% url 'search' %}"{% if request.resolver_match.url_name == 'search' %} class="active" aria-current="page"{% endif %}>Search</a></li>
+    </ul>
+    <div class="nav-actions">
       {% if user.is_authenticated %}
-        <a class="nav-user" href="{% url 'account' %}">Hi, {{ user.get_username }}</a>
+        <a class="nav-user" href="{% url 'account' %}">{{ user.get_username }}</a>
         <form method="post" action="{% url 'logout' %}">
           {% csrf_token %}
-          <button type="submit" class="btn-ghost">Sign out</button>
+          <button type="submit" class="nav-quiet">Sign out</button>
         </form>
       {% else %}
-        <a href="{% url 'login' %}" class="btn-ghost">Sign in</a>
-        <a href="{% url 'signup' %}" class="btn-accent">Get started</a>
+        <a href="{% url 'login' %}" class="nav-quiet">Sign in</a>
+        <a href="{% url 'signup' %}" class="btn-accent">Sign up free</a>
       {% endif %}
     </div>
   </nav>
@@ -59,34 +53,29 @@
     {% block content %}{% endblock %}
   </main>
   <footer class="footer">
-      <div class="footer-grid">
-        <div class="footer-brand">
-          <a href="{% url 'home' %}" class="logo" aria-label="Compile home"><span>compile</span><span class="slash">/</span></a>
-          <p class="footer-tagline">CSEC and CAPE exam prep for Caribbean students. Every answer comes with an explanation.</p>
-        </div>
-        <nav class="footer-col" aria-label="Study">
-          <h2>Study</h2>
-          <ul>
-            <li><a href="{% url 'subjects:list' %}">Subjects and lessons</a></li>
-            <li><a href="{% url 'quizzes:list' %}">Practice quizzes</a></li>
-            <li><a href="{% url 'progress:flashcard-hub' %}">Flashcards</a></li>
-            <li><a href="{% url 'progress:dashboard' %}">Your progress</a></li>
-          </ul>
-        </nav>
-        <nav class="footer-col" aria-label="About">
-          <h2>About</h2>
-          <ul>
-            <li><a href="https://github.com/philquake/cxc_platform/issues" target="_blank" rel="noopener">Report a problem<span class="sr-only"> (opens in a new tab)</span></a></li>
-            <li><a href="{% url 'terms' %}">Terms</a></li>
-            <li><a href="{% url 'privacy' %}">Privacy</a></li>
-          </ul>
-        </nav>
-      </div>
-
-      <div class="footer-bottom">
-        <span class="footer-copy">© 2026 compile/. Built in Jamaica for students across the Caribbean.</span>
-      </div>
+    <div class="footer-top">
+      <p class="footer-note">CSEC IT and CAPE Computer Science practice for Caribbean students. Every answer comes with an explanation.</p>
+      <nav aria-label="Study">
+        <a href="{% url 'subjects:list' %}">Subjects and lessons</a>
+        <a href="{% url 'quizzes:list' %}">Practice quizzes</a>
+        <a href="{% url 'progress:flashcard-hub' %}">Flashcards</a>
+        <a href="{% url 'progress:dashboard' %}">Your progress</a>
+      </nav>
+      <nav aria-label="About">
+        <a href="https://github.com/philquake/cxc_platform/issues" target="_blank" rel="noopener">Report a problem<span class="sr-only"> (opens in a new tab)</span></a>
+        <a href="{% url 'terms' %}">Terms</a>
+        <a href="{% url 'privacy' %}">Privacy</a>
+        <a href="#main">Back to top</a>
+      </nav>
+    </div>
+    <a href="{% url 'home' %}" class="footer-name" aria-label="compile/ home">compile/</a>
+    <div class="footer-meta">
+      <span>Built in Jamaica</span>
+      {% block credits %}<span></span>{% endblock %}
+      <span>&copy; 2026 compile/</span>
+    </div>
   </footer>
+  <script src="{% static 'js/site.js' %}?v=1.0" defer></script>
   {% bootstrap_javascript %}
 </body>
 

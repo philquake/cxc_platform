@@ -1,53 +1,47 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}{{ subject.name }} lessons | Compile{% endblock %}
+{% block title %}{{ subject.name }} lessons | compile/{% endblock %}
 
 {% block extra_css %}
-{% load static %}
-<link rel="stylesheet" href="{% static 'css/subjects.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages.css' %}?v=1.0">
 {% endblock %}
 
 {% block content %}
-<div class="content-column">
-    <a href="{% url 'subjects:list' %}" class="content-back">&larr; All subjects</a>
-
-    <header class="content-header">
-        <span class="content-card-label">{{ subject.code }}</span>
+<div class="page">
+    <header class="page-head">
         <h1>{{ subject.name }}</h1>
-        {% if subject.description %}
-            <p>{{ subject.description }}</p>
-        {% endif %}
+        {% if subject.description %}<p>{{ subject.description }}</p>{% endif %}
+        <p class="page-progress-links"><a class="page-link" href="{% url 'subjects:list' %}">All subjects</a></p>
         {% if user.is_authenticated and lesson_total %}
-            <p class="subject-progress-line">{{ lesson_done }} of {{ lesson_total }} lessons complete</p>
-            <div class="progress-header-links">
+            <p class="page-progress">{{ lesson_done }} of {{ lesson_total }} lessons complete</p>
+            <div class="page-actions">
                 {% if next_lesson %}
-                    <a class="btn btn-primary" href="{% url 'subjects:lesson-detail' subject.name|slugify next_lesson.slug %}">{% if lesson_done %}Continue with lesson {{ next_lesson.lesson_number }}{% else %}Start lesson {{ next_lesson.lesson_number }}{% endif %}</a>
+                    <a class="btn-accent btn-big" href="{% url 'subjects:lesson-detail' subject.name|slugify next_lesson.slug %}">{% if lesson_done %}Continue with lesson {{ next_lesson.lesson_number }}{% else %}Start lesson {{ next_lesson.lesson_number }}{% endif %}</a>
                 {% endif %}
-                <a class="btn btn-secondary" href="{% url 'progress:study-plan' subject.name|slugify %}">Plan for your exam</a>
+                <a class="page-link" href="{% url 'progress:study-plan' subject.name|slugify %}">Plan for your exam</a>
             </div>
         {% endif %}
     </header>
 
     {% regroup subject.active_lessons by section_number as lesson_sections %}
     {% for section in lesson_sections %}
-        <section class="lesson-section-group">
-            <header class="lesson-section-heading">
-                {% if section.list.0.section_title %}
-                    <h3>{{ section.list.0.section_title }}</h3>
-                {% endif %}
-            </header>
-            <div class="content-grid">
+        <section class="group">
+            <h2>{% if section.list.0.section_title %}{{ section.list.0.section_title }}{% else %}More lessons{% endif %}</h2>
+            <ol class="row-list">
                 {% for lesson in section.list %}
-                    <a class="content-card lesson-card{% if lesson.id in completed_ids %} is-complete{% endif %}" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
-                        <span class="content-card-label">Lesson {{ lesson.lesson_number }}</span>
-                        <h3>{{ lesson.title }}</h3>
-                        {% if lesson.id in completed_ids %}<span class="lesson-card-status">Completed</span>{% endif %}
+                <li>
+                    <a class="row{% if lesson.id in completed_ids %} is-complete{% endif %}" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
+                        <span class="row-kind">Lesson {{ lesson.lesson_number }}</span>
+                        <span class="row-main"><span class="row-title">{{ lesson.title }}</span></span>
+                        <span class="row-go">{% if lesson.id in completed_ids %}Completed{% else %}Read <span aria-hidden="true">&rarr;</span>{% endif %}</span>
                     </a>
+                </li>
                 {% endfor %}
-            </div>
+            </ol>
         </section>
     {% empty %}
-        <p class="content-empty">No lessons here yet. Lessons for {{ subject.name }} are being written, so check back soon.</p>
+        <p class="row-empty">No lessons here yet. Lessons for {{ subject.name }} are being written, so check back soon.</p>
     {% endfor %}
 </div>
 {% endblock %}

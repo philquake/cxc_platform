@@ -162,18 +162,7 @@ class XPTransaction(models.Model):
 
     def __str__(self):
         return f"{self.user.username} +{self.amount} XP ({self.reason})"
-    
-class MistakeReview(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="mistake_reviews")
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    resolved = models.BooleanField(default=False)
-    resolved_at = models.DateTimeField(null=True, blank=True)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["user", "question"], name="unique_user_question_review")
-        ]
-        
 class FlashcardState(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="flashcard_states")
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="flashcard_states")

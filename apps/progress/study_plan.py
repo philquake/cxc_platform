@@ -12,7 +12,6 @@ from .analytics import topic_mastery
 from .models import (
 	FlashcardState,
 	LessonProgress,
-	MistakeReview,
 	QuizAnswer,
 	StudyPlan,
 	StudyPlanItem,
@@ -50,15 +49,7 @@ def _lesson_topics(lessons, subject):
 
 
 def _review_topic_ids(user, subject):
-	mistake_topic_ids = set(
-		MistakeReview.objects.filter(
-			user=user,
-			resolved=False,
-			question__subject=subject,
-			question__is_active=True,
-		).values_list("question__topic_id", flat=True)
-	)
-	wrong_answer_topic_ids = set(
+	return set(
 		QuizAnswer.objects.filter(
 			attempt__user=user,
 			attempt__completed_at__isnull=False,
@@ -67,7 +58,6 @@ def _review_topic_ids(user, subject):
 			is_correct=False,
 		).values_list("question__topic_id", flat=True)
 	)
-	return mistake_topic_ids | wrong_answer_topic_ids
 
 
 def generate_plan(user, subject, target_date: date):

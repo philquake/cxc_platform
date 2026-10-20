@@ -109,6 +109,34 @@ class QuizModelTests(TestCase):
 		)
 		self.assertEqual(quiz.time_limit_minutes, 90)
 
+	def test_mock_exam_distributes_rounding_remainder(self):
+		topics = [self.topic]
+		for slug in ("geometry", "statistics"):
+			topics.append(Topic.objects.create(subject=self.subject, name=slug, slug=slug, exam_weight=1))
+		self.topic.exam_weight = 1
+		self.topic.save(update_fields=["exam_weight"])
+		for topic in topics:
+			for number in range(5):
+				Question.objects.create(
+					subject=self.subject,
+					topic=topic,
+					lesson=self.lesson,
+					text=f"{topic.slug} {number}",
+				)
+
+		quiz, topic_counts = generate_mock_exam(self.subject, 10, 60)
+
+		self.assertEqual(quiz.quiz_questions.count(), 10)
+		self.assertEqual(sorted(topic_counts.values()), [3, 3, 4])
+
+	def test_mock_exam_rolls_back_if_questions_cannot_be_saved(self):
+		from unittest import mock
+
+		with mock.patch("apps.quizzes.services.QuizQuestion.objects.bulk_create", side_effect=RuntimeError):
+			with self.assertRaises(RuntimeError):
+				generate_mock_exam(self.subject, 1, 30)
+		self.assertFalse(Quiz.objects.filter(is_mock=True).exists())
+
 	def test_mock_question_can_span_topics_and_lessons(self):
 		second_topic = Topic.objects.create(
 			subject=self.subject,

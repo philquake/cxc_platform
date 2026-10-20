@@ -24,10 +24,17 @@ def generate_mock_exam(subject, question_count, time_limit_minutes, topics=None)
     if not total_weight:
         raise ValueError("The subject has no active topics with a positive exam weight.")
 
+    # Largest-remainder allocation so the targets sum to question_count; ties go to the lower pk.
+    shares = {t.pk: question_count * t.exam_weight / total_weight for t in weighted_topics}
+    targets = {pk: int(share) for pk, share in shares.items()}
+    by_remainder = sorted(shares, key=lambda pk: (targets[pk] - shares[pk], pk))
+    for pk in by_remainder[: question_count - sum(targets.values())]:
+        targets[pk] += 1
+
     sampled_questions = []
     topic_counts = {}
     for topic in weighted_topics:
-        target_count = round(question_count * topic.exam_weight / total_weight)
+        target_count = targets[topic.pk]
         questions = list(
             Question.objects.filter(
                 subject=subject,

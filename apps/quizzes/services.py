@@ -1,5 +1,7 @@
 import random
 
+from django.db import transaction
+
 from apps.questions.models import Question
 from apps.subjects.models import Topic
 
@@ -40,15 +42,16 @@ def generate_mock_exam(subject, question_count, time_limit_minutes, topics=None)
         raise ValueError("No active questions are available for the selected topics.")
 
     random.shuffle(sampled_questions)
-    quiz = Quiz.objects.create(
-        subject=subject,
-        title=f"{subject.code} Mock Exam",
-        description="Timed, subject-wide exam practice.",
-        is_mock=True,
-        time_limit_minutes=time_limit_minutes,
-    )
-    QuizQuestion.objects.bulk_create([
-        QuizQuestion(quiz=quiz, question=question, order=order)
-        for order, question in enumerate(sampled_questions)
-    ])
+    with transaction.atomic():
+        quiz = Quiz.objects.create(
+            subject=subject,
+            title=f"{subject.code} Mock Exam",
+            description="Timed, subject-wide exam practice.",
+            is_mock=True,
+            time_limit_minutes=time_limit_minutes,
+        )
+        QuizQuestion.objects.bulk_create([
+            QuizQuestion(quiz=quiz, question=question, order=order)
+            for order, question in enumerate(sampled_questions)
+        ])
     return quiz, topic_counts

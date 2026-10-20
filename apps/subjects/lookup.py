@@ -1,12 +1,12 @@
 from django.http import Http404
-from django.utils.text import slugify
 
 from .models import Subject
 
 
-def get_subject_or_404(slug):
-    """Subjects are addressed by slugified name or code (no slug field)."""
-    for item in Subject.objects.filter(is_active=True):
-        if slug in {slugify(item.name), slugify(item.code)}:
-            return item
-    raise Http404("Subject not found")
+def get_subject_or_404(slug, queryset=None):
+    """Find an active subject by its slug; the subject code is accepted as a fallback."""
+    subjects = (Subject.objects if queryset is None else queryset).filter(is_active=True)
+    subject = subjects.filter(slug=slug).first() or subjects.filter(code__iexact=slug).first()
+    if subject is None:
+        raise Http404("Subject not found")
+    return subject

@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.http import Http404
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -6,6 +7,7 @@ from django.utils import timezone
 from apps.lessons.models import Lesson
 from apps.progress.models import LessonProgress, QuizAttempt
 from apps.quizzes.models import Quiz
+from apps.subjects.lookup import get_subject_or_404
 from apps.subjects.models import Subject, Topic
 
 
@@ -232,3 +234,26 @@ class LessonMasteryTests(TestCase):
         self.assertEqual(unit["lessons"][0].mastery_level, "proficient")
         self.assertEqual(unit["lessons"][0].mastery_step, 3)
         self.assertEqual(response.context["mastered_total"], 1)
+
+
+class SubjectSlugTests(TestCase):
+    def test_slug_is_generated_and_made_unique(self):
+        first = Subject.objects.create(name="Computer Science", code="CS1")
+        second = Subject.objects.create(name="Computer  Science", code="CS2")
+        self.assertEqual((first.slug, second.slug), ("computer-science", "computer-science-2"))
+
+    def test_slug_survives_renaming_and_code_still_resolves(self):
+        subject = Subject.objects.create(name="Mathematics", code="MATH")
+        subject.name = "Maths"
+        subject.save()
+        self.assertEqual(subject.slug, "mathematics")
+        self.assertEqual(get_subject_or_404("mathematics"), subject)
+        self.assertEqual(get_subject_or_404("math"), subject)
+        with self.assertRaises(Http404):
+            get_subject_or_404("maths")
+
+    def test_lesson_page_works_for_names_with_punctuation(self):
+        subject = Subject.objects.create(name="Add. Maths (CAPE)", code="AM")
+        Lesson.objects.create(subject=subject, title="Limits", slug="limits", content="<p>x</p>")
+        url = reverse("subjects:lesson-detail", kwargs={"subject_slug": subject.slug, "lesson_slug": "limits"})
+        self.assertEqual(self.client.get(url).status_code, 200)

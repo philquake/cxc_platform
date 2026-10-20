@@ -37,7 +37,7 @@
                     <span class="content-card-label">{{ subject.code }}</span>
                     <h3>{{ subject.name }}</h3>
                     <p>{{ subject.due_count }} due card{{ subject.due_count|pluralize }}</p>
-                    <a class="btn {% if subject.due_count %}btn-primary{% else %}btn-secondary{% endif %}" href="{% url 'progress:flashcards' subject.name|slugify %}">
+                    <a class="btn {% if subject.due_count %}btn-primary{% else %}btn-secondary{% endif %}" href="{% url 'progress:flashcards' subject.slug %}">
                         {% if subject.due_count %}Review {{ subject.code }} cards{% else %}Review ahead{% endif %}
                     </a>
                 </article>

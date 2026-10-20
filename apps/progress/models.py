@@ -128,6 +128,31 @@ class QuizAnswer(models.Model):
         return f"{self.attempt} - {self.question}"
 
 
+class TopicMasteryStat(models.Model):
+    """Recency-weighted answer totals per user/topic/difficulty, kept up to date as quizzes are submitted.
+
+    Weights halve every ANSWER_HALF_LIFE_DAYS, so totals only need decaying forward from updated_at.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="mastery_stats")
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="mastery_stats")
+    difficulty = models.CharField(max_length=20)
+    weighted_total = models.FloatField(default=0)
+    weighted_correct = models.FloatField(default=0)
+    n = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "topic", "difficulty"],
+                name="unique_user_topic_difficulty_mastery",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.topic} ({self.difficulty})"
+
+
 class XPTransaction(models.Model):
     user = models.ForeignKey(
         User,

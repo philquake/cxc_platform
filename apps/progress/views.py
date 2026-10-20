@@ -3,12 +3,11 @@ from datetime import date, timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Count, OuterRef, Q, Subquery, Sum
+from django.db.models import Count, Max, OuterRef, Q, Subquery, Sum
 from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.text import slugify
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
@@ -18,7 +17,14 @@ from apps.quizzes.models import Quiz
 from apps.subjects.lookup import get_subject_or_404
 from apps.subjects.models import Subject, Topic
 
-from .analytics import answer_rows, difficulty_breakdown, estimated_readiness, mock_time_analytics, topic_mastery
+from .analytics import (
+	difficulty_breakdown,
+	estimated_readiness,
+	mastery_rows,
+	mock_time_analytics,
+	record_attempt,
+	topic_mastery,
+)
 from .models import (
     FlashcardState,
     LessonProgress,
@@ -95,6 +101,9 @@ def dashboard(request):
 		quiz__lesson__is_active=True,
 	).select_related("quiz", "quiz__lesson"):
 		latest_attempts.setdefault(attempt.quiz_id, attempt)
+	latest_by_lesson = {}
+	for attempt in latest_attempts.values():
+		latest_by_lesson.setdefault(attempt.quiz.lesson_id, attempt)
 
 	subjects = list(
 		Subject.objects.filter(is_active=True).prefetch_related("lessons", "topics")
@@ -121,7 +130,7 @@ def dashboard(request):
 		subject.due_flashcard_count = due_flashcards_by_subject.get(subject.id, 0)
 		subject.active_study_plan = active_plans_by_subject.get(subject.id)
 		lessons = [lesson for lesson in subject.lessons.all() if lesson.is_active]
-		subject_answers = answer_rows(request.user, subject)
+		subject_answers = mastery_rows(request.user, subject)
 		topic_results = topic_mastery(request.user, subject, subject_answers)
 		active_topics = [topic for topic in subject.topics.all() if topic.is_active]
 		for topic in active_topics:
@@ -131,6 +140,7 @@ def dashboard(request):
 			topic.mastery_count = result["n"] if result else 0
 			topic.mastery_available = bool(result and result["enough_data"])
 		lesson_by_id = {lesson.id: lesson for lesson in lessons}
+		topic_by_id = {topic.id: topic for topic in active_topics}
 		for topic_id, lesson_id in Question.objects.filter(
 			subject=subject,
 			topic_id__in=topic_results,
@@ -139,20 +149,13 @@ def dashboard(request):
 		).order_by("lesson__lesson_number", "lesson_id").values_list(
 			"topic_id", "lesson_id"
 		):
-			topic = next((item for item in active_topics if item.id == topic_id), None)
+			topic = topic_by_id.get(topic_id)
 			if topic and not hasattr(topic, "mastery_lesson"):
 				topic.mastery_lesson = lesson_by_id.get(lesson_id)
 		completed_count = 0
 		for lesson in lessons:
 			lesson.is_completed = lesson.id in lesson_progress_ids
-			lesson.latest_quiz_attempt = next(
-				(
-					attempt
-					for attempt in latest_attempts.values()
-					if attempt.quiz.lesson_id == lesson.id
-				),
-				None,
-			)
+			lesson.latest_quiz_attempt = latest_by_lesson.get(lesson.id)
 			if lesson.is_completed:
 				completed_count += 1
 			subject.progress_lessons = lessons
@@ -331,17 +334,6 @@ def _safe_next_url(request, fallback):
 	return fallback
 
 
-def _ensure_flashcard_state(user, question, *, due_days=0):
-	state, _ = FlashcardState.objects.get_or_create(
-		user=user,
-		question=question,
-	)
-	state.due_at = timezone.localdate() + timedelta(days=due_days)
-	state.last_reviewed_at = timezone.now()
-	state.save(update_fields=["due_at", "last_reviewed_at"])
-	return state
-
-
 def _normalize_answer_text(value):
 	return " ".join((value or "").strip().lower().split())
 
@@ -377,7 +369,7 @@ def complete_lesson(request, lesson_id):
 	fallback = reverse(
 		"subjects:lesson-detail",
 		kwargs={
-			"subject_slug": slugify(lesson.subject.name),
+			"subject_slug": lesson.subject.slug,
 			"lesson_slug": lesson.slug,
 		},
 	)
@@ -395,7 +387,8 @@ def submit_quiz(request, quiz_id):
 		pk=quiz_id,
 		is_active=True,
 	)
-	quiz_questions = list(quiz.quiz_questions.all())
+	# Same filter as the quiz page, so a deactivated question can't be marked wrong unseen.
+	quiz_questions = [qq for qq in quiz.quiz_questions.all() if qq.question.is_active]
 	selected_answers = {}
 	selected_text_answers = {}
 	matching_answers = {}
@@ -447,6 +440,7 @@ def submit_quiz(request, quiz_id):
 	)
 	score = 0
 	quiz_answers = []
+	wrong_questions = {}
 	for quiz_question in quiz_questions:
 		question = quiz_question.question
 		selected_answer = None
@@ -493,7 +487,7 @@ def submit_quiz(request, quiz_id):
 		if is_correct:
 			score += 1
 		else:
-			_ensure_flashcard_state(request.user, question)
+			wrong_questions[question.id] = question
 		quiz_answers.append(QuizAnswer(
 			attempt=attempt,
 			question=question,
@@ -502,8 +496,23 @@ def submit_quiz(request, quiz_id):
 			is_correct=is_correct,
 		))
 	QuizAnswer.objects.bulk_create(quiz_answers)
+	FlashcardState.objects.bulk_create(
+		[
+			FlashcardState(
+				user=request.user,
+				question=question,
+				due_at=timezone.localdate(),
+				last_reviewed_at=timezone.now(),
+			)
+			for question in wrong_questions.values()
+		],
+		update_conflicts=True,
+		unique_fields=["user", "question"],
+		update_fields=["due_at", "last_reviewed_at"],
+	)
 	attempt.score = score
 	attempt.save(update_fields=["score"])
+	record_attempt(attempt)
 	# XP only for a first completion or a new best percentage, so retakes can't farm the leaderboard.
 	if quiz.topic_id and attempt.percentage > previous_best:
 		_award_xp(
@@ -520,22 +529,30 @@ def submit_quiz(request, quiz_id):
 
 
 def _render_leaderboard(request, subject, topic, xp_filter):
-	all_rows = list(
+	totals = (
 		XPTransaction.objects.filter(user__is_staff=False, user__is_superuser=False, **xp_filter)
 		.values("user_id", "user__username", "user__profile__display_name")
 		.annotate(xp=Sum("amount"))
-		.order_by("-xp", "user_id")
 	)
-	for index, row in enumerate(all_rows, start=1):
+	top = list(totals.order_by("-xp", "user_id")[:20])
+	for index, row in enumerate(top, start=1):
 		row["rank"] = index
-	current_user_row = next((row for row in all_rows if row["user_id"] == request.user.id), None)
+	current_user_row = next((row for row in top if row["user_id"] == request.user.id), None)
+	if current_user_row is None:
+		mine = totals.filter(user_id=request.user.id).order_by().first()
+		if mine:
+			# Same order as the list: more XP first, then lower user id.
+			ahead = totals.filter(xp__gt=mine["xp"]).count() + totals.filter(
+				xp=mine["xp"], user_id__lt=mine["user_id"]
+			).count()
+			current_user_row = {**mine, "rank": ahead + 1}
 	return render(
 		request,
 		"progress/leaderboard.html",
 		{
 			"subject": subject,
 			"topic": topic,
-			"leaderboard": all_rows[:20],
+			"leaderboard": top,
 			"current_user_row": current_user_row,
 		},
 	)
@@ -556,23 +573,22 @@ def subject_leaderboard(request, subject_slug):
 
 @login_required
 def mistake_bank(request):
+    # Latest miss per question, picked in the database so history size doesn't matter.
+    latest_miss_ids = (
+        QuizAnswer.objects.filter(attempt__user=request.user, is_correct=False)
+        .values("question_id")
+        .annotate(latest=Max("id"))
+        .values("latest")
+    )
     wrong_answers = (
-        QuizAnswer.objects.filter(
-            attempt__user=request.user,
-            is_correct=False,
-        )
+        QuizAnswer.objects.filter(id__in=latest_miss_ids)
         .select_related("question", "question__subject", "question__topic", "selected_answer")
         .prefetch_related("question__answers")
         .order_by("-attempt__completed_at")
     )
 
-    # collapse to one entry per question (latest miss), so repeats don't spam the list
-    seen = {}
-    for wa in wrong_answers:
-        seen.setdefault(wa.question_id, wa)
-
     grouped = {}
-    for mistake in seen.values():
+    for mistake in wrong_answers:
         subject = mistake.question.subject
         topic = mistake.question.topic
         subject_group = grouped.setdefault(

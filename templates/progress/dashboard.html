@@ -63,20 +63,20 @@
                             <h4>Flashcards</h4>
                             {% if subject.due_flashcard_count %}
                                 <p>{{ subject.due_flashcard_count }} card{{ subject.due_flashcard_count|pluralize }} due for review.</p>
-                                <a class="btn btn-primary" href="{% url 'progress:flashcards' subject.name|slugify %}">Review {{ subject.due_flashcard_count }} due card{{ subject.due_flashcard_count|pluralize }}</a>
+                                <a class="btn btn-primary" href="{% url 'progress:flashcards' subject.slug %}">Review {{ subject.due_flashcard_count }} due card{{ subject.due_flashcard_count|pluralize }}</a>
                             {% else %}
                                 <p>No cards due yet. Take a lesson quiz to add cards to your review queue.</p>
-                                <a class="btn btn-secondary" href="{% url 'subjects:detail' subject.name|slugify %}">Browse lessons</a>
+                                <a class="btn btn-secondary" href="{% url 'subjects:detail' subject.slug %}">Browse lessons</a>
                             {% endif %}
                         </div>
                         <div class="progress-next-item">
                             <h4>Study plan</h4>
                             {% if subject.active_study_plan %}
                                 <p>Your plan is active.</p>
-                                <a class="btn btn-primary" href="{% url 'progress:study-plan' subject.name|slugify %}">Continue your active plan</a>
+                                <a class="btn btn-primary" href="{% url 'progress:study-plan' subject.slug %}">Continue your active plan</a>
                             {% else %}
                                 <p>No active plan yet. Set your exam date to build a schedule.</p>
-                                <a class="btn btn-secondary" href="{% url 'progress:study-plan' subject.name|slugify %}">Create a study plan</a>
+                                <a class="btn btn-secondary" href="{% url 'progress:study-plan' subject.slug %}">Create a study plan</a>
                             {% endif %}
                         </div>
                     </div>
@@ -170,7 +170,7 @@
                                     </span>
                                     <span class="progress-weak-topic-links">
                                         {% if topic.mastery_lesson %}
-                                            <a href="{% url 'subjects:lesson-detail' subject.name|slugify topic.mastery_lesson.slug %}">Study lesson</a>
+                                            <a href="{% url 'subjects:lesson-detail' subject.slug topic.mastery_lesson.slug %}">Study lesson</a>
                                         {% endif %}
                                         <a href="{% url 'progress:mistake-bank' %}">Mistake bank</a>
                                     </span>
@@ -183,16 +183,16 @@
                 {% if subject.active_topics %}
                     <div class="progress-block progress-topic-links">
                         <span class="progress-topic-label">Topic leaderboards</span>
-                        <a href="{% url 'progress:subject-leaderboard' subject.name|slugify %}"><strong>All of {{ subject.code }}</strong></a>
+                        <a href="{% url 'progress:subject-leaderboard' subject.slug %}"><strong>All of {{ subject.code }}</strong></a>
                         {% for topic in subject.active_topics %}
-                            <a href="{% url 'progress:leaderboard' subject.name|slugify topic.slug %}">{{ topic.name }}</a>
+                            <a href="{% url 'progress:leaderboard' subject.slug topic.slug %}">{{ topic.name }}</a>
                         {% endfor %}
                     </div>
                 {% endif %}
 
                 <div class="progress-block"><h3>Lessons</h3><div class="progress-lessons">
                     {% for lesson in subject.progress_lessons %}
-                        <a class="progress-lesson {% if lesson.is_completed %}is-complete is-done{% endif %}" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
+                        <a class="progress-lesson {% if lesson.is_completed %}is-complete is-done{% endif %}" href="{% url 'subjects:lesson-detail' subject.slug lesson.slug %}">
                             <span class="tick" aria-hidden="true"></span>
                             <span class="progress-lesson-copy">
                                 <strong>{{ lesson.title }}</strong>

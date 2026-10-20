@@ -33,7 +33,7 @@ Loaded from `.env` at the repo root via django-environ. Never commit it.
 python manage.py runserver
 python manage.py makemigrations
 python manage.py migrate
-python manage.py test                 # all apps
+python manage.py test                 # all apps (uses in-memory SQLite, never Supabase)
 python manage.py test apps.progress   # one app
 python manage.py collectstatic --noinput
 ```
@@ -44,7 +44,7 @@ python manage.py collectstatic --noinput
 config/            settings, root urls, wsgi/asgi
 apps/
   core/            home, search, terms/privacy, ads.txt, Cloudinary storage (empty models.py)
-  accounts/        signup/login/logout, account edit, password reset/change, Profile model + admin inline (never created by views), `auth_extras` templatetags
+  accounts/        signup/login/logout, account edit, password reset/change, Profile model + admin inline, `auth_extras` templatetags
   subjects/        Subject, Topic (exam_weight), subject/lesson views
   lessons/         Lesson (CKEditor5 content), LessonImage, `optimize_images` template filter
   questions/       Question (5 formats), Answer
@@ -71,7 +71,7 @@ static/css|js|admin/css|admin/js
 - **XP**: lesson complete = 50 XP, quiz = `25 + percentage // 5`, awarded only on a first completion or a strictly higher percentage than the user's previous best for that quiz (the submit locks the user's `UserProgress` row so concurrent requests can't double-award; attempts are always recorded; past XP is untouched). Streak updates in `_award_xp`. Staff/superusers are excluded from leaderboards.
 - **Quiz scoring** (`progress.views.submit_quiz`): normalizes text (lowercase, collapsed whitespace) for short answer, worded, true/false-without-answers and matching. Wrong answers create or reset a `FlashcardState` due today.
 - **Flashcards**: `FlashcardState.review()` implements SM-2 with ratings `again/hard/good/easy`. Reviews are posted via fetch from `flashcards.html`.
-- **Mastery** (`progress/analytics.py`): recency-weighted accuracy, 14-day half-life, needs 5+ answers (`MIN_EVIDENCE`) before a topic counts. Readiness = 70% topic mastery + 30% latest mock when a mock exists.
+- **Mastery** (`progress/analytics.py`): recency-weighted accuracy, 14-day half-life, needs 5+ answers (`MIN_EVIDENCE`) before a topic counts. Totals live in `TopicMasteryStat` (user+topic+difficulty), updated by `record_attempt` at the end of `submit_quiz`, so reads never scan answer history. Anything that creates `QuizAnswer` rows directly (tests, imports) must call `record_attempt`. Totals are frozen at answer time: later topic/difficulty edits or deleted attempts don't change them. Readiness = 70% topic mastery + 30% latest mock when a mock exists.
 - **Study plan** (`progress/study_plan.py`): remaining lessons sorted by `exam_weight * (1 - accuracy)`, max 3 lessons/day, flashcard review after each lesson, mistake review for topics with misses, a quiz every 4th lesson.
 - **Mock exams**: generated from the Subject admin action (`quizzes/services.py`). Questions sampled per topic by weight. Shortages are not padded from other topics.
 - **Search**: Postgres full-text (`SearchVector`/`SearchRank`) when available, `icontains` fallback otherwise (used in tests on SQLite).
@@ -80,8 +80,7 @@ static/css|js|admin/css|admin/js
 
 ## URL conventions
 
-- Subjects are addressed by **slugified subject name** (`subject.name|slugify`), and several views also accept the slugified code. Lookup is done by iterating active subjects in Python, not via a slug field.
-- `lesson_detail` finds the subject with `name__iexact=slug.replace("-", " ")`. This breaks for subject names containing real hyphens or punctuation. Prefer adding a proper `slug` field if you touch this.
+- Subjects are addressed by `Subject.slug` (auto-generated from the name on first save, unique, editable in admin). `get_subject_or_404` also accepts the subject code. Templates build URLs with `subject.slug`.
 - Namespaces: `subjects:`, `quizzes:`, `progress:`. Accounts and core URLs are un-namespaced (`login`, `signup`, `account`, `home`, `search`, `terms`, `privacy`).
 - Redirects after auth/submit go through `url_has_allowed_host_and_scheme`. Keep that check on any new `next` handling.
 
@@ -108,11 +107,9 @@ static/css|js|admin/css|admin/js
 ## Known issues and cleanup candidates
 
 - `apps.core` is not in `INSTALLED_APPS`. It works because it has no models, but add it if you introduce any.
-- `quizzes/admin.py` defines `QuizQuestionInlineFormSet` twice; the second definition wins and the first is dead code. `DataAttrSelect` is defined after its first use.
 - `progress/tests.py` still has duplicated test methods (`test_flashcard_reviews_apply_sm2_growth_ease_and_reset`, `test_flashcard_review_rejects_unknown_rating`, `test_study_plan_items_require_one_same_subject_target_and_valid_date`); later definitions shadow earlier ones, so delete the first copies.
 - `StudyPlanItem` ordering and constraints changed in migration 0006; the admin for `progress` registers only `UserProgress`, `XPTransaction`, `LessonProgress`, `QuizAttempt` and `QuizAnswer`, not `StudyPlan`/`StudyPlanItem`/`FlashcardState`/`MistakeReview`.
 - Templates now use "compile/" consistently; the repo name and README title still say "CXC Platform".
-- `Profile` model is in the admin (inline on User) but no view or signal creates it.
 - `templates/subjects/lesson_detail.html` calls `quiz.quiz_questions.count()` per quiz (extra queries).
 - `dashboard` and the study plan view run several queries per subject. Watch performance as content grows.
 - `AGENTS.md` holds separate agent-behaviour guidance ("lazy senior dev" style); keep it consistent with this file.

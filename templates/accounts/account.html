@@ -44,7 +44,7 @@
             {% for subject in subjects %}
                 <div class="profile-subject">
                     <div class="profile-subject-head">
-                        <a href="{% url 'subjects:detail' subject.name|slugify %}">{{ subject.name }}</a>
+                        <a href="{% url 'subjects:detail' subject.slug %}">{{ subject.name }}</a>
                         <span>{{ subject.done }} of {{ subject.lesson_total }}</span>
                     </div>
                     <div class="profile-track" role="progressbar" aria-valuenow="{{ subject.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ subject.name }} lessons completed"><span style="width: {{ subject.percent }}%"></span></div>

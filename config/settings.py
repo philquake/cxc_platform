@@ -4,6 +4,7 @@ Django settings for config project.
 
 from datetime import timedelta
 from pathlib import Path
+import sys
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -155,9 +156,12 @@ if str(DATABASES["default"].get("PORT")) == "6543":
 else:
     DATABASES["default"]["CONN_MAX_AGE"] = 600
 
+if "test" in sys.argv[:2]:
+    # Never create test databases on the shared Supabase server.
+    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
+
 
 # Password validation
-
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -189,6 +193,9 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+
+if "test" in sys.argv[:2]:
+    STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
 
 #admin panel customizations
 CKEDITOR_5_FILE_STORAGE = "apps.core.storage.SeekSafeCloudinaryStorage"

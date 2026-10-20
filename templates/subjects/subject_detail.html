@@ -15,8 +15,8 @@
         {% if subject.description %}<p>{{ subject.description }}</p>{% endif %}
         {% if next_lesson %}
         <div class="band-actions">
-            <a class="btn-primary-lg" href="{% url 'subjects:lesson-detail' subject.name|slugify next_lesson.slug %}">{% if lesson_done %}Continue: {{ next_lesson.title }}{% else %}Start: {{ next_lesson.title }}{% endif %}</a>
-            <a class="btn-outline-lg" href="{% url 'progress:study-plan' subject.name|slugify %}">Plan for your exam</a>
+            <a class="btn-primary-lg" href="{% url 'subjects:lesson-detail' subject.slug next_lesson.slug %}">{% if lesson_done %}Continue: {{ next_lesson.title }}{% else %}Start: {{ next_lesson.title }}{% endif %}</a>
+            <a class="btn-outline-lg" href="{% url 'progress:study-plan' subject.slug %}">Plan for your exam</a>
         </div>
         {% elif not user.is_authenticated and lesson_total %}
         <div class="band-actions">
@@ -43,7 +43,7 @@
             <ol class="lesson-rows">
                 {% for lesson in unit.lessons %}
                 <li>
-                    <a class="lesson-row{% if lesson.id in completed_ids %} is-done{% endif %}" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
+                    <a class="lesson-row{% if lesson.id in completed_ids %} is-done{% endif %}" href="{% url 'subjects:lesson-detail' subject.slug lesson.slug %}">
                         <span class="tick" aria-hidden="true"></span>
                         <span class="lesson-row-title">{{ lesson.title }}</span>
                         <span class="meter meter-{{ lesson.mastery_level }}" role="img" aria-label="Mastery: {{ lesson.mastery_label }}">

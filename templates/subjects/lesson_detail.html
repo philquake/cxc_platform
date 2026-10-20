@@ -13,7 +13,7 @@
 <div class="lesson-shell">
     {% if unit %}
     <aside class="outline" aria-label="Lessons in this unit">
-        <a class="outline-back" href="{% url 'subjects:detail' subject.name|slugify %}">&larr; {{ subject.name }}</a>
+        <a class="outline-back" href="{% url 'subjects:detail' subject.slug %}">&larr; {{ subject.name }}</a>
         <h2 class="outline-title">{% if unit.title %}{{ unit.title }}{% else %}Unit {{ unit.number }}{% endif %}</h2>
         {% if user.is_authenticated %}
         <div class="bar" role="img" aria-label="{{ unit.percent }}% of this unit complete"><span style="width: {{ unit.percent }}%"></span></div>
@@ -21,7 +21,7 @@
         <ol class="outline-list">
             {% for item in unit.lessons %}
             <li>
-                <a class="outline-link{% if item.pk == lesson.pk %} is-current{% endif %}{% if item.id in completed_ids %} is-done{% endif %}" href="{% url 'subjects:lesson-detail' subject.name|slugify item.slug %}"{% if item.pk == lesson.pk %} aria-current="page"{% endif %}>
+                <a class="outline-link{% if item.pk == lesson.pk %} is-current{% endif %}{% if item.id in completed_ids %} is-done{% endif %}" href="{% url 'subjects:lesson-detail' subject.slug item.slug %}"{% if item.pk == lesson.pk %} aria-current="page"{% endif %}>
                     <span class="tick" aria-hidden="true"></span>
                     <span>{{ item.title }}</span>
                 </a>
@@ -66,7 +66,7 @@
 <div class="lesson-bar">
     <div class="lesson-bar-inner">
         <div class="lesson-bar-prev">
-            {% if previous_lesson %}<a href="{% url 'subjects:lesson-detail' subject.name|slugify previous_lesson.slug %}" rel="prev"><span class="arr" aria-hidden="true">&larr;</span>Previous<span class="sr-only">: {{ previous_lesson.title }}</span></a>{% endif %}
+            {% if previous_lesson %}<a href="{% url 'subjects:lesson-detail' subject.slug previous_lesson.slug %}" rel="prev"><span class="arr" aria-hidden="true">&larr;</span>Previous<span class="sr-only">: {{ previous_lesson.title }}</span></a>{% endif %}
         </div>
         <div class="lesson-bar-mid">
             {% if user.is_authenticated %}
@@ -85,9 +85,9 @@
         </div>
         <div class="lesson-bar-next">
             {% if next_lesson %}
-                <a href="{% url 'subjects:lesson-detail' subject.name|slugify next_lesson.slug %}" rel="next">Next<span class="sr-only">: {{ next_lesson.title }}</span><span class="arr arr-r" aria-hidden="true">&rarr;</span></a>
+                <a href="{% url 'subjects:lesson-detail' subject.slug next_lesson.slug %}" rel="next">Next<span class="sr-only">: {{ next_lesson.title }}</span><span class="arr arr-r" aria-hidden="true">&rarr;</span></a>
             {% else %}
-                <a href="{% url 'subjects:detail' subject.name|slugify %}">Back to course</a>
+                <a href="{% url 'subjects:detail' subject.slug %}">Back to course</a>
             {% endif %}
         </div>
     </div>

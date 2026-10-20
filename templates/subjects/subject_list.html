@@ -19,7 +19,7 @@
     <ul class="course-grid">
         {% for subject in subjects %}
         <li>
-            <a class="course-card" href="{% url 'subjects:detail' subject.name|slugify %}">
+            <a class="course-card" href="{% url 'subjects:detail' subject.slug %}">
                 <span class="course-code">{{ subject.code }}</span>
                 <span class="course-name">{{ subject.name }}</span>
                 {% if subject.description %}<span class="course-text">{{ subject.description|truncatewords:28 }}</span>{% endif %}

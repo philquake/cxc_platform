@@ -46,7 +46,7 @@
                             <a class="btn btn-primary" href="{% url 'quizzes:detail' medium_quiz.id %}">Try the medium quiz</a>
                         {% endif %}
                         {% if next_lesson %}
-                            <a class="btn btn-secondary" href="{% url 'subjects:lesson-detail' next_lesson.subject.name|slugify next_lesson.slug %}">Move to next lesson</a>
+                            <a class="btn btn-secondary" href="{% url 'subjects:lesson-detail' next_lesson.subject.slug next_lesson.slug %}">Move to next lesson</a>
                         {% endif %}
                     </div>
                 {% elif result_attempt.quiz.is_mock %}
@@ -57,7 +57,7 @@
                 {% else %}
                     <p>Read the lesson again, then retake the quiz. Missed questions are added to your flashcards.</p>
                     <div class="quiz-result-actions">
-                        <a class="btn btn-secondary" href="{% url 'subjects:lesson-detail' result_attempt.quiz.lesson.subject.name|slugify result_attempt.quiz.lesson.slug %}">Review the lesson</a>
+                        <a class="btn btn-secondary" href="{% url 'subjects:lesson-detail' result_attempt.quiz.lesson.subject.slug result_attempt.quiz.lesson.slug %}">Review the lesson</a>
                         <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Try again</button>
                     </div>
                 {% endif %}
@@ -85,7 +85,7 @@
                 <nav class="topic-links" aria-label="Quiz topics">
                     {% for subject_topic in subject.topics.all %}
                         {% if subject_topic.is_active %}
-                            <a href="{% url 'quizzes:topic-list' subject.name|slugify subject_topic.slug %}">{{ subject_topic.name }}</a>
+                            <a href="{% url 'quizzes:topic-list' subject.slug subject_topic.slug %}">{{ subject_topic.name }}</a>
                         {% endif %}
                     {% endfor %}
                 </nav>

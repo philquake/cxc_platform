@@ -26,7 +26,7 @@
             <h2 id="lesson-results-heading">Lessons</h2>
             <div class="content-grid">
                 {% for lesson in lesson_results %}
-                    <a class="content-card" href="{% url 'subjects:lesson-detail' lesson.subject.name|slugify lesson.slug %}">
+                    <a class="content-card" href="{% url 'subjects:lesson-detail' lesson.subject.slug lesson.slug %}">
                         <span class="content-card-label">{{ lesson.subject.code }}, lesson</span>
                         <h2>{{ lesson.title }}</h2>
                         {% if lesson.section_title %}<p>{{ lesson.section_title }}</p>{% endif %}
@@ -43,7 +43,7 @@
             <h2 id="question-results-heading">Questions</h2>
             <div class="content-grid">
                 {% for question in question_results %}
-                    <a class="content-card" href="{% url 'subjects:lesson-detail' question.subject.name|slugify question.lesson.slug %}">
+                    <a class="content-card" href="{% url 'subjects:lesson-detail' question.subject.slug question.lesson.slug %}">
                         <span class="content-card-label">{{ question.subject.code }}, question</span>
                         <h2>{{ question.text|truncatewords:12 }}</h2>
                         <p>{{ question.lesson.title }}</p>

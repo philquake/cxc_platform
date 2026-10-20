@@ -20,7 +20,7 @@ from apps.progress.models import (
 	UserProgress,
 	XPTransaction,
 )
-from apps.progress.analytics import difficulty_breakdown, estimated_readiness, topic_mastery
+from apps.progress.analytics import difficulty_breakdown, estimated_readiness, record_attempt, topic_mastery
 
 class ProgressFlowTests(TestCase):
 	def setUp(self):
@@ -94,6 +94,7 @@ class ProgressFlowTests(TestCase):
 			selected_answer=self.correct_answer,
 			is_correct=True,
 		)
+		record_attempt(first_attempt)
 		latest_attempt = QuizAttempt.objects.create(
 			user=self.user,
 			quiz=self.quiz,
@@ -105,12 +106,34 @@ class ProgressFlowTests(TestCase):
 			question=question,
 			is_correct=False,
 		)
+		record_attempt(latest_attempt)
 
 		mastery = topic_mastery(self.user, question.subject)
 
 		self.assertEqual(mastery[question.topic_id]["n"], 2)
 		self.assertGreater(mastery[question.topic_id]["accuracy"], 0)
 		self.assertLess(mastery[question.topic_id]["accuracy"], 0.5)
+
+	def test_incremental_totals_match_recomputing_from_every_answer(self):
+		from datetime import timedelta
+
+		question = self.correct_answer.question
+		now = timezone.now()
+		# Recorded out of date order on purpose: 20 days ago, today, 5 days ago.
+		history = [(20, True), (0, False), (5, True), (5, False)]
+		for days_ago, is_correct in history:
+			attempt = QuizAttempt.objects.create(
+				user=self.user, quiz=self.quiz, total_questions=1, completed_at=now - timedelta(days=days_ago)
+			)
+			QuizAnswer.objects.create(attempt=attempt, question=question, is_correct=is_correct)
+			record_attempt(attempt)
+
+		weights = [0.5 ** (days_ago / 14) for days_ago, _ in history]
+		expected = sum(w for w, (_, ok) in zip(weights, history) if ok) / sum(weights)
+		result = topic_mastery(self.user, question.subject)[question.topic_id]
+
+		self.assertAlmostEqual(result["accuracy"], expected, places=6)
+		self.assertEqual(result["n"], 4)
 
 	def test_difficulty_breakdown_groups_answers_by_question_difficulty(self):
 		question = self.correct_answer.question
@@ -127,6 +150,7 @@ class ProgressFlowTests(TestCase):
 			question=question,
 			is_correct=True,
 		)
+		record_attempt(attempt)
 
 		breakdown = difficulty_breakdown(self.user, question.subject)
 
@@ -251,6 +275,7 @@ class ProgressFlowTests(TestCase):
 			selected_answer=self.correct_answer,
 			is_correct=True,
 		)
+		record_attempt(attempt)
 		self.client.force_login(self.user)
 
 		response = self.client.get(reverse("progress:dashboard"))
@@ -934,6 +959,27 @@ class QuizXPPolicyTests(TestCase):
 		self.assertEqual(QuizAttempt.objects.filter(user=self.user).count(), 5)
 		self.assertEqual(XPTransaction.objects.filter(user=self.user).count(), 2)
 
+	def test_inactive_question_is_not_scored_or_flashcarded(self):
+		hidden = Question.objects.create(
+			subject=self.quiz.subject, topic=self.quiz.topic, lesson=self.quiz.lesson, text="Gone?", is_active=False
+		)
+		QuizQuestion.objects.create(quiz=self.quiz, question=hidden, order=1)
+		self.submit(self.right)
+		attempt = QuizAttempt.objects.get(user=self.user)
+		self.assertEqual((attempt.score, attempt.total_questions), (1, 1))
+		self.assertFalse(FlashcardState.objects.filter(question=hidden).exists())
+
+	def test_wrong_answers_reset_flashcards_and_mistake_bank_shows_latest_per_question(self):
+		self.submit(self.wrong)
+		self.submit(self.wrong)
+		self.assertEqual(FlashcardState.objects.filter(user=self.user, question=self.question).count(), 1)
+		response = self.client.get(reverse("progress:mistake-bank"))
+		groups = response.context["mistake_groups"]
+		self.assertEqual(len(groups[0]["topics"][0]["mistakes"]), 1)
+		self.assertEqual(
+			groups[0]["topics"][0]["mistakes"][0].attempt_id, QuizAttempt.objects.order_by("-id").first().id
+		)
+
 	def test_failed_submission_rolls_back_attempt_and_xp(self):
 		from unittest import mock
 
@@ -945,12 +991,12 @@ class QuizXPPolicyTests(TestCase):
 
 	def test_shared_answer_rows_match_separate_queries(self):
 		from unittest import mock
-		from apps.progress.analytics import answer_rows
+		from apps.progress.analytics import mastery_rows
 
 		self.submit(self.right)
 		self.submit(self.wrong)
 		subject = self.quiz.subject
-		rows = answer_rows(self.user, subject)
+		rows = mastery_rows(self.user, subject)
 		with mock.patch("django.utils.timezone.now", return_value=timezone.now()):
 			self.assertEqual(topic_mastery(self.user, subject, rows), topic_mastery(self.user, subject))
 			self.assertEqual(
@@ -1024,7 +1070,7 @@ class LeaderboardDisplayNameTests(TestCase):
 		self.add_user("blank", 80, "")
 		self.add_user("noprofile", 70)
 		self.client.force_login(self.viewer)
-		with self.assertNumQueries(4):
+		with self.assertNumQueries(5):
 			response = self.client.get(self.url)
 		self.assertContains(response, "Ada L.")
 		self.assertContains(response, "blank")
@@ -1048,3 +1094,12 @@ class LeaderboardDisplayNameTests(TestCase):
 		self.client.force_login(self.viewer)
 		rows = self.client.get(self.url).context["leaderboard"]
 		self.assertEqual([r["user_id"] for r in rows], [first.id, second.id])
+
+	def test_rank_beyond_list_counts_ties_by_user_id(self):
+		for i in range(20):
+			self.add_user(f"top{i:02d}", 100)
+		tied_first = self.add_user("tied_a", 5)
+		tied_second = self.add_user("tied_b", 5)
+		self.client.force_login(tied_second)
+		self.assertEqual(self.client.get(self.url).context["current_user_row"]["rank"], 22)
+		self.assertLess(tied_first.id, tied_second.id)

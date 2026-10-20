@@ -6,25 +6,6 @@ from apps.questions.models import Question
 from apps.subjects.models import Topic
 from .models import Quiz, QuizQuestion
 
-class QuizQuestionInlineFormSet(BaseInlineFormSet):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        queryset = Question.objects.filter(is_active=True)
-        self.form.base_fields["question"].queryset = queryset
-
-        widget = DataAttrSelect(
-            data_attrs={
-                q.id: {
-                    "data-subject": q.subject_id,
-                    "data-topic": q.topic_id,
-                    "data-lesson": q.lesson_id,
-                    "data-difficulty": q.difficulty,
-                }
-                for q in queryset
-            }
-        )
-        widget.choices = self.form.base_fields["question"].choices
-        self.form.base_fields["question"].widget = widget
 class DataAttrSelect(forms.Select):
     """A Select widget that stamps extra data-* attributes onto each
     <option>, keyed by the choice's pk, so client-side JS can filter

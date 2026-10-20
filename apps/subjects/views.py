@@ -1,11 +1,10 @@
-from django.http import Http404
 from django.shortcuts import get_object_or_404, render
-from django.utils.text import slugify
 from django.db.models import Count, Prefetch, Q
 
 from apps.lessons.models import Lesson
 from apps.quizzes.models import Quiz
 from apps.progress.models import LessonProgress, QuizAttempt
+from .lookup import get_subject_or_404
 from .models import Subject
 
 MASTERY_LEVELS = (
@@ -66,7 +65,7 @@ def subject_list(request):
 
 
 def subject_detail(request, slug):
-    subjects = Subject.objects.filter(is_active=True).prefetch_related(
+    subject = get_subject_or_404(slug, Subject.objects.prefetch_related(
         Prefetch(
             "lessons",
             queryset=Lesson.objects.filter(is_active=True).order_by(
@@ -74,13 +73,7 @@ def subject_detail(request, slug):
             ),
             to_attr="active_lessons",
         )
-    )
-    subject = next(
-        (item for item in subjects if slug in {slugify(item.name), slugify(item.code)}),
-        None,
-    )
-    if subject is None:
-        raise Http404("Subject not found")
+    ))
 
     completed_ids = set()
     if request.user.is_authenticated:
@@ -117,7 +110,7 @@ def subject_detail(request, slug):
 
 
 def lesson_detail(request, subject_slug, lesson_slug):
-    subject = get_object_or_404(Subject, name__iexact=subject_slug.replace("-", " "), is_active=True)
+    subject = get_subject_or_404(subject_slug)
     lesson = get_object_or_404(
         Lesson.objects,
         subject=subject,

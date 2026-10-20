@@ -12,7 +12,7 @@
 {% block content %}
 <div class="progress-page">
     <header class="progress-header study-plan-header">
-        <a href="{% url 'subjects:detail' subject.name|slugify %}" class="crumb-back">&larr; {{ subject.name }}</a>
+        <a href="{% url 'subjects:detail' subject.slug %}" class="crumb-back">&larr; {{ subject.name }}</a>
         <h1>{{ subject.name }} study plan</h1>
         <p>A day-by-day schedule that counts back from your exam. Topics worth more marks, and topics you find hard, come first.</p>
     </header>
@@ -75,7 +75,7 @@
                             </span>
                             <div class="progress-weak-topic-links study-plan-actions">
                                 {% if item.item_type == "lesson" and not item.completed %}
-                                    <a href="{% url 'subjects:lesson-detail' subject.name|slugify item.lesson.slug %}">Open lesson</a>
+                                    <a href="{% url 'subjects:lesson-detail' subject.slug item.lesson.slug %}">Open lesson</a>
                                 {% elif item.item_type == "quiz" and item.quiz %}
                                     {% if item.completed %}
                                         <span>Done</span>
@@ -83,7 +83,7 @@
                                         <a href="{% url 'quizzes:detail' item.quiz.id %}">Open quiz</a>
                                     {% endif %}
                                 {% elif item.item_type == "flashcard_review" %}
-                                    <a href="{% url 'progress:flashcards-topic' subject.name|slugify item.topic.slug %}">Review cards</a>
+                                    <a href="{% url 'progress:flashcards-topic' subject.slug item.topic.slug %}">Review cards</a>
                                     {% if not item.completed %}
                                         <form method="post">
                                             {% csrf_token %}

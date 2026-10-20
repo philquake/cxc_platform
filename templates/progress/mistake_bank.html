@@ -78,7 +78,7 @@
                     </p>
                 {% endif %}
 
-                <a class="progress-action-link" href="{% url 'subjects:lesson-detail' mistake.question.subject.name|slugify mistake.question.lesson.slug %}">
+                <a class="progress-action-link" href="{% url 'subjects:lesson-detail' mistake.question.subject.slug mistake.question.lesson.slug %}">
                     Review the lesson
                 </a>
             </article>

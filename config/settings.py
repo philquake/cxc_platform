@@ -20,6 +20,9 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 # Required behind Render's HTTPS proxy so request.is_secure() and CSRF work correctly
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+if not DEBUG:
+    SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
 
 
 # Application definition
@@ -37,7 +40,6 @@ INSTALLED_APPS = [
     # Third-party
     "django_ckeditor_5",
     'django_bootstrap5',
-    "django_browser_reload",
 
     # Project apps
     "apps.subjects",
@@ -151,7 +153,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Jamaica'
 USE_I18N = True
 USE_TZ = True
 

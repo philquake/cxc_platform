@@ -18,7 +18,7 @@ from apps.quizzes.models import Quiz
 from apps.subjects.lookup import get_subject_or_404
 from apps.subjects.models import Subject, Topic
 
-from .analytics import difficulty_breakdown, estimated_readiness, mock_time_analytics, topic_mastery
+from .analytics import answer_rows, difficulty_breakdown, estimated_readiness, mock_time_analytics, topic_mastery
 from .models import (
     FlashcardState,
     LessonProgress,
@@ -121,7 +121,8 @@ def dashboard(request):
 		subject.due_flashcard_count = due_flashcards_by_subject.get(subject.id, 0)
 		subject.active_study_plan = active_plans_by_subject.get(subject.id)
 		lessons = [lesson for lesson in subject.lessons.all() if lesson.is_active]
-		topic_results = topic_mastery(request.user, subject)
+		subject_answers = answer_rows(request.user, subject)
+		topic_results = topic_mastery(request.user, subject, subject_answers)
 		active_topics = [topic for topic in subject.topics.all() if topic.is_active]
 		for topic in active_topics:
 			result = topic_results.get(topic.id)
@@ -161,7 +162,7 @@ def dashboard(request):
 			(completed_count / len(lessons)) * 100
 		) if lessons else 0
 		subject.active_topics = active_topics
-		subject.difficulty_breakdown = difficulty_breakdown(request.user, subject)
+		subject.difficulty_breakdown = difficulty_breakdown(request.user, subject, subject_answers)
 		subject.mock_time = mock_time_analytics(request.user, subject)
 		latest_mock = QuizAttempt.objects.filter(
 			user=request.user,
@@ -426,6 +427,17 @@ def submit_quiz(request, quiz_id):
 		if parsed_time_taken >= 0:
 			time_taken = parsed_time_taken
 
+	# Row lock serialises this user's submissions, so the best-score check below can't race.
+	UserProgress.objects.select_for_update().get_or_create(user=request.user)
+	previous_best = max(
+		(
+			previous.percentage
+			for previous in QuizAttempt.objects.filter(
+				user=request.user, quiz=quiz, completed_at__isnull=False
+			)
+		),
+		default=-1,
+	)
 	attempt = QuizAttempt.objects.create(
 		user=request.user,
 		quiz=quiz,
@@ -492,7 +504,8 @@ def submit_quiz(request, quiz_id):
 	QuizAnswer.objects.bulk_create(quiz_answers)
 	attempt.score = score
 	attempt.save(update_fields=["score"])
-	if quiz.topic_id:
+	# XP only for a first completion or a new best percentage, so retakes can't farm the leaderboard.
+	if quiz.topic_id and attempt.percentage > previous_best:
 		_award_xp(
 			request.user,
 			quiz.topic,

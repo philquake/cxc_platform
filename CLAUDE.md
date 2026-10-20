@@ -68,7 +68,7 @@ static/css|js|admin/css|admin/js
 
 ## Key behaviours
 
-- **XP**: lesson complete = 50 XP, quiz = `25 + percentage // 5`. Streak updates in `_award_xp`. Staff/superusers are excluded from leaderboards.
+- **XP**: lesson complete = 50 XP, quiz = `25 + percentage // 5`, awarded only on a first completion or a strictly higher percentage than the user's previous best for that quiz (the submit locks the user's `UserProgress` row so concurrent requests can't double-award; attempts are always recorded; past XP is untouched). Streak updates in `_award_xp`. Staff/superusers are excluded from leaderboards.
 - **Quiz scoring** (`progress.views.submit_quiz`): normalizes text (lowercase, collapsed whitespace) for short answer, worded, true/false-without-answers and matching. Wrong answers create or reset a `FlashcardState` due today.
 - **Flashcards**: `FlashcardState.review()` implements SM-2 with ratings `again/hard/good/easy`. Reviews are posted via fetch from `flashcards.html`.
 - **Mastery** (`progress/analytics.py`): recency-weighted accuracy, 14-day half-life, needs 5+ answers (`MIN_EVIDENCE`) before a topic counts. Readiness = 70% topic mastery + 30% latest mock when a mock exists.

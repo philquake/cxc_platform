@@ -8,20 +8,27 @@ ANSWER_HALF_LIFE_DAYS = 14
 TOPIC_READINESS_WEIGHT = 0.7
 MOCK_READINESS_WEIGHT = 0.3
 
-def topic_mastery(user, subject):
-    now = timezone.now()
-    answer_rows = QuizAnswer.objects.filter(
+def answer_rows(user, subject):
+    """Completed answers for one subject; pass to topic_mastery/difficulty_breakdown to query once."""
+    return list(QuizAnswer.objects.filter(
         attempt__user=user,
         attempt__completed_at__isnull=False,
         question__subject=subject,
     ).values_list(
         "question__topic_id",
         "question__topic__name",
+        "question__difficulty",
         "is_correct",
         "attempt__completed_at",
-    )
+    ))
+
+
+def topic_mastery(user, subject, rows=None):
+    now = timezone.now()
     totals = {}
-    for topic_id, topic_name, is_correct, completed_at in answer_rows:
+    for topic_id, topic_name, _, is_correct, completed_at in (
+        answer_rows(user, subject) if rows is None else rows
+    ):
         age_days = max((now - completed_at).total_seconds() / 86400, 0)
         answer_weight = 0.5 ** (age_days / ANSWER_HALF_LIFE_DAYS)
         topic = totals.setdefault(topic_id, {
@@ -47,22 +54,15 @@ def topic_mastery(user, subject):
     return results
 
 
-def difficulty_breakdown(user, subject):
+def difficulty_breakdown(user, subject, rows=None):
     now = timezone.now()
-    answer_rows = QuizAnswer.objects.filter(
-        attempt__user=user,
-        attempt__completed_at__isnull=False,
-        question__subject=subject,
-    ).values_list(
-        "question__difficulty",
-        "is_correct",
-        "attempt__completed_at",
-    )
     totals = {
         difficulty: {"weighted_total": 0.0, "weighted_correct": 0.0, "n": 0}
         for difficulty in ("easy", "medium", "hard")
     }
-    for difficulty, is_correct, completed_at in answer_rows:
+    for _, _, difficulty, is_correct, completed_at in (
+        answer_rows(user, subject) if rows is None else rows
+    ):
         age_days = max((now - completed_at).total_seconds() / 86400, 0)
         answer_weight = 0.5 ** (age_days / ANSWER_HALF_LIFE_DAYS)
         band = totals.setdefault(

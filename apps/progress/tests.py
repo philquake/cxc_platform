@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.models import Profile
 from apps.lessons.models import Lesson
 from apps.questions.models import Answer, Question
 from apps.quizzes.models import Quiz, QuizQuestion
@@ -960,3 +961,154 @@ class AdminDashboardTests(TestCase):
 
 		self.assertContains(response, "admin/js/quiz_admin.js")
 		self.assertContains(response, 'data-difficulty="medium"')
+
+
+class QuizXPPolicyTests(TestCase):
+	def setUp(self):
+		self.user = get_user_model().objects.create_user(username="student", password="x")
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		topic = Topic.objects.create(subject=subject, name="Algebra", slug="algebra")
+		lesson = Lesson.objects.create(subject=subject, title="Algebra", slug="algebra", content="<p>A</p>")
+		self.question = Question.objects.create(subject=subject, topic=topic, lesson=lesson, text="2 + 2?")
+		self.right = Answer.objects.create(question=self.question, text="4", is_correct=True)
+		self.wrong = Answer.objects.create(question=self.question, text="5")
+		self.quiz = Quiz.objects.create(subject=subject, topic=topic, lesson=lesson, title="Quiz")
+		QuizQuestion.objects.create(quiz=self.quiz, question=self.question)
+		self.client.force_login(self.user)
+
+	def submit(self, answer):
+		return self.client.post(
+			reverse("progress:submit-quiz", args=[self.quiz.id]),
+			{f"question-{self.question.id}": answer.id},
+		)
+
+	def xp(self):
+		return UserProgress.objects.get(user=self.user).total_xp
+
+	def test_xp_only_for_first_completion_and_new_best(self):
+		self.submit(self.wrong)  # first completion: 25 XP
+		self.assertEqual(self.xp(), 25)
+		self.submit(self.wrong)  # equal score
+		self.assertEqual(self.xp(), 25)
+		self.submit(self.right)  # improved 0% -> 100%: 25 + 20
+		self.assertEqual(self.xp(), 70)
+		self.submit(self.right)  # equal best
+		self.submit(self.wrong)  # lower score
+		self.assertEqual(self.xp(), 70)
+		self.assertEqual(QuizAttempt.objects.filter(user=self.user).count(), 5)
+		self.assertEqual(XPTransaction.objects.filter(user=self.user).count(), 2)
+
+	def test_failed_submission_rolls_back_attempt_and_xp(self):
+		from unittest import mock
+
+		with mock.patch("apps.progress.views._award_xp", side_effect=RuntimeError):
+			with self.assertRaises(RuntimeError):
+				self.submit(self.right)
+		self.assertFalse(QuizAttempt.objects.exists())
+		self.assertFalse(QuizAnswer.objects.exists())
+
+	def test_shared_answer_rows_match_separate_queries(self):
+		from unittest import mock
+		from apps.progress.analytics import answer_rows
+
+		self.submit(self.right)
+		self.submit(self.wrong)
+		subject = self.quiz.subject
+		rows = answer_rows(self.user, subject)
+		with mock.patch("django.utils.timezone.now", return_value=timezone.now()):
+			self.assertEqual(topic_mastery(self.user, subject, rows), topic_mastery(self.user, subject))
+			self.assertEqual(
+				difficulty_breakdown(self.user, subject, rows), difficulty_breakdown(self.user, subject)
+			)
+
+	def test_unknown_quiz_is_404(self):
+		self.assertEqual(
+			self.client.post(reverse("progress:submit-quiz", args=[9999])).status_code, 404
+		)
+
+
+class JamaicaStudyDayTests(TestCase):
+	def award_at(self, user, topic, utc_moment):
+		from unittest import mock
+		from apps.progress.views import _award_xp
+
+		with mock.patch("django.utils.timezone.now", return_value=utc_moment):
+			_award_xp(user, topic, 10, "test")
+
+	def test_streak_rolls_over_at_jamaica_midnight_not_utc(self):
+		from datetime import datetime, timezone as dt_timezone
+
+		user = get_user_model().objects.create_user(username="s", password="x")
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		topic = Topic.objects.create(subject=subject, name="Algebra", slug="algebra")
+		# 22:00 Mar 1 Jamaica (UTC-5) is already Mar 2 in UTC.
+		self.award_at(user, topic, datetime(2026, 3, 2, 3, 0, tzinfo=dt_timezone.utc))
+		# 23:30 Mar 1 Jamaica: same local day, so the streak must not advance.
+		self.award_at(user, topic, datetime(2026, 3, 2, 4, 30, tzinfo=dt_timezone.utc))
+		progress = UserProgress.objects.get(user=user)
+		self.assertEqual(progress.current_streak, 1)
+		self.assertEqual(str(progress.last_activity_date), "2026-03-01")
+		# 00:30 Mar 2 Jamaica: next local day.
+		self.award_at(user, topic, datetime(2026, 3, 2, 5, 30, tzinfo=dt_timezone.utc))
+		progress.refresh_from_db()
+		self.assertEqual(progress.current_streak, 2)
+		self.assertEqual(str(progress.last_activity_date), "2026-03-02")
+
+
+	def test_flashcard_due_date_uses_jamaica_day(self):
+		from datetime import date, datetime, timezone as dt_timezone
+
+		user = get_user_model().objects.create_user(username="f", password="x")
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		topic = Topic.objects.create(subject=subject, name="Algebra", slug="algebra")
+		lesson = Lesson.objects.create(subject=subject, title="A", slug="a", content="<p>A</p>")
+		question = Question.objects.create(subject=subject, topic=topic, lesson=lesson, text="Q?")
+		state = FlashcardState.objects.create(user=user, question=question)
+		# 22:00 Mar 1 in Jamaica is already Mar 2 in UTC; a 1-day interval is due Mar 2 locally.
+		state.review("good", reviewed_at=datetime(2026, 3, 2, 3, 0, tzinfo=dt_timezone.utc))
+		self.assertEqual(state.due_at, date(2026, 3, 2))
+
+
+class LeaderboardDisplayNameTests(TestCase):
+	def setUp(self):
+		self.viewer = get_user_model().objects.create_user(username="viewer", password="x")
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		self.topic = Topic.objects.create(subject=subject, name="Algebra", slug="algebra")
+		self.url = reverse("progress:subject-leaderboard", args=["mathematics"])
+
+	def add_user(self, username, xp, display_name=None, email=""):
+		user = get_user_model().objects.create_user(username=username, email=email, password="x")
+		if display_name is not None:
+			Profile.objects.create(user=user, display_name=display_name)
+		XPTransaction.objects.create(user=user, topic=self.topic, amount=xp, reason="t")
+		return user
+
+	def test_display_name_blank_fallback_and_no_profile(self):
+		self.add_user("named", 90, "Ada L.", email="secret@example.com")
+		self.add_user("blank", 80, "")
+		self.add_user("noprofile", 70)
+		self.client.force_login(self.viewer)
+		with self.assertNumQueries(4):
+			response = self.client.get(self.url)
+		self.assertContains(response, "Ada L.")
+		self.assertContains(response, "blank")
+		self.assertContains(response, "noprofile")
+		self.assertNotContains(response, "named")
+		self.assertNotContains(response, "secret@example.com")
+
+	def test_top_twenty_limit_ties_and_rank_beyond_list(self):
+		for i in range(22):
+			self.add_user(f"u{i:02d}", 100 - i)
+		me = self.add_user("me", 1)
+		self.client.force_login(me)
+		response = self.client.get(self.url)
+		self.assertEqual(len(response.context["leaderboard"]), 20)
+		self.assertEqual([r["rank"] for r in response.context["leaderboard"]][:3], [1, 2, 3])
+		self.assertEqual(response.context["current_user_row"]["rank"], 23)
+
+	def test_equal_xp_ties_break_by_user_id(self):
+		first = self.add_user("first", 50)
+		second = self.add_user("second", 50)
+		self.client.force_login(self.viewer)
+		rows = self.client.get(self.url).context["leaderboard"]
+		self.assertEqual([r["user_id"] for r in rows], [first.id, second.id])

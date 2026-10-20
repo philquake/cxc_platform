@@ -42,7 +42,10 @@ def search(request):
                 )
             ).filter(rank__gt=0).select_related("subject").order_by("-rank")[:20]
             questions = Question.objects.filter(is_active=True).annotate(
-                rank=SearchRank(SearchVector("text", weight="A"), search_query)
+                rank=SearchRank(
+                    SearchVector("text", weight="A") + SearchVector("explanation", weight="B"),
+                    search_query,
+                )
             ).filter(rank__gt=0).select_related("subject", "topic", "lesson").order_by("-rank")[:20]
         else:
             lessons = Lesson.objects.filter(

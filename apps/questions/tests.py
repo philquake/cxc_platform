@@ -76,3 +76,62 @@ class QuestionAnalyticsAdminTests(TestCase):
 		self.assertContains(response, "5")
 		self.assertContains(response, "7")
 		self.assertContains(response, "70%")
+
+
+class AdminImportTests(TestCase):
+	def setUp(self):
+		self.admin = get_user_model().objects.create_superuser("boss", "b@example.com", "pw")
+		self.client.force_login(self.admin)
+		self.subject = Subject.objects.create(name="Mathematics", code="MATH")
+		self.topic = Topic.objects.create(subject=self.subject, name="Algebra", slug="algebra")
+		self.lesson = Lesson.objects.create(subject=self.subject, title="Intro", lesson_number=1, content="<p>x</p>")
+
+	def _upload(self, name, body):
+		from django.core.files.uploadedfile import SimpleUploadedFile
+		return SimpleUploadedFile(name, body.encode())
+
+	def test_question_csv_import_creates_questions_and_answers(self):
+		csv_text = (
+			"subject,topic,lesson,format,text,option_1,option_2,correct,expected_answer\n"
+			"MATH,Algebra,1,multiple_choice,2+2?,3,4,b,\n"
+			"MATH,Algebra,1,true_false,1>0,,,true,\n"
+			"MATH,Algebra,1,short_answer,Name x,,,,unknown\n"
+		)
+		response = self.client.post(
+			reverse("admin:questions_question_import"), {"file": self._upload("q.csv", csv_text)}
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(Question.objects.count(), 3)
+		mc = Question.objects.get(format="multiple_choice")
+		self.assertEqual(mc.answers.get(is_correct=True).text, "4")
+
+	def test_question_csv_import_is_all_or_nothing(self):
+		csv_text = (
+			"subject,topic,lesson,format,text,option_1,option_2,correct\n"
+			"MATH,Algebra,1,multiple_choice,Good?,a,b,1\n"
+			"MATH,Nope,1,multiple_choice,Bad?,a,b,1\n"
+		)
+		response = self.client.post(
+			reverse("admin:questions_question_import"), {"file": self._upload("q.csv", csv_text)}
+		)
+		self.assertContains(response, "Row 3")
+		self.assertEqual(Question.objects.count(), 0)
+
+	def test_lesson_import_numbers_and_titles_from_files(self):
+		html = "<h1>Networks</h1><p>Body</p><script>x</script>"
+		response = self.client.post(
+			reverse("admin:lessons_lesson_import"),
+			{"subject": self.subject.pk, "files": [self._upload("a.html", html), self._upload("b_notes.txt", "Hi")]},
+		)
+		self.assertEqual(response.status_code, 200)
+		lessons = Lesson.objects.filter(subject=self.subject).order_by("lesson_number")
+		self.assertEqual([l.lesson_number for l in lessons], [1, 2, 3])
+		self.assertEqual(lessons[1].title, "Networks")
+		self.assertNotIn("script", lessons[1].content)
+		self.assertEqual(lessons[2].title, "B Notes")
+		self.assertFalse(lessons[2].is_active)
+
+	def test_changelists_show_import_buttons(self):
+		self.assertContains(self.client.get(reverse("admin:questions_question_changelist")), "Import questions")
+		self.assertContains(self.client.get(reverse("admin:lessons_lesson_changelist")), "Upload notes")
+		self.assertContains(self.client.get(reverse("admin:index")), "Upload notes")

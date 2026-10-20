@@ -1,0 +1,46 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<ol class="breadcrumbs">
+  <li><a href="{% url 'admin:index' %}">{% translate 'Home' %}</a></li>
+  <li><a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a></li>
+  <li><a href="{{ changelist_url }}">{{ opts.verbose_name_plural|capfirst }}</a></li>
+  <li>{{ title }}</li>
+</ol>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="import-page">
+  {% if created %}
+  <div class="card import-card import-success" role="status">
+    <h2 class="card-title">{% blocktranslate count n=created|length %}Imported {{ n }} item{% plural %}Imported {{ n }} items{% endblocktranslate %}</h2>
+    <ul>{% for line in created|slice:":30" %}<li>{{ line }}</li>{% endfor %}</ul>
+    <p><a class="button default" href="{{ changelist_url }}">{% translate 'View list' %}</a></p>
+  </div>
+  {% endif %}
+
+  {% if errors %}
+  <div class="card import-card import-errors" role="alert">
+    <h2 class="card-title">{% translate 'Nothing was imported. Fix these and upload again:' %}</h2>
+    <ul>{% for line in errors|slice:":50" %}<li>{{ line }}</li>{% endfor %}</ul>
+    {% if errors|length > 50 %}<p>{% blocktranslate with n=errors|length %}Showing 50 of {{ n }} problems.{% endblocktranslate %}</p>{% endif %}
+  </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="card import-card">
+    {% csrf_token %}
+    <p class="help">{{ import_help }}</p>
+    {% if template_url %}<p><a href="{{ template_url }}" download>{% translate 'Download the CSV template' %}</a></p>{% endif %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="form-row{% if field.errors %} errors{% endif %}">
+        {{ field.errors }}
+        {{ field.label_tag }} {{ field }}
+        {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="submit-row"><input type="submit" class="default" value="{% translate 'Upload and import' %}"></div>
+  </form>
+</div>
+{% endblock %}

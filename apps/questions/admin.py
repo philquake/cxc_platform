@@ -3,7 +3,14 @@ from django.contrib import admin
 from django.db.models import Count, Q
 from django.utils.html import format_html, format_html_join
 
+from apps.core.admin_import import ImportAdminMixin
+
+from .importers import import_questions, sample_csv
 from .models import Question, Answer
+
+
+class QuestionImportForm(forms.Form):
+    file = forms.FileField(label="CSV file", widget=forms.ClearableFileInput(attrs={"accept": ".csv,text/csv"}))
 
 
 class AnswerInline(admin.TabularInline):
@@ -19,8 +26,19 @@ class QuestionAdminForm(forms.ModelForm):
 
 
 @admin.register(Question)
-class QuestionAdmin(admin.ModelAdmin):
+class QuestionAdmin(ImportAdminMixin, admin.ModelAdmin):
     form = QuestionAdminForm
+    import_form_class = QuestionImportForm
+    import_title = "Import questions"
+    import_template_csv = staticmethod(sample_csv)
+    import_help = (
+        "Upload a CSV with one question per row. Subjects, topics and lessons must already exist "
+        "(lesson is the lesson number). If any row has a problem, nothing is imported."
+    )
+
+    def run_import(self, request, form):
+        count, errors = import_questions(form.cleaned_data["file"])
+        return ([f"{count} questions added"] if count else []), errors
     fieldsets = (
         (
             None,

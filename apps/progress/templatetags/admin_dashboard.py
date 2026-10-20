@@ -108,6 +108,8 @@ def admin_dashboard(context):
         chart = {"days": days, "peak": peak, "total": sum(per_day.values())}
 
     for perm, label, url_name in (
+        ("lessons.add_lesson", "Upload notes", "admin:lessons_lesson_import"),
+        ("questions.add_question", "Import questions", "admin:questions_question_import"),
         ("lessons.add_lesson", "New lesson", "admin:lessons_lesson_add"),
         ("questions.add_question", "New question", "admin:questions_question_add"),
         ("quizzes.add_quiz", "New quiz", "admin:quizzes_quiz_add"),

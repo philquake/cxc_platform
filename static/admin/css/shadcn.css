@@ -1849,3 +1849,113 @@ ul.actionlist li:last-child {
     position: static;
   }
 }
+
+/* ---------- Import pages ---------- */
+.import-page {
+  display: grid;
+  gap: 16px;
+  max-width: 720px;
+}
+
+.import-card {
+  padding: 20px;
+}
+
+.import-card ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.import-errors {
+  border-color: var(--destructive, #dc2626);
+}
+
+.import-card input[type="file"],
+.import-card select {
+  max-width: 100%;
+}
+
+.import-card .form-row {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.quick-actions {
+  flex-wrap: wrap;
+}
+
+/* ---------- Responsive: lists, forms, tables ---------- */
+@media (max-width: 1024px) {
+  #changelist .results,
+  .module.filtered .results {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 767px) {
+  .quick-actions .button {
+    flex: 1 1 calc(50% - 8px);
+    text-align: center;
+  }
+
+  .object-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    float: none;
+    margin: 0 0 12px;
+    padding: 0;
+  }
+
+  .object-tools li {
+    float: none;
+    margin: 0;
+  }
+
+  .form-row,
+  .aligned .form-row > div {
+    display: block;
+  }
+
+  .aligned label {
+    float: none;
+    display: block;
+    width: auto;
+    padding: 0 0 6px;
+  }
+
+  .aligned .form-row input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .aligned .form-row select,
+  .aligned .form-row textarea,
+  .import-card input:not([type="checkbox"]):not([type="file"]),
+  .import-card select {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 16px; /* stops iOS zooming on focus */
+  }
+
+  .aligned .form-row .ck-editor {
+    width: 100%;
+  }
+
+  .inline-group .tabular {
+    overflow-x: auto;
+  }
+
+  .submit-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .submit-row input,
+  .submit-row a {
+    flex: 1 1 140px;
+  }
+
+  #changelist-filter {
+    width: 100%;
+  }
+}

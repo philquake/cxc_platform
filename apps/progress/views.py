@@ -1,3 +1,4 @@
+import re
 from datetime import date, timedelta
 
 from django.contrib import messages
@@ -335,7 +336,8 @@ def _safe_next_url(request, fallback):
 
 
 def _normalize_answer_text(value):
-	return " ".join((value or "").strip().lower().split())
+	# Punctuation is ignored so "Central Processing Unit." matches "Central Processing Unit".
+	return " ".join(re.sub(r"[^\w\s]", "", (value or "").lower()).split())
 
 
 @login_required
@@ -514,7 +516,8 @@ def submit_quiz(request, quiz_id):
 	attempt.save(update_fields=["score"])
 	record_attempt(attempt)
 	# XP only for a first completion or a new best percentage, so retakes can't farm the leaderboard.
-	if quiz.topic_id and attempt.percentage > previous_best:
+	# A zero score earns nothing, so blank submissions can't farm it either.
+	if quiz.topic_id and score > 0 and attempt.percentage > previous_best:
 		_award_xp(
 			request.user,
 			quiz.topic,

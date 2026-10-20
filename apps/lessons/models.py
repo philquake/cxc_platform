@@ -1,6 +1,10 @@
+import nh3
 from django.db import models
 from django_ckeditor_5.fields import CKEditor5Field
 from apps.subjects.models import Subject
+
+# CKEditor writes font colour, alignment and image/table classes as style/class attributes.
+ALLOWED_ATTRIBUTES = {**nh3.ALLOWED_ATTRIBUTES, "*": {"style", "class"}}
 
 
 class Lesson(models.Model):
@@ -34,6 +38,7 @@ class Lesson(models.Model):
         ]
 
     def save(self, *args, **kwargs):
+        self.content = nh3.clean(self.content, attributes=ALLOWED_ATTRIBUTES)
         if not self.slug:
             from django.utils.text import slugify
             self.slug = slugify(self.title)

@@ -6,6 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 import sys
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -216,6 +217,9 @@ EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
     default="django.core.mail.backends.console.EmailBackend",
 )
+if not DEBUG and "test" not in sys.argv[:2] and EMAIL_BACKEND.endswith("console.EmailBackend"):
+    # Otherwise password-reset emails only reach the server log.
+    raise ImproperlyConfigured("Set EMAIL_BACKEND (and the EMAIL_* SMTP settings) when DEBUG is off.")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@cxcstudy.com")
 EMAIL_HOST = env("EMAIL_HOST", default="")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)

@@ -114,3 +114,15 @@ class LessonImporterTests(TestCase):
 		self.assertIn("&lt;script&gt;", lesson.content)
 		self.assertEqual(lesson.content.count("<p>"), 3)
 		self.assertIn("<br>", lesson.content)
+
+
+class LessonSaveSanitizeTests(TestCase):
+	def test_save_strips_scripts_but_keeps_editor_styles(self):
+		subject = Subject.objects.create(name="IT", code="IT")
+		lesson = Lesson.objects.create(
+			subject=subject, title="Safe", lesson_number=1,
+			content='<p style="color:red">Hi</p><script>alert(1)</script><a href="javascript:alert(1)">x</a>',
+		)
+		self.assertIn('style="color:red"', lesson.content)
+		self.assertNotIn("script", lesson.content)
+		self.assertNotIn("javascript:", lesson.content)

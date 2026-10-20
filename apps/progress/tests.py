@@ -803,7 +803,6 @@ class ProgressFlowTests(TestCase):
 		self.assertEqual(response.status_code, 302)
 		self.assertIn("/quizzes/?attempt=", response["Location"])
 		result_response = self.client.get(response["Location"])
-		self.assertContains(result_response, "+25 XP earned")
 		self.assertContains(result_response, "✓ Correct answer: 4")
 		self.assertContains(result_response, "Because 2 + 2 = 4, the correct answer is four.")
 		attempt = QuizAttempt.objects.get(user=self.user, quiz=self.quiz)
@@ -811,7 +810,7 @@ class ProgressFlowTests(TestCase):
 		self.assertEqual(attempt.total_questions, 1)
 		self.assertEqual(attempt.answers.count(), 1)
 		self.assertFalse(attempt.answers.get().is_correct)
-		self.assertEqual(UserProgress.objects.get(user=self.user).total_xp, 25)
+		self.assertEqual(UserProgress.objects.get(user=self.user).total_xp, 0)
 
 	def test_topic_leaderboard_is_scoped_to_topic(self):
 		other_user = get_user_model().objects.create_user(username="other")
@@ -837,7 +836,7 @@ class ProgressFlowTests(TestCase):
 		)
 
 		self.assertEqual(response.status_code, 200)
-		self.assertContains(response, "other")
+		self.assertContains(response, f"Student #{other_user.id}")
 		self.assertContains(response, "100 XP")
 
 	def test_quiz_submission_ignores_answer_from_another_question(self):
@@ -947,17 +946,38 @@ class QuizXPPolicyTests(TestCase):
 		return UserProgress.objects.get(user=self.user).total_xp
 
 	def test_xp_only_for_first_completion_and_new_best(self):
-		self.submit(self.wrong)  # first completion: 25 XP
-		self.assertEqual(self.xp(), 25)
-		self.submit(self.wrong)  # equal score
-		self.assertEqual(self.xp(), 25)
-		self.submit(self.right)  # improved 0% -> 100%: 25 + 20
-		self.assertEqual(self.xp(), 70)
+		self.submit(self.wrong)  # 0% earns nothing, so blank/wrong submits can't farm XP
+		self.assertFalse(XPTransaction.objects.filter(user=self.user).exists())
+		self.submit(self.right)  # first scoring attempt: 25 + 20
+		self.assertEqual(self.xp(), 45)
 		self.submit(self.right)  # equal best
 		self.submit(self.wrong)  # lower score
-		self.assertEqual(self.xp(), 70)
-		self.assertEqual(QuizAttempt.objects.filter(user=self.user).count(), 5)
-		self.assertEqual(XPTransaction.objects.filter(user=self.user).count(), 2)
+		self.assertEqual(self.xp(), 45)
+		self.assertEqual(QuizAttempt.objects.filter(user=self.user).count(), 4)
+		self.assertEqual(XPTransaction.objects.filter(user=self.user).count(), 1)
+
+	def test_written_answer_ignores_punctuation_and_case(self):
+		open_question = Question.objects.create(
+			subject=self.quiz.subject, topic=self.quiz.topic, lesson=self.quiz.lesson, text="CPU stands for?",
+			format=Question.FORMAT_SHORT_ANSWER, expected_answer="Central Processing Unit",
+		)
+		QuizQuestion.objects.create(quiz=self.quiz, question=open_question, order=1)
+		self.client.post(
+			reverse("progress:submit-quiz", args=[self.quiz.id]),
+			{f"question-{open_question.id}": "  central processing unit. "},
+		)
+		self.assertTrue(QuizAnswer.objects.get(question=open_question).is_correct)
+
+	def test_matching_dropdown_options_are_not_in_answer_order(self):
+		match = Question.objects.create(
+			subject=self.quiz.subject, topic=self.quiz.topic, lesson=self.quiz.lesson, text="Match",
+			format=Question.FORMAT_MATCHING,
+		)
+		for order, (left, right) in enumerate([("Mouse", "Output"), ("Monitor", "Input")]):
+			Answer.objects.create(question=match, text=left, match_text=right, is_correct=True, order=order)
+		QuizQuestion.objects.create(quiz=self.quiz, question=match, order=1)
+		page = self.client.get(reverse("quizzes:detail", args=[self.quiz.id])).content.decode()
+		self.assertLess(page.index('value="Input"'), page.index('value="Output"'))
 
 	def test_inactive_question_is_not_scored_or_flashcarded(self):
 		hidden = Question.objects.create(
@@ -1073,8 +1093,9 @@ class LeaderboardDisplayNameTests(TestCase):
 		with self.assertNumQueries(5):
 			response = self.client.get(self.url)
 		self.assertContains(response, "Ada L.")
-		self.assertContains(response, "blank")
-		self.assertContains(response, "noprofile")
+		# No display name: show a neutral label, never the username.
+		self.assertContains(response, "Student #")
+		self.assertNotContains(response, "noprofile")
 		self.assertNotContains(response, "named")
 		self.assertNotContains(response, "secret@example.com")
 

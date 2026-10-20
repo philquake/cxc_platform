@@ -140,7 +140,7 @@
                                     {{ answer.text }}
                                     <select name="question-{{ quiz_question.question.id }}-{{ answer.id }}">
                                         <option value="">Choose a match</option>
-                                        {% for option in quiz_question.question.answers.all %}
+                                        {% for option in quiz_question.question.answers.all|dictsort:"match_text" %}
                                             <option value="{{ option.match_text }}">{{ option.match_text }}</option>
                                         {% endfor %}
                                     </select>

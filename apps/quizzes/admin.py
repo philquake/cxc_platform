@@ -2,6 +2,7 @@ from django import forms
 from django.contrib import admin
 from django.forms.models import BaseInlineFormSet
 
+from apps.lessons.models import Lesson
 from apps.questions.models import Question
 from apps.subjects.models import Topic
 from .models import Quiz, QuizQuestion
@@ -35,20 +36,30 @@ class QuizAdminForm(forms.ModelForm):
             "description",
             "is_mock",
             "time_limit_minutes",
+            "difficulty",
+            "pathway",
+            "shuffle_questions",
             "is_active",
         )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        topic_subject_map = dict(Topic.objects.values_list("id", "subject_id"))
+        tag_subjects(self)
+
+
+def tag_subjects(form):
+    """Stamp data-subject on topic and lesson options so quiz_admin.js can filter them by subject."""
+    for name, model in (("topic", Topic), ("lesson", Lesson)):
+        if name not in form.fields:
+            continue
         widget = DataAttrSelect(
             data_attrs={
-                topic_id: {"data-subject": subject_id}
-                for topic_id, subject_id in topic_subject_map.items()
+                pk: {"data-subject": subject_id}
+                for pk, subject_id in model.objects.values_list("id", "subject_id")
             }
         )
-        widget.choices = self.fields["topic"].choices
-        self.fields["topic"].widget = widget
+        widget.choices = form.fields[name].choices
+        form.fields[name].widget = widget
 
 
 class QuizQuestionInlineFormSet(BaseInlineFormSet):
@@ -87,12 +98,13 @@ class QuizAdmin(admin.ModelAdmin):
         "topic",
         "lesson",
         "is_mock",
+        "difficulty",
         "time_limit_minutes",
         "is_active",
         "created_at",
         "updated_at",
     )
-    list_filter = ("subject", "topic", "lesson", "is_active")
+    list_filter = ("subject", "topic", "lesson", "difficulty", "pathway", "is_active")
     search_fields = ("title", "description")
     fields = (
         "subject",
@@ -102,6 +114,9 @@ class QuizAdmin(admin.ModelAdmin):
         "description",
         "is_mock",
         "time_limit_minutes",
+        "difficulty",
+        "pathway",
+        "shuffle_questions",
         "is_active",
     )
     inlines = [QuizQuestionInline]

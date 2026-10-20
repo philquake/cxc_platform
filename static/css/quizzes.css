@@ -390,6 +390,39 @@
     font-size: 13px;
     line-height: 1.5;
 }
+
+.quiz-result-item-marks {
+    margin: 4px 0 0;
+    color: var(--color-accent-ink);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.quiz-question-marks {
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+.quiz-hint {
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    background: var(--color-panel);
+    border: 1px solid var(--color-panel-border);
+    border-radius: 10px;
+}
+
+.quiz-hint summary {
+    cursor: pointer;
+    color: var(--color-accent-ink);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.quiz-hint p {
+    margin: 6px 0 0;
+    color: var(--color-text-muted);
+    font-size: 14px;
+}
 /* ---------- answering: options, sticky action bar ---------- */
 .quiz-question label {
     min-height: 48px;

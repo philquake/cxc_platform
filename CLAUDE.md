@@ -60,7 +60,8 @@ static/css|js|admin/css|admin/js
 - `Subject` 1─* `Lesson` (unique `subject+slug` and `subject+lesson_number`; slug auto-generated from title on save)
 - `Question` belongs to Subject, Topic **and** Lesson (all required). `clean()` enforces they agree.
   - Formats: `multiple_choice`, `true_false`, `short_answer`, `matching`, `worded`
-  - Open-ended formats need `expected_answer`; it may list alternatives separated by `|`, and worded answers are correct if they contain any alternative (punctuation and case are ignored). True/false may have no `Answer` rows (uses `expected_answer`). Matching uses `Answer.text` + `Answer.match_text`.
+  - Open-ended formats need `expected_answer`; short answers may list alternatives separated by `|` (punctuation and case are ignored). Worded answers are marked by a teacher (`expected_answer` is the reference answer).
+  - `marks` (default 1), `mark_scheme`, `hint`, `estimated_time_minutes`, and pathway flags `for_guided`/`for_adaptive`/`for_practice` (default all on). True/false may have no `Answer` rows (uses `expected_answer`). Matching uses `Answer.text` + `Answer.match_text`.
 - `Quiz` is either a **practice quiz** (requires topic + lesson) or a **mock exam** (`is_mock=True`, no topic/lesson, optional `time_limit_minutes`). Enforced in `clean()` and a DB check constraint.
 - `QuizQuestion` through table. For practice quizzes the question must match the quiz topic and lesson; for mocks only the subject.
 - `progress`: `UserProgress` (XP, streak, level = 500 XP/level), `LessonProgress`, `QuizAttempt`/`QuizAnswer`, `XPTransaction` (one per lesson completion or quiz attempt), `MistakeReview`, `FlashcardState` (SM-2), `StudyPlan`/`StudyPlanItem`.
@@ -69,13 +70,14 @@ static/css|js|admin/css|admin/js
 ## Key behaviours
 
 - **XP**: lesson complete = 50 XP, quiz = `25 + percentage // 5`, awarded only on a first completion or a strictly higher percentage than the user's previous best for that quiz (the submit locks the user's `UserProgress` row so concurrent requests can't double-award; attempts are always recorded; past XP is untouched). Streak updates in `_award_xp`. Staff/superusers are excluded from leaderboards.
-- **Quiz scoring** (`progress.views.submit_quiz`): normalizes text (lowercase, collapsed whitespace) for short answer, worded, true/false-without-answers and matching. Wrong answers create or reset a `FlashcardState` due today.
+- **Quiz scoring** (`progress.views.submit_quiz`): `QuizAttempt.score` is marks awarded out of `total_marks` (`total_questions` is just the count). Objective formats score all-or-nothing; text is normalized for short answer, true/false-without-answers and matching. Non-blank worded answers get `marks_awarded=None` and the attempt is `awaiting_review`; teachers mark them in the QuizAnswer admin ("Awaiting marking" filter, editable in the list), and the last mark calls `finalize_attempt` (score, flashcards, `record_attempt`, XP, no streak change). Pending attempts are excluded from best-score, lesson mastery, readiness and the admin average. Answers short of full marks create or reset a `FlashcardState` due today.
 - **Flashcards**: `FlashcardState.review()` implements SM-2 with ratings `again/hard/good/easy`. Reviews are posted via fetch from `flashcards.html`.
 - **Mastery** (`progress/analytics.py`): recency-weighted accuracy, 14-day half-life, needs 5+ answers (`MIN_EVIDENCE`) before a topic counts. Totals live in `TopicMasteryStat` (user+topic+difficulty), updated by `record_attempt` at the end of `submit_quiz`, so reads never scan answer history. Anything that creates `QuizAnswer` rows directly (tests, imports) must call `record_attempt`. Totals are frozen at answer time: later topic/difficulty edits or deleted attempts don't change them. Readiness = 70% topic mastery + 30% latest mock when a mock exists.
 - **Study plan** (`progress/study_plan.py`): remaining lessons sorted by `exam_weight * (1 - accuracy)`, max 3 lessons/day, flashcard review after each lesson, mistake review for topics with misses, a quiz every 4th lesson.
 - **Mock exams**: generated from the Subject admin action (`quizzes/services.py`). Questions sampled per topic by weight. Shortages are not padded from other topics.
+- **Lesson quizzes**: the Lesson admin action calls `generate_lesson_quizzes` to make inactive Easy (MCQ), Medium (T/F, MCQ, short answer) and Hard (worded) practice quizzes from one topic+lesson, optionally one pathway. Format rules apply only here, not in `Question.clean()`. Any shortage raises unless "allow fewer" is ticked.
 - **Search**: Postgres full-text (`SearchVector`/`SearchRank`) when available, `icontains` fallback otherwise (used in tests on SQLite).
-- **Quiz page**: question order is randomized on every render (`order_by("?")`).
+- **Quiz page**: question order is shuffled on every render unless `Quiz.shuffle_questions` is off (prefetched as `quiz.question_list`). Hints show on non-mock quizzes.
 - **Lesson images**: `optimize_images` filter injects Cloudinary transforms into `res.cloudinary.com/.../image/upload/` URLs in lesson HTML.
 
 ## URL conventions

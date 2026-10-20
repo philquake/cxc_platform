@@ -5,22 +5,28 @@
         option.disabled = !visible && !option.selected;
     }
 
+    // Topic and lesson options carry data-subject; hide the ones from other subjects.
     function filterTopicsBySubject() {
         const subject = document.getElementById("id_subject");
-        const topic = document.getElementById("id_topic");
-        if (!subject || !topic) {
+        if (!subject) {
             return;
         }
-        Array.from(topic.options).forEach(function (option) {
-            if (!option.value) {
+        ["id_topic", "id_lesson"].forEach(function (id) {
+            const select = document.getElementById(id);
+            if (!select) {
                 return;
             }
-            setOptionVisible(option, !subject.value || option.dataset.subject === subject.value);
+            Array.from(select.options).forEach(function (option) {
+                if (!option.value || !option.dataset.subject) {
+                    return;
+                }
+                setOptionVisible(option, !subject.value || option.dataset.subject === subject.value);
+            });
+            const selected = select.options[select.selectedIndex];
+            if (selected && selected.dataset.subject && subject.value && selected.dataset.subject !== subject.value) {
+                select.value = "";
+            }
         });
-        const selected = topic.options[topic.selectedIndex];
-        if (selected && selected.value && subject.value && selected.dataset.subject !== subject.value) {
-            topic.value = "";
-        }
     }
 
     function toggleMockFields() {

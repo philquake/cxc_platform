@@ -84,6 +84,9 @@ class QuizAttempt(models.Model):
     )
     score = models.PositiveIntegerField(default=0)
     total_questions = models.PositiveIntegerField(default=0)
+    # score counts marks awarded out of total_marks; worded answers wait for a marker.
+    total_marks = models.PositiveIntegerField(default=0)
+    awaiting_review = models.BooleanField(default=False)
     time_taken_seconds = models.PositiveIntegerField(null=True, blank=True)
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -93,11 +96,11 @@ class QuizAttempt(models.Model):
 
     @property
     def percentage(self):
-        if self.total_questions == 0:
+        if self.total_marks == 0:
             return 0
 
         return round(
-            (self.score / self.total_questions) * 100
+            (self.score / self.total_marks) * 100
         )
 
     def __str__(self):
@@ -123,9 +126,16 @@ class QuizAnswer(models.Model):
     )
     selected_text = models.TextField(blank=True, default="")
     is_correct = models.BooleanField(default=False)
+    marks_awarded = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Empty until the answer is marked.")
+    feedback = models.TextField(blank=True, help_text="Shown to the student with their result.")
 
     def __str__(self):
         return f"{self.attempt} - {self.question}"
+
+    def clean(self):
+        super().clean()
+        if self.marks_awarded is not None and self.question_id and self.marks_awarded > self.question.marks:
+            raise ValidationError({"marks_awarded": f"This question is worth at most {self.question.marks} marks."})
 
 
 class TopicMasteryStat(models.Model):

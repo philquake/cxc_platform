@@ -23,8 +23,9 @@ def _lesson_mastery(user, lessons):
             user=user,
             quiz__lesson__in=lessons,
             completed_at__isnull=False,
-            total_questions__gt=0,
-        ).values_list("quiz__lesson_id", "score", "total_questions")
+            awaiting_review=False,
+            total_marks__gt=0,
+        ).values_list("quiz__lesson_id", "score", "total_marks")
         for lesson_id, score, total in rows:
             best[lesson_id] = max(best.get(lesson_id, 0), round(score * 100 / total))
     for lesson in lessons:

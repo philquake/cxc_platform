@@ -1,6 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.db import connection
+from unittest import mock
+
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
@@ -12,7 +14,7 @@ from apps.questions.models import Answer, Question
 from apps.subjects.models import Subject, Topic
 
 from apps.quizzes.models import Quiz, QuizQuestion
-from apps.quizzes.services import generate_mock_exam
+from apps.quizzes.services import generate_lesson_quizzes, generate_mock_exam
 
 
 class QuizModelTests(TestCase):
@@ -241,7 +243,7 @@ class QuizModelTests(TestCase):
 			)
 			QuizQuestion.objects.create(quiz=quiz, question=self.question)
 			QuizAttempt.objects.create(
-				user=user, quiz=quiz, score=1, total_questions=1, completed_at=timezone.now()
+				user=user, quiz=quiz, score=1, total_questions=1, total_marks=1, completed_at=timezone.now()
 			)
 		self.client.force_login(user)
 
@@ -261,7 +263,7 @@ class QuizModelTests(TestCase):
 		QuizQuestion.objects.create(quiz=quiz, question=self.question)
 		other = User.objects.create_user(username="other", password="test-password")
 		QuizAttempt.objects.create(
-			user=other, quiz=quiz, score=1, total_questions=1, completed_at=timezone.now()
+			user=other, quiz=quiz, score=1, total_questions=1, total_marks=1, completed_at=timezone.now()
 		)
 		self.client.force_login(User.objects.create_user(username="me", password="test-password"))
 
@@ -343,7 +345,7 @@ class QuizModelTests(TestCase):
 		attempt = QuizAttempt.objects.create(
 			user=user,
 			quiz=quiz,
-			total_questions=1,
+			total_questions=1, total_marks=1,
 			completed_at=timezone.now(),
 		)
 		self.client.force_login(user)
@@ -388,3 +390,99 @@ class MockExamTimeMultiplierTests(TestCase):
 	def test_anonymous_user_gets_base_time_limit(self):
 		response = self._timer_minutes()
 		self.assertContains(response, 'data-time-limit-minutes="60"')
+
+
+class LessonQuizGeneratorTests(TestCase):
+	def setUp(self):
+		self.subject = Subject.objects.create(name="Information Technology", code="IT")
+		self.topic = Topic.objects.create(subject=self.subject, name="Hardware", slug="hardware")
+		self.lesson = Lesson.objects.create(subject=self.subject, title="Memory", slug="memory", content="<p>RAM</p>")
+		self.other_lesson = Lesson.objects.create(
+			subject=self.subject, title="Storage", slug="storage", content="<p>Disks</p>", lesson_number=2
+		)
+
+	def make(self, difficulty, fmt, count=1, lesson=None, **extra):
+		return [
+			Question.objects.create(
+				subject=self.subject, topic=self.topic, lesson=lesson or self.lesson, text=f"{difficulty} {fmt} {i}",
+				difficulty=difficulty, format=fmt, expected_answer="x", **extra,
+			)
+			for i in range(count)
+		]
+
+	def formats(self, quiz):
+		return set(quiz.questions.values_list("format", flat=True))
+
+	def test_each_difficulty_gets_only_its_allowed_formats(self):
+		easy = self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 3)
+		self.make("easy", Question.FORMAT_TRUE_FALSE, 3)  # wrong format for easy
+		self.make("medium", Question.FORMAT_TRUE_FALSE, 2)
+		self.make("medium", Question.FORMAT_SHORT_ANSWER, 2)
+		self.make("medium", Question.FORMAT_MATCHING, 2)  # not allowed in medium
+		self.make("hard", Question.FORMAT_WORDED, 2)
+		self.make("hard", Question.FORMAT_MULTIPLE_CHOICE, 2)  # not allowed in hard
+		quizzes, shortages = generate_lesson_quizzes(self.topic, self.lesson, {"easy": 3, "medium": 4, "hard": 2})
+		by_difficulty = {quiz.difficulty: quiz for quiz in quizzes}
+		self.assertEqual(shortages, [])
+		self.assertEqual(set(by_difficulty["easy"].questions.all()), set(easy))
+		self.assertEqual(self.formats(by_difficulty["medium"]), {Question.FORMAT_TRUE_FALSE, Question.FORMAT_SHORT_ANSWER})
+		self.assertEqual(self.formats(by_difficulty["hard"]), {Question.FORMAT_WORDED})
+		for quiz in quizzes:
+			self.assertFalse(quiz.is_active)
+			self.assertEqual((quiz.topic, quiz.lesson), (self.topic, self.lesson))
+			quiz.full_clean()
+
+	def test_filters_by_lesson_pathway_and_active_and_never_duplicates(self):
+		wanted = self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 2, for_guided=True)
+		self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 2, lesson=self.other_lesson)
+		self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 2, for_guided=False)
+		self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 2, is_active=False)
+		(quiz,), _ = generate_lesson_quizzes(self.topic, self.lesson, {"easy": 2}, pathway="guided")
+		self.assertEqual(quiz.pathway, "guided")
+		self.assertEqual(sorted(quiz.questions.values_list("pk", flat=True)), sorted(q.pk for q in wanted))
+
+	def test_shortage_raises_with_counts_unless_partial_allowed(self):
+		self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 2)
+		self.make("hard", Question.FORMAT_WORDED, 1)
+		with self.assertRaisesMessage(ValueError, "Easy: 2 of 5 eligible; Medium: 0 of 2 eligible; Hard: 1 of 3 eligible"):
+			generate_lesson_quizzes(self.topic, self.lesson, {"easy": 5, "medium": 2, "hard": 3})
+		self.assertFalse(Quiz.objects.exists())
+		quizzes, shortages = generate_lesson_quizzes(
+			self.topic, self.lesson, {"easy": 5, "medium": 2, "hard": 3}, allow_partial=True
+		)
+		self.assertEqual([quiz.quiz_questions.count() for quiz in quizzes], [2, 1])  # medium has none, so skipped
+		self.assertEqual(len(shortages), 3)
+
+	def test_rejects_topic_from_another_subject(self):
+		other = Topic.objects.create(subject=Subject.objects.create(name="Maths", code="MATH"), name="Algebra", slug="algebra")
+		with self.assertRaises(ValueError):
+			generate_lesson_quizzes(other, self.lesson, {"easy": 1})
+
+	def test_failure_mid_creation_rolls_back_every_quiz(self):
+		self.make("easy", Question.FORMAT_MULTIPLE_CHOICE)
+		self.make("hard", Question.FORMAT_WORDED)
+		real = QuizQuestion.objects.bulk_create
+		calls = []
+
+		def fail_second(*args, **kwargs):
+			calls.append(1)
+			if len(calls) == 2:
+				raise RuntimeError("boom")
+			return real(*args, **kwargs)
+
+		with mock.patch.object(QuizQuestion.objects, "bulk_create", side_effect=fail_second):
+			with self.assertRaises(RuntimeError):
+				generate_lesson_quizzes(self.topic, self.lesson, {"easy": 1, "hard": 1})
+		self.assertFalse(Quiz.objects.exists())
+		self.assertFalse(QuizQuestion.objects.exists())
+
+	def test_unshuffled_quiz_keeps_set_order(self):
+		questions = self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 6)
+		quiz = Quiz.objects.create(
+			subject=self.subject, topic=self.topic, lesson=self.lesson, title="Fixed", shuffle_questions=False
+		)
+		for order, question in enumerate(reversed(questions)):
+			QuizQuestion.objects.create(quiz=quiz, question=question, order=order)
+		page = self.client.get(reverse("quizzes:detail", args=[quiz.id])).content.decode()
+		positions = [page.index(f"easy multiple_choice {i}<") for i in reversed(range(6))]
+		self.assertEqual(positions, sorted(positions))

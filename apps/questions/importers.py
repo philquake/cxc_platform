@@ -13,6 +13,7 @@ OPTION_COLUMNS = ["option_1", "option_2", "option_3", "option_4"]
 COLUMNS = [
     "subject", "topic", "lesson", "format", "text", "difficulty",
     "explanation", "expected_answer", *OPTION_COLUMNS, "correct",
+    "marks", "mark_scheme", "hint", "estimated_time",
 ]
 SAMPLE_ROWS = [
     ["Information Technology", "Hardware", "1", "multiple_choice", "Which device is an input device?", "easy",
@@ -23,6 +24,11 @@ SAMPLE_ROWS = [
      "CPU is the main processing unit.", "Central Processing Unit", "", "", "", "", ""],
     ["Information Technology", "Hardware", "1", "matching", "Match each device to its type.", "medium",
      "Devices are grouped by whether they send or show data.", "", "Mouse|Input", "Monitor|Output", "", "", ""],
+    ["Information Technology", "Hardware", "1", "worded", "Explain two differences between RAM and ROM.", "hard",
+     "RAM is temporary working memory; ROM holds start-up instructions.",
+     "RAM is volatile and can be written to; ROM is non-volatile and read-only.", "", "", "", "", "",
+     "4", "1 mark per correct difference (max 2), 1 mark each for explaining it (max 2).",
+     "Think about what happens when the power goes off.", "4"],
 ]
 FORMAT_ALIASES = {
     "mcq": "multiple_choice", "multiple choice": "multiple_choice", "true/false": "true_false",
@@ -128,10 +134,16 @@ def import_questions(upload):
             if fmt not in dict(Question.FORMAT_CHOICES):
                 raise ValueError(f"unknown format '{fmt}'")
             difficulty = row.get("difficulty", "").lower() or "medium"
+            for column in ("marks", "estimated_time"):
+                if row.get(column) and not row[column].isdigit():
+                    raise ValueError(f"'{column}' must be a whole number")
             question = Question(
                 subject=subject, topic=topic, lesson=lesson, text=row["text"], format=fmt,
                 difficulty=difficulty, explanation=row.get("explanation", ""),
                 expected_answer=row.get("expected_answer", ""),
+                marks=int(row.get("marks") or 1), mark_scheme=row.get("mark_scheme", ""),
+                hint=row.get("hint", ""),
+                estimated_time_minutes=int(row["estimated_time"]) if row.get("estimated_time") else None,
             )
             answers = _build_answers(question, row, line)
             try:

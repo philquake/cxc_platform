@@ -1,6 +1,7 @@
 import time
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core import signing
 from django.test import TestCase
 from django.urls import reverse
@@ -19,6 +20,7 @@ from apps.progress.models import (
 	QuizAttempt,
 	StudyPlan,
 	StudyPlanItem,
+	TopicMasteryStat,
 	UserProgress,
 	XPTransaction,
 )
@@ -87,7 +89,7 @@ class ProgressFlowTests(TestCase):
 		first_attempt = QuizAttempt.objects.create(
 			user=self.user,
 			quiz=self.quiz,
-			total_questions=1,
+			total_questions=1, total_marks=1,
 			completed_at=timezone.now() - timezone.timedelta(days=1),
 		)
 		QuizAnswer.objects.create(
@@ -100,7 +102,7 @@ class ProgressFlowTests(TestCase):
 		latest_attempt = QuizAttempt.objects.create(
 			user=self.user,
 			quiz=self.quiz,
-			total_questions=1,
+			total_questions=1, total_marks=1,
 			completed_at=timezone.now(),
 		)
 		QuizAnswer.objects.create(
@@ -125,7 +127,7 @@ class ProgressFlowTests(TestCase):
 		history = [(20, True), (0, False), (5, True), (5, False)]
 		for days_ago, is_correct in history:
 			attempt = QuizAttempt.objects.create(
-				user=self.user, quiz=self.quiz, total_questions=1, completed_at=now - timedelta(days=days_ago)
+				user=self.user, quiz=self.quiz, total_questions=1, total_marks=1, completed_at=now - timedelta(days=days_ago)
 			)
 			QuizAnswer.objects.create(attempt=attempt, question=question, is_correct=is_correct)
 			record_attempt(attempt)
@@ -144,7 +146,7 @@ class ProgressFlowTests(TestCase):
 		attempt = QuizAttempt.objects.create(
 			user=self.user,
 			quiz=self.quiz,
-			total_questions=1,
+			total_questions=1, total_marks=1,
 			completed_at=timezone.now(),
 		)
 		QuizAnswer.objects.create(
@@ -170,7 +172,7 @@ class ProgressFlowTests(TestCase):
 			user=self.user,
 			quiz=mock,
 			score=1,
-			total_questions=1,
+			total_questions=1, total_marks=1,
 			time_taken_seconds=120,
 			completed_at=timezone.now(),
 		)
@@ -235,7 +237,7 @@ class ProgressFlowTests(TestCase):
 			user=self.user,
 			quiz=mock,
 			score=1,
-			total_questions=2,
+			total_questions=2, total_marks=2,
 			completed_at=timezone.now(),
 		)
 		results = {
@@ -269,7 +271,7 @@ class ProgressFlowTests(TestCase):
 			user=self.user,
 			quiz=self.quiz,
 			score=1,
-			total_questions=1,
+			total_questions=1, total_marks=1,
 			completed_at=timezone.now(),
 		)
 		QuizAnswer.objects.create(
@@ -300,14 +302,14 @@ class ProgressFlowTests(TestCase):
 			user=self.user,
 			quiz=self.quiz,
 			score=0,
-			total_questions=1,
+			total_questions=1, total_marks=1,
 			completed_at=now - timezone.timedelta(days=1),
 		)
 		latest_attempt = QuizAttempt.objects.create(
 			user=self.user,
 			quiz=self.quiz,
 			score=1,
-			total_questions=1,
+			total_questions=1, total_marks=1,
 			completed_at=now,
 		)
 		other_quiz = Quiz.objects.create(
@@ -320,7 +322,7 @@ class ProgressFlowTests(TestCase):
 			user=self.user,
 			quiz=other_quiz,
 			score=1,
-			total_questions=1,
+			total_questions=1, total_marks=1,
 			completed_at=now - timezone.timedelta(hours=1),
 		)
 		self.client.force_login(self.user)
@@ -356,7 +358,7 @@ class ProgressFlowTests(TestCase):
 		math_attempt = QuizAttempt.objects.create(
 			user=self.user,
 			quiz=self.quiz,
-			total_questions=2,
+			total_questions=2, total_marks=2,
 			completed_at=timezone.now(),
 		)
 		QuizAnswer.objects.create(
@@ -407,7 +409,7 @@ class ProgressFlowTests(TestCase):
 		science_attempt = QuizAttempt.objects.create(
 			user=self.user,
 			quiz=science_quiz,
-			total_questions=1,
+			total_questions=1, total_marks=1,
 			completed_at=timezone.now(),
 		)
 		QuizAnswer.objects.create(
@@ -886,7 +888,7 @@ class AdminDashboardTests(TestCase):
 		)
 		self.quiz = Quiz.objects.create(subject=subject, topic=topic, lesson=lesson, title="Algebra quiz")
 		attempt = QuizAttempt.objects.create(
-			user=student, quiz=self.quiz, score=0, total_questions=1, completed_at=timezone.now()
+			user=student, quiz=self.quiz, score=0, total_questions=1, total_marks=1, completed_at=timezone.now()
 		)
 		QuizAnswer.objects.create(attempt=attempt, question=self.hard, is_correct=False)
 
@@ -971,26 +973,129 @@ class QuizXPPolicyTests(TestCase):
 		)
 		self.assertTrue(QuizAnswer.objects.get(question=open_question).is_correct)
 
-	def test_expected_answer_alternatives_and_worded_containment(self):
+	def test_short_answer_accepts_listed_alternatives(self):
 		short = Question.objects.create(
 			subject=self.quiz.subject, topic=self.quiz.topic, lesson=self.quiz.lesson, text="Short",
 			format=Question.FORMAT_SHORT_ANSWER, expected_answer="RAM|random access memory",
 		)
+		QuizQuestion.objects.create(quiz=self.quiz, question=short, order=1)
+		self.client.post(reverse("progress:submit-quiz", args=[self.quiz.id]), {f"question-{short.id}": "Random Access Memory"})
+		self.assertTrue(QuizAnswer.objects.get(question=short).is_correct)
+
+	def _worded(self, marks=4):
 		worded = Question.objects.create(
 			subject=self.quiz.subject, topic=self.quiz.topic, lesson=self.quiz.lesson, text="Explain",
-			format=Question.FORMAT_WORDED, expected_answer="volatile",
+			format=Question.FORMAT_WORDED, expected_answer="volatile", marks=marks,
 		)
-		for order, question in enumerate([short, worded], start=1):
-			QuizQuestion.objects.create(quiz=self.quiz, question=question, order=order)
+		QuizQuestion.objects.create(quiz=self.quiz, question=worded, order=1)
+		return worded
+
+	def _mark(self, answer, marks):
+		from django.contrib.admin.sites import site
+		from django.test import RequestFactory
+
+		from apps.progress.admin import QuizAnswerAdmin
+
+		answer.marks_awarded = marks
+		answer.full_clean()
+		QuizAnswerAdmin(QuizAnswer, site).save_model(RequestFactory().post("/"), answer, None, True)
+
+	def test_worded_answer_waits_for_marking_then_scores_partial_credit(self):
+		worded = self._worded()
 		self.client.post(
 			reverse("progress:submit-quiz", args=[self.quiz.id]),
-			{
-				f"question-{short.id}": "Random Access Memory",
-				f"question-{worded.id}": "It is volatile, so it loses data when power is off.",
-			},
+			{f"question-{self.question.id}": self.right.id, f"question-{worded.id}": "It is volatile."},
 		)
-		self.assertTrue(QuizAnswer.objects.get(question=short).is_correct)
-		self.assertTrue(QuizAnswer.objects.get(question=worded).is_correct)
+		attempt = QuizAttempt.objects.get(user=self.user)
+		answer = QuizAnswer.objects.get(question=worded)
+		self.assertTrue(attempt.awaiting_review)
+		self.assertIsNone(answer.marks_awarded)
+		self.assertEqual(attempt.total_marks, 5)
+		self.assertFalse(XPTransaction.objects.filter(user=self.user).exists())
+		self.assertFalse(TopicMasteryStat.objects.filter(user=self.user).exists())
+		self.assertFalse(FlashcardState.objects.filter(user=self.user).exists())
+		page = self.client.get(reverse("quizzes:detail", args=[self.quiz.id]) + f"?attempt={attempt.id}")
+		self.assertContains(page, "waiting for your teacher to mark")
+
+		answer.feedback = "Name a second difference."
+		self._mark(answer, 2)
+		attempt.refresh_from_db()
+		answer.refresh_from_db()
+		self.assertFalse(attempt.awaiting_review)
+		self.assertEqual((attempt.score, attempt.percentage), (3, 60))
+		self.assertFalse(answer.is_correct)
+		self.assertEqual(self.xp(), 25 + 60 // 5)
+		self.assertTrue(TopicMasteryStat.objects.filter(user=self.user).exists())
+		self.assertTrue(FlashcardState.objects.filter(user=self.user, question=worded).exists())
+		page = self.client.get(reverse("quizzes:detail", args=[self.quiz.id]) + f"?attempt={attempt.id}")
+		self.assertContains(page, "2/4 marks")
+		self.assertContains(page, "Name a second difference.")
+
+		self._mark(answer, 4)  # a correction updates the score but awards no more XP
+		attempt.refresh_from_db()
+		self.assertEqual(attempt.score, 5)
+		self.assertTrue(QuizAnswer.objects.get(pk=answer.pk).is_correct)
+		self.assertEqual(XPTransaction.objects.filter(user=self.user).count(), 1)
+
+	def test_marking_queue_lists_pending_answers_and_marks_them_inline(self):
+		worded = self._worded()
+		self.client.post(
+			reverse("progress:submit-quiz", args=[self.quiz.id]),
+			{f"question-{self.question.id}": self.right.id, f"question-{worded.id}": "Loses data without power"},
+		)
+		answer = QuizAnswer.objects.get(question=worded)
+		self.client.force_login(get_user_model().objects.create_superuser("teacher", "t@example.com", "pw"))
+		url = reverse("admin:progress_quizanswer_changelist") + "?marking=pending"
+		response = self.client.get(url)
+		self.assertContains(response, "Loses data without power")
+		self.assertEqual(list(response.context["cl"].result_list), [answer])
+		response = self.client.post(url, {
+			"form-TOTAL_FORMS": "1", "form-INITIAL_FORMS": "1",
+			"form-0-id": answer.id, "form-0-marks_awarded": "3", "form-0-feedback": "Good", "_save": "Save",
+		})
+		self.assertEqual(response.status_code, 302)
+		attempt = QuizAttempt.objects.get(user=self.user)
+		self.assertEqual((attempt.awaiting_review, attempt.score), (False, 4))
+		self.assertEqual(self.xp(), 25 + 80 // 5)
+
+	def test_blank_worded_answer_needs_no_marking(self):
+		self._worded()
+		self.submit(self.right)
+		attempt = QuizAttempt.objects.get(user=self.user)
+		self.assertFalse(attempt.awaiting_review)
+		self.assertEqual((attempt.score, attempt.total_marks), (1, 5))
+
+	def test_pending_attempt_does_not_count_as_previous_best(self):
+		worded = self._worded(marks=1)
+		self.client.post(
+			reverse("progress:submit-quiz", args=[self.quiz.id]),
+			{f"question-{self.question.id}": self.right.id, f"question-{worded.id}": "volatile"},
+		)
+		self.client.post(
+			reverse("progress:submit-quiz", args=[self.quiz.id]),
+			{f"question-{self.question.id}": self.right.id},
+		)
+		self.assertEqual(self.xp(), 25 + 50 // 5)
+		self._mark(QuizAnswer.objects.get(question=worded, marks_awarded__isnull=True), 1)  # 100% beats 50%
+		self.assertEqual(self.xp(), (25 + 50 // 5) + (25 + 100 // 5))
+
+	def test_marks_cannot_exceed_question_marks(self):
+		worded = self._worded(marks=2)
+		self.client.post(
+			reverse("progress:submit-quiz", args=[self.quiz.id]),
+			{f"question-{self.question.id}": self.right.id, f"question-{worded.id}": "x"},
+		)
+		answer = QuizAnswer.objects.get(question=worded)
+		answer.marks_awarded = 3
+		with self.assertRaises(ValidationError):
+			answer.full_clean()
+
+	def test_multi_mark_objective_question_scores_all_or_nothing(self):
+		self.question.marks = 3
+		self.question.save()
+		self.submit(self.right)
+		attempt = QuizAttempt.objects.get(user=self.user)
+		self.assertEqual((attempt.score, attempt.total_marks, attempt.percentage), (3, 3, 100))
 
 	def test_matching_dropdown_options_are_not_in_answer_order(self):
 		match = Question.objects.create(

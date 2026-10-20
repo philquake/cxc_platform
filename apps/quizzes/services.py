@@ -2,7 +2,7 @@ import random
 
 from django.db import transaction
 
-from apps.questions.models import Question
+from apps.questions.models import PATHWAY_CHOICES, Question
 from apps.subjects.models import Topic
 
 from .models import Quiz, QuizQuestion
@@ -62,3 +62,69 @@ def generate_mock_exam(subject, question_count, time_limit_minutes, topics=None)
             for order, question in enumerate(sampled_questions)
         ])
     return quiz, topic_counts
+
+
+FORMATS_BY_DIFFICULTY = {
+    "easy": {Question.FORMAT_MULTIPLE_CHOICE},
+    "medium": {Question.FORMAT_TRUE_FALSE, Question.FORMAT_MULTIPLE_CHOICE, Question.FORMAT_SHORT_ANSWER},
+    "hard": {Question.FORMAT_WORDED},
+}
+DEFAULT_COUNTS = {"easy": 10, "medium": 10, "hard": 5}
+
+
+def generate_lesson_quizzes(topic, lesson, counts, pathway="", allow_partial=False):
+    """Create one inactive practice quiz per requested difficulty from the lesson's question bank.
+
+    counts maps difficulty to question count. Raises ValueError on any shortage unless allow_partial.
+    Quizzes start inactive so a teacher can preview them before switching them on.
+    """
+    if lesson.subject_id != topic.subject_id:
+        raise ValueError("The lesson and topic belong to different subjects.")
+    counts = {difficulty: count for difficulty, count in counts.items() if count}
+    if not counts:
+        raise ValueError("Ask for at least one question.")
+    if any(difficulty not in FORMATS_BY_DIFFICULTY or count < 0 for difficulty, count in counts.items()):
+        raise ValueError("Counts must be positive and keyed by easy, medium or hard.")
+    if pathway and pathway not in dict(PATHWAY_CHOICES):
+        raise ValueError(f"Unknown pathway '{pathway}'.")
+
+    picked, shortages = {}, []
+    for difficulty in FORMATS_BY_DIFFICULTY:
+        if difficulty not in counts:
+            continue
+        questions = Question.objects.filter(
+            topic=topic,
+            lesson=lesson,
+            is_active=True,
+            difficulty=difficulty,
+            format__in=FORMATS_BY_DIFFICULTY[difficulty],
+        )
+        if pathway:
+            questions = questions.filter(**{f"for_{pathway}": True})
+        picked[difficulty] = list(questions.order_by("?")[: counts[difficulty]])
+        if len(picked[difficulty]) < counts[difficulty]:
+            shortages.append(f"{difficulty.title()}: {len(picked[difficulty])} of {counts[difficulty]} eligible")
+    if shortages and not allow_partial:
+        raise ValueError("Not enough questions. " + "; ".join(shortages) + ".")
+    picked = {difficulty: questions for difficulty, questions in picked.items() if questions}
+    if not picked:
+        raise ValueError("No eligible questions for this topic and lesson.")
+
+    quizzes = []
+    with transaction.atomic():
+        for difficulty, questions in picked.items():
+            quiz = Quiz.objects.create(
+                subject=lesson.subject,
+                topic=topic,
+                lesson=lesson,
+                title=f"{lesson.title}: {difficulty.title()}",
+                difficulty=difficulty,
+                pathway=pathway,
+                is_active=False,
+            )
+            QuizQuestion.objects.bulk_create([
+                QuizQuestion(quiz=quiz, question=question, order=order)
+                for order, question in enumerate(questions)
+            ])
+            quizzes.append(quiz)
+    return quizzes, shortages

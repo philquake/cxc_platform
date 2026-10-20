@@ -90,7 +90,7 @@
               <tr>
                 <td>{{ attempt.user.get_username }}</td>
                 <td><a href="{% url 'admin:progress_quizattempt_change' attempt.pk %}">{{ attempt.quiz.title }}</a>{% if attempt.quiz.is_mock %} <span class="badge badge-secondary">{% translate 'Mock' %}</span>{% endif %}</td>
-                <td class="num">{{ attempt.score }}/{{ attempt.total_questions }}</td>
+                <td class="num">{{ attempt.score }}/{{ attempt.total_marks }}{% if attempt.awaiting_review %} (marking){% endif %}</td>
                 <td class="num">{{ attempt.completed_at|timesince }} {% translate 'ago' %}</td>
               </tr>
             {% endfor %}

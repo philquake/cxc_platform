@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from apps.lessons.models import Lesson
-from apps.questions.models import Question
+from apps.questions.models import DIFFICULTY_CHOICES, PATHWAY_CHOICES, Question
 from apps.subjects.models import Subject, Topic
 
 
@@ -35,6 +35,9 @@ class Quiz(models.Model):
     is_active = models.BooleanField(default=True)
     is_mock = models.BooleanField(default=False)
     time_limit_minutes = models.PositiveIntegerField(null=True, blank=True)
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, blank=True)
+    pathway = models.CharField(max_length=20, choices=PATHWAY_CHOICES, blank=True)
+    shuffle_questions = models.BooleanField(default=True, help_text="Untick to show questions in their set order.")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -3,6 +3,17 @@ from django.db import models
 from apps.lessons.models import Lesson
 from apps.subjects.models import Subject, Topic
 
+DIFFICULTY_CHOICES = [
+    ("easy", "Easy"),
+    ("medium", "Medium"),
+    ("hard", "Hard"),
+]
+PATHWAY_CHOICES = [
+    ("guided", "Guided learning"),
+    ("adaptive", "Personalised learning"),
+    ("practice", "Practice / exam prep"),
+]
+
 
 class Question(models.Model):
     FORMAT_MULTIPLE_CHOICE = "multiple_choice"
@@ -44,13 +55,16 @@ class Question(models.Model):
     explanation = models.TextField(blank=True)
     difficulty = models.CharField(
         max_length=20,
-        choices=[
-            ("easy", "Easy"),
-            ("medium", "Medium"),
-            ("hard", "Hard"),
-        ],
+        choices=DIFFICULTY_CHOICES,
         default="medium",
     )
+    marks = models.PositiveSmallIntegerField(default=1)
+    mark_scheme = models.TextField(blank=True, help_text="Marking criteria and partial-credit rules, shown to markers and to students after marking.")
+    hint = models.TextField(blank=True, help_text="Optional hint shown on practice quizzes, not mock exams.")
+    estimated_time_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    for_guided = models.BooleanField("Guided learning", default=True)
+    for_adaptive = models.BooleanField("Personalised learning", default=True)
+    for_practice = models.BooleanField("Practice / exam prep", default=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -64,6 +78,8 @@ class Question(models.Model):
     def clean(self):
         super().clean()
         errors = {}
+        if self.marks < 1:
+            errors["marks"] = "A question is worth at least one mark."
         if self.format in {self.FORMAT_SHORT_ANSWER, self.FORMAT_WORDED} and not self.expected_answer.strip():
             errors["expected_answer"] = "Open-ended questions require an expected answer."
         if self.lesson_id and self.subject_id and self.lesson.subject_id != self.subject_id:

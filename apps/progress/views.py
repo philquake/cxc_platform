@@ -41,7 +41,7 @@ from .models import (
 from .study_plan import due_flashcard_count, generate_plan
 
 
-def _award_xp(user, topic, amount, reason, lesson_progress=None, quiz_attempt=None):
+def _award_xp(user, topic, amount, reason, lesson_progress=None, quiz_attempt=None, update_streak=True):
 	with transaction.atomic():
 		xp_transaction = XPTransaction.objects.create(
 			user=user,
@@ -52,16 +52,17 @@ def _award_xp(user, topic, amount, reason, lesson_progress=None, quiz_attempt=No
 			quiz_attempt=quiz_attempt,
 		)
 		progress, _ = UserProgress.objects.select_for_update().get_or_create(user=user)
-		today = timezone.localdate()
-		if progress.last_activity_date == today:
-			pass
-		elif progress.last_activity_date == today - timedelta(days=1):
-			progress.current_streak += 1
-		else:
-			progress.current_streak = 1
+		if update_streak:
+			today = timezone.localdate()
+			if progress.last_activity_date == today:
+				pass
+			elif progress.last_activity_date == today - timedelta(days=1):
+				progress.current_streak += 1
+			else:
+				progress.current_streak = 1
+			progress.longest_streak = max(progress.longest_streak, progress.current_streak)
+			progress.last_activity_date = today
 		progress.total_xp += amount
-		progress.longest_streak = max(progress.longest_streak, progress.current_streak)
-		progress.last_activity_date = today
 		progress.save()
 	return xp_transaction
 
@@ -185,7 +186,8 @@ def dashboard(request):
 			quiz__is_mock=True,
 			quiz__is_active=True,
 			completed_at__isnull=False,
-			total_questions__gt=0,
+			awaiting_review=False,
+			total_marks__gt=0,
 		).select_related("quiz").order_by("-completed_at", "-started_at").first()
 		subject.readiness = estimated_readiness(
 			active_topics,
@@ -324,14 +326,11 @@ def _safe_next_url(request, fallback):
 	return fallback
 
 
-def _matches_expected(answer, expected, contains=False):
-	"""Expected answers may list alternatives separated by "|"; worded answers may contain one."""
+def _matches_expected(answer, expected):
+	"""Expected answers may list alternatives separated by "|"."""
 	answer = _normalize_answer_text(answer)
 	options = [_normalize_answer_text(option) for option in (expected or "").split("|")]
-	options = [option for option in options if option]
-	if contains:
-		return any(option in answer for option in options)
-	return answer in options
+	return answer in [option for option in options if option]
 
 
 def _normalize_answer_text(value):
@@ -375,6 +374,54 @@ def complete_lesson(request, lesson_id):
 		},
 	)
 	return redirect(_safe_next_url(request, fallback))
+
+
+@transaction.atomic
+def finalize_attempt(attempt, update_streak=True):
+	"""Score a fully marked attempt, then queue flashcards, update mastery and award XP. Call once per attempt."""
+	# Row lock serialises this user's submissions and markings, so the best-score check below can't race.
+	UserProgress.objects.select_for_update().get_or_create(user=attempt.user)
+	previous_best = max(
+		(
+			round(score * 100 / total) if total else 0
+			for score, total in QuizAttempt.objects.filter(
+				user=attempt.user, quiz=attempt.quiz, completed_at__isnull=False, awaiting_review=False
+			).exclude(pk=attempt.pk).values_list("score", "total_marks")
+		),
+		default=-1,
+	)
+	answers = list(attempt.answers.select_related("question"))
+	attempt.score = sum(answer.marks_awarded or 0 for answer in answers)
+	attempt.awaiting_review = False
+	attempt.save(update_fields=["score", "awaiting_review"])
+	FlashcardState.objects.bulk_create(
+		[
+			FlashcardState(
+				user=attempt.user,
+				question=answer.question,
+				due_at=timezone.localdate(),
+				last_reviewed_at=timezone.now(),
+			)
+			for answer in answers
+			if not answer.is_correct
+		],
+		update_conflicts=True,
+		unique_fields=["user", "question"],
+		update_fields=["due_at", "last_reviewed_at"],
+	)
+	record_attempt(attempt)
+	# XP only for a first completion or a new best percentage, so retakes can't farm the leaderboard.
+	# A zero score earns nothing, so blank submissions can't farm it either.
+	quiz = attempt.quiz
+	if quiz.topic_id and attempt.score > 0 and attempt.percentage > previous_best:
+		_award_xp(
+			attempt.user,
+			quiz.topic,
+			25 + attempt.percentage // 5,
+			f"Completed quiz: {attempt.percentage}%",
+			quiz_attempt=attempt,
+			update_streak=update_streak,
+		)
 
 
 @login_required
@@ -421,27 +468,15 @@ def submit_quiz(request, quiz_id):
 		except (signing.BadSignature, TypeError, ValueError):
 			pass
 
-	# Row lock serialises this user's submissions, so the best-score check below can't race.
-	UserProgress.objects.select_for_update().get_or_create(user=request.user)
-	previous_best = max(
-		(
-			round(score * 100 / total) if total else 0
-			for score, total in QuizAttempt.objects.filter(
-				user=request.user, quiz=quiz, completed_at__isnull=False
-			).values_list("score", "total_questions")
-		),
-		default=-1,
-	)
 	attempt = QuizAttempt.objects.create(
 		user=request.user,
 		quiz=quiz,
 		total_questions=len(quiz_questions),
+		total_marks=sum(qq.question.marks for qq in quiz_questions),
 		time_taken_seconds=time_taken,
 		completed_at=timezone.now(),
 	)
-	score = 0
 	quiz_answers = []
-	wrong_questions = {}
 	for quiz_question in quiz_questions:
 		question = quiz_question.question
 		selected_answer = None
@@ -462,11 +497,13 @@ def submit_quiz(request, quiz_id):
 				and _normalize_answer_text(selected_pairs.get(answer_id, "")) == correct_value
 				for answer_id, correct_value in correct_pairs.items()
 			)
-		elif question.format in {Question.FORMAT_SHORT_ANSWER, Question.FORMAT_WORDED}:
+		elif question.format == Question.FORMAT_WORDED:
 			selected_text = selected_text_answers.get(question.id, "")
-			is_correct = _matches_expected(
-				selected_text, question.expected_answer, contains=question.format == Question.FORMAT_WORDED
-			)
+			# A marker awards partial credit later; blank answers need no marking.
+			is_correct = None if selected_text else False
+		elif question.format == Question.FORMAT_SHORT_ANSWER:
+			selected_text = selected_text_answers.get(question.id, "")
+			is_correct = _matches_expected(selected_text, question.expected_answer)
 		elif question.format == Question.FORMAT_TRUE_FALSE and not any(question.answers.all()):
 			selected_text = request.POST.get(f"question-{question.id}", "").strip()
 			is_correct = (
@@ -484,45 +521,20 @@ def submit_quiz(request, quiz_id):
 				None,
 			)
 			is_correct = bool(selected_answer and selected_answer.is_correct)
-		if is_correct:
-			score += 1
-		else:
-			wrong_questions[question.id] = question
 		quiz_answers.append(QuizAnswer(
 			attempt=attempt,
 			question=question,
 			selected_answer=selected_answer,
 			selected_text=selected_text,
-			is_correct=is_correct,
+			is_correct=bool(is_correct),
+			marks_awarded=None if is_correct is None else question.marks if is_correct else 0,
 		))
 	QuizAnswer.objects.bulk_create(quiz_answers)
-	FlashcardState.objects.bulk_create(
-		[
-			FlashcardState(
-				user=request.user,
-				question=question,
-				due_at=timezone.localdate(),
-				last_reviewed_at=timezone.now(),
-			)
-			for question in wrong_questions.values()
-		],
-		update_conflicts=True,
-		unique_fields=["user", "question"],
-		update_fields=["due_at", "last_reviewed_at"],
-	)
-	attempt.score = score
-	attempt.save(update_fields=["score"])
-	record_attempt(attempt)
-	# XP only for a first completion or a new best percentage, so retakes can't farm the leaderboard.
-	# A zero score earns nothing, so blank submissions can't farm it either.
-	if quiz.topic_id and score > 0 and attempt.percentage > previous_best:
-		_award_xp(
-			request.user,
-			quiz.topic,
-			25 + attempt.percentage // 5,
-			f"Completed quiz: {attempt.percentage}%",
-			quiz_attempt=attempt,
-		)
+	if any(answer.marks_awarded is None for answer in quiz_answers):
+		attempt.awaiting_review = True
+		attempt.save(update_fields=["awaiting_review"])
+	else:
+		finalize_attempt(attempt)
 
 	destination = _safe_next_url(request, reverse("quizzes:list"))
 	separator = "&" if "?" in destination else "?"

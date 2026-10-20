@@ -1,4 +1,5 @@
 import math
+import random
 import time
 
 from django.core import signing
@@ -21,10 +22,7 @@ def quiz_queryset(subject=None, topic=None, with_questions=False):
         quiz_questions = quiz_questions.filter(question__subject=subject)
     if topic is not None:
         quiz_questions = quiz_questions.filter(question__topic=topic)
-        
-    # Randomize question order (and answer order within each question)
-    # on every render, instead of always following the fixed "order" field.
-    quiz_questions = quiz_questions.order_by("?")
+
 
     quiz_filters = Q(is_active=True) & (Q(lesson__is_active=True) | Q(is_mock=True))
     if subject is not None:
@@ -48,7 +46,9 @@ def quiz_queryset(subject=None, topic=None, with_questions=False):
         return quizzes.annotate(question_count=Count("quiz_questions", filter=question_filter))
     return quizzes.prefetch_related(
         Prefetch(
+            # Fixed "order" here; _shuffle_questions randomises quizzes that ask for it.
             "quiz_questions",
+            to_attr="question_list",
             queryset=quiz_questions.select_related("question").prefetch_related(
                 "question__answers"
             ),
@@ -83,6 +83,7 @@ def lesson_quizzes(request, lesson_id):
     if not quizzes.exists():
         raise Http404("Quiz not found")
     quizzes = list(quizzes)
+    _shuffle_questions(quizzes)
     _add_latest_attempts(request, quizzes)
     return render(
         request,
@@ -102,6 +103,7 @@ def quiz_detail(request, quiz_id):
     quiz = quizzes.first()
     if quiz is None:
         raise Http404("Quiz not found")
+    _shuffle_questions([quiz])
     _add_latest_attempts(request, [quiz])
     return render(
         request,
@@ -170,6 +172,12 @@ def _add_time_limits(request, quizzes):
         quiz.has_extra_time = bool(minutes) and quiz.effective_time_limit_minutes > minutes
         if quiz.is_mock and request.user.is_authenticated:
             quiz.start_token = signing.dumps([quiz.id, request.user.id, int(time.time())])
+
+
+def _shuffle_questions(quizzes):
+    for quiz in quizzes:
+        if quiz.shuffle_questions:
+            random.shuffle(quiz.question_list)
 
 
 def _add_latest_attempts(request, quizzes):

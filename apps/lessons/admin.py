@@ -1,10 +1,13 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.contrib.admin.helpers import ActionForm
 from django.utils.html import format_html, format_html_join
 
 from django import forms
 
 from apps.core.admin_import import ImportAdminMixin
-from apps.subjects.models import Subject
+from apps.questions.models import PATHWAY_CHOICES
+from apps.quizzes.services import DEFAULT_COUNTS, generate_lesson_quizzes
+from apps.subjects.models import Subject, Topic
 
 from .importers import import_lessons
 from .models import Lesson, LessonImage
@@ -33,8 +36,66 @@ class LessonImportForm(forms.Form):
     )
 
 
+class LessonQuizSettingsForm(forms.Form):
+    topic = forms.ModelChoiceField(
+        label="Topic",
+        queryset=Topic.objects.none(),
+        required=False,
+        help_text="Leave blank to use the lesson's only topic.",
+    )
+    easy = forms.IntegerField(label="Easy", min_value=0, max_value=100, initial=DEFAULT_COUNTS["easy"], required=False)
+    medium = forms.IntegerField(label="Medium", min_value=0, max_value=100, initial=DEFAULT_COUNTS["medium"], required=False)
+    hard = forms.IntegerField(label="Hard", min_value=0, max_value=100, initial=DEFAULT_COUNTS["hard"], required=False)
+    pathway = forms.ChoiceField(label="Pathway", choices=[("", "Any pathway"), *PATHWAY_CHOICES], required=False)
+    allow_partial = forms.BooleanField(label="Allow fewer than requested", required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["topic"].queryset = Topic.objects.filter(is_active=True).select_related("subject")
+
+
+class LessonQuizActionForm(ActionForm, LessonQuizSettingsForm):
+    pass
+
+
+@admin.action(description="Generate Easy/Medium/Hard quizzes for selected lessons")
+def generate_quizzes(modeladmin, request, queryset):
+    form = LessonQuizSettingsForm(request.POST)
+    if not form.is_valid():
+        modeladmin.message_user(request, f"Check the quiz settings: {form.errors.as_text()}", level=messages.ERROR)
+        return
+    data = form.cleaned_data
+    counts = {difficulty: data[difficulty] or 0 for difficulty in DEFAULT_COUNTS}
+    for lesson in queryset.select_related("subject"):
+        topic = data["topic"]
+        if topic is None:
+            topics = list(Topic.objects.filter(questions__lesson=lesson).distinct()[:2])
+            if len(topics) != 1:
+                modeladmin.message_user(
+                    request, f"{lesson}: its questions span several topics (or none); choose a topic.", level=messages.WARNING
+                )
+                continue
+            topic = topics[0]
+        try:
+            quizzes, shortages = generate_lesson_quizzes(
+                topic, lesson, counts, pathway=data["pathway"], allow_partial=data["allow_partial"]
+            )
+        except ValueError as error:
+            modeladmin.message_user(request, f"{lesson}: {error}", level=messages.WARNING)
+            continue
+        made = ", ".join(f"{quiz.get_difficulty_display()} ({quiz.quiz_questions.count()})" for quiz in quizzes)
+        note = f" Short: {'; '.join(shortages)}." if shortages else ""
+        modeladmin.message_user(
+            request,
+            f"{lesson}: created {made} as inactive quizzes. Preview them under Quizzes, then tick Active.{note}",
+            level=messages.SUCCESS,
+        )
+
+
 @admin.register(Lesson)
 class LessonAdmin(ImportAdminMixin, admin.ModelAdmin):
+    action_form = LessonQuizActionForm
+    actions = (generate_quizzes,)
     import_form_class = LessonImportForm
     import_title = "Upload notes"
     import_help = (

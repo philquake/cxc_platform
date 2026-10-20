@@ -222,7 +222,7 @@ class LessonMasteryTests(TestCase):
         )
         for score in (3, 9):
             QuizAttempt.objects.create(
-                user=user, quiz=quiz, score=score, total_questions=10,
+                user=user, quiz=quiz, score=score, total_questions=10, total_marks=10,
                 completed_at=timezone.now(),
             )
         self.client.force_login(user)

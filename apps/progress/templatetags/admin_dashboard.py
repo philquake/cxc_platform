@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.lessons.models import Lesson
-from apps.progress.models import QuizAttempt, UserProgress
+from apps.progress.models import QuizAnswer, QuizAttempt, UserProgress
 from apps.questions.models import Answer, Question
 
 register = template.Library()
@@ -81,8 +81,8 @@ def admin_dashboard(context):
 
     if user.has_perm("progress.view_quizattempt"):
         completed = QuizAttempt.objects.filter(completed_at__isnull=False)
-        week = completed.filter(completed_at__gte=week_ago).aggregate(
-            n=Count("id"), score=Sum("score"), total=Sum("total_questions")
+        week = completed.filter(completed_at__gte=week_ago, awaiting_review=False).aggregate(
+            n=Count("id"), score=Sum("score"), total=Sum("total_marks")
         )
         stats.append({
             "label": "Quiz attempts (7d)",
@@ -90,6 +90,14 @@ def admin_dashboard(context):
             "hint": f"{week['score'] * 100 / week['total']:.0f}% average score" if week["total"] else "No attempts yet",
             "url": reverse("admin:progress_quizattempt_changelist"),
         })
+        if user.has_perm("progress.change_quizanswer"):
+            pending = QuizAnswer.objects.filter(marks_awarded__isnull=True).count()
+            stats.append({
+                "label": "Awaiting marking",
+                "value": pending,
+                "hint": "Worded answers to mark" if pending else "All answers marked",
+                "url": reverse("admin:progress_quizanswer_changelist") + "?marking=pending",
+            })
         recent_attempts = list(completed.select_related("user", "quiz").order_by("-completed_at")[:6])
 
         start = today - timedelta(days=CHART_DAYS - 1)

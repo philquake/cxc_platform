@@ -137,3 +137,30 @@ class OptimizeImagesFilterTests(TestCase):
 		self.assertNotIn("<script", out)
 		self.assertNotIn("onclick", out)
 		self.assertIn("Hi", out)
+
+
+class LessonQuizActionTests(TestCase):
+	def test_action_generates_inactive_quizzes_and_reports_shortages(self):
+		from django.contrib.auth import get_user_model
+
+		from apps.questions.models import Question
+		from apps.quizzes.models import Quiz
+		from apps.subjects.models import Topic
+
+		self.client.force_login(get_user_model().objects.create_superuser("boss", "b@example.com", "pw"))
+		subject = Subject.objects.create(name="Information Technology", code="IT")
+		topic = Topic.objects.create(subject=subject, name="Hardware", slug="hardware")
+		lesson = Lesson.objects.create(subject=subject, title="Memory", content="<p>x</p>")
+		for i in range(2):
+			Question.objects.create(subject=subject, topic=topic, lesson=lesson, text=f"Q{i}", difficulty="easy")
+		url = reverse("admin:lessons_lesson_changelist")
+		form = {"action": "generate_quizzes", "_selected_action": [lesson.id], "easy": 3, "medium": "", "hard": ""}
+
+		response = self.client.post(url, form, follow=True)
+		self.assertContains(response, "Easy: 2 of 3 eligible")
+		self.assertFalse(Quiz.objects.exists())
+
+		response = self.client.post(url, {**form, "allow_partial": "on"}, follow=True)
+		quiz = Quiz.objects.get()
+		self.assertEqual((quiz.topic, quiz.difficulty, quiz.is_active, quiz.questions.count()), (topic, "easy", False, 2))
+		self.assertContains(response, "inactive quizzes")

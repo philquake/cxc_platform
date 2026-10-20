@@ -16,7 +16,7 @@
             <div class="quiz-result-dialog-content">
                 <button type="button" class="quiz-result-close" onclick="this.closest('dialog').close()" aria-label="Close result dialog">&times;</button>
                 <p class="content-card-label">Quiz complete</p>
-                <h2 id="quiz-result-title" tabindex="-1">{{ result_attempt.score }}/{{ result_attempt.total_questions }} correct</h2>
+                <h2 id="quiz-result-title" tabindex="-1">{{ result_attempt.score }}/{{ result_attempt.total_marks }} marks</h2>
                 <p class="quiz-result-score">{{ result_attempt.percentage }}%</p>
                 {% if result_attempt.xp_transaction %}
                     <p class="quiz-result-xp">+{{ result_attempt.xp_transaction.amount }} XP earned</p>
@@ -27,19 +27,35 @@
                             <div class="quiz-result-item is-incorrect">
                                 <p class="quiz-result-item-question">{{ forloop.counter }}. {{ answer.question.text }}</p>
                                 <p class="quiz-result-item-status">
-                                    <span class="sr-only">Incorrect.</span><span aria-hidden="true">✗</span> Your answer: {% if answer.selected_answer %}{{ answer.selected_answer.text }}{% elif answer.selected_text %}{{ answer.selected_text }}{% else %}No answer selected{% endif %}
+                                    {% if answer.marks_awarded is None %}<span class="sr-only">Awaiting marking.</span>{% else %}<span class="sr-only">Incorrect.</span><span aria-hidden="true">✗</span>{% endif %} Your answer: {% if answer.selected_answer %}{{ answer.selected_answer.text }}{% elif answer.selected_text %}{{ answer.selected_text }}{% else %}No answer selected{% endif %}
                                 </p>
+                                {% if answer.marks_awarded is None %}
+                                    <p class="quiz-result-item-marks">Waiting for your teacher to mark this answer.</p>
+                                {% elif answer.question.marks > 1 %}
+                                    <p class="quiz-result-item-marks">{{ answer.marks_awarded }}/{{ answer.question.marks }} marks</p>
+                                {% endif %}
+                                {% if answer.feedback %}
+                                    <p class="quiz-result-item-explanation">Teacher feedback: {{ answer.feedback }}</p>
+                                {% endif %}
                                 {% if answer.question.correct_answer_text %}
                                     <p class="quiz-result-item-correct">✓ Correct answer: {{ answer.question.correct_answer_text }}</p>
                                 {% endif %}
                                 {% if answer.question.explanation %}
                                     <p class="quiz-result-item-explanation">{{ answer.question.explanation }}</p>
                                 {% endif %}
+                                {% if answer.question.mark_scheme and answer.marks_awarded is not None %}
+                                    <p class="quiz-result-item-explanation">Mark scheme: {{ answer.question.mark_scheme|linebreaksbr }}</p>
+                                {% endif %}
                             </div>
                         {% endif %}
                     {% endfor %}
                 </div>
-                {% if result_attempt.percentage >= 70 %}
+                {% if result_attempt.awaiting_review %}
+                    <p>Some answers are waiting for your teacher to mark them. Your score and XP update once they are marked.</p>
+                    <div class="quiz-result-actions">
+                        <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Close</button>
+                    </div>
+                {% elif result_attempt.percentage >= 70 %}
                     <p>You passed. Keep going while it is fresh.</p>
                     <div class="quiz-result-actions">
                         {% if other_quiz %}
@@ -131,9 +147,12 @@
                 {% endif %}
 
                 {% if show_questions %}
-                {% for quiz_question in quiz.quiz_questions.all %}
+                {% for quiz_question in quiz.question_list %}
                     <fieldset class="quiz-question">
-                        <legend>{{ forloop.counter }}. {{ quiz_question.question.text }}</legend>
+                        <legend>{{ forloop.counter }}. {{ quiz_question.question.text }}{% if quiz_question.question.marks > 1 %} <span class="quiz-question-marks">({{ quiz_question.question.marks }} marks)</span>{% endif %}</legend>
+                        {% if quiz_question.question.hint and not quiz.is_mock %}
+                            <details class="quiz-hint"><summary>Show a hint</summary><p>{{ quiz_question.question.hint }}</p></details>
+                        {% endif %}
                         {% if quiz_question.question.format == 'matching' %}
                             {% for answer in quiz_question.question.answers.all %}
                                 <label>
@@ -178,9 +197,9 @@
                 {% empty %}
                     <p class="quiz-empty">This quiz has no questions yet. Try another quiz, or check back soon.</p>
                 {% endfor %}
-                {% if user.is_authenticated and quiz.quiz_questions.all %}
+                {% if user.is_authenticated and quiz.question_list %}
                     <div class="quiz-actions">
-                        <span class="quiz-answered" role="status" aria-live="polite" data-answered-status data-total="{{ quiz.quiz_questions.all|length }}">0 of {{ quiz.quiz_questions.all|length }} answered</span>
+                        <span class="quiz-answered" role="status" aria-live="polite" data-answered-status data-total="{{ quiz.question_list|length }}">0 of {{ quiz.question_list|length }} answered</span>
                         <button type="reset" class="quiz-reset">Clear answers</button>
                         <button type="submit" class="quiz-submit">Submit answers</button>
                     </div>
@@ -192,7 +211,7 @@
                     <a class="progress-action-link" href="{% url 'quizzes:detail' quiz.id %}">Open quiz</a>
                 {% endif %}
                 {% if quiz.latest_attempt %}
-                    <p class="quiz-result">Last attempt: {{ quiz.latest_attempt.score }} of {{ quiz.latest_attempt.total_questions }} correct ({{ quiz.latest_attempt.percentage }}%)</p>
+                    <p class="quiz-result">Last attempt: {{ quiz.latest_attempt.score }} of {{ quiz.latest_attempt.total_marks }} marks ({{ quiz.latest_attempt.percentage }}%){% if quiz.latest_attempt.awaiting_review %}, waiting for marking{% endif %}</p>
                 {% endif %}
                 {% if show_questions %}</form>{% endif %}
             </article>

@@ -102,9 +102,11 @@
     <div class="quiz-list">
         {% for quiz in quizzes %}
             <article class="quiz-card">
+                {% if show_questions %}
                 <form method="post" action="{% url 'progress:submit-quiz' quiz.id %}" class="quiz-form" data-quiz-form{% if not quiz.is_mock %} data-stepper{% endif %}>
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                {% endif %}
                 <div class="quiz-card-heading">
                     <div>
                         <span class="content-card-label">{{ quiz.subject.code }}{% if quiz.topic %} / {{ quiz.topic.name }}{% elif quiz.is_mock %} / mock exam{% endif %}</span>
@@ -119,7 +121,7 @@
                     </span>
                 </div>
                 {% if quiz.description %}<p class="quiz-card-description">{{ quiz.description }}</p>{% endif %}
-                {% if quiz.is_mock and quiz.effective_time_limit_minutes %}
+                {% if show_questions and quiz.is_mock and quiz.effective_time_limit_minutes %}
                     <div class="mock-exam-timer" data-time-limit-minutes="{{ quiz.effective_time_limit_minutes }}">
                         <span>Time remaining</span>
                         <strong class="mock-exam-countdown" role="timer">{{ quiz.effective_time_limit_minutes }}:00</strong>
@@ -128,6 +130,7 @@
                     <input type="hidden" name="time_taken_seconds" value="0">
                 {% endif %}
 
+                {% if show_questions %}
                 {% for quiz_question in quiz.quiz_questions.all %}
                     <fieldset class="quiz-question">
                         <legend>{{ forloop.counter }}. {{ quiz_question.question.text }}</legend>
@@ -184,15 +187,19 @@
                 {% elif not user.is_authenticated %}
                     <a class="progress-action-link" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Sign in to submit your answers and earn XP</a>
                 {% endif %}
+                {% else %}
+                    <p class="quiz-card-description">{{ quiz.question_count }} question{{ quiz.question_count|pluralize }}</p>
+                    <a class="progress-action-link" href="{% url 'quizzes:detail' quiz.id %}">Open quiz</a>
+                {% endif %}
                 {% if quiz.latest_attempt %}
                     <p class="quiz-result">Last attempt: {{ quiz.latest_attempt.score }} of {{ quiz.latest_attempt.total_questions }} correct ({{ quiz.latest_attempt.percentage }}%)</p>
                 {% endif %}
-                </form>
+                {% if show_questions %}</form>{% endif %}
             </article>
         {% empty %}
             <p class="content-empty">No quizzes{% if subject %} for {{ subject.name }}{% endif %} yet. Quizzes appear here as lessons are published.</p>
         {% endfor %}
     </div>
 </div>
-{% if quizzes %}<script src="{% static 'js/quiz_progress.js' %}" defer></script><script src="{% static 'js/quiz_stepper.js' %}" defer></script><script src="{% static 'js/mock_exam_timer.js' %}" defer></script>{% endif %}
+{% if quizzes and show_questions %}<script src="{% static 'js/quiz_progress.js' %}" defer></script><script src="{% static 'js/quiz_stepper.js' %}" defer></script><script src="{% static 'js/mock_exam_timer.js' %}" defer></script>{% endif %}
 {% endblock %}

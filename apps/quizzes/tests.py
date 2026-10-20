@@ -1,6 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
@@ -225,7 +227,48 @@ class QuizModelTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "Timed mock")
 		self.assertContains(response, "45 minutes")
+		self.assertNotContains(response, "data-time-limit-minutes")
+
+		response = self.client.get(reverse("quizzes:detail", args=[mock.pk]))
+
 		self.assertContains(response, 'data-time-limit-minutes="45"')
+
+	def test_listing_skips_questions_and_batches_attempt_queries(self):
+		user = User.objects.create_user(username="lister", password="test-password")
+		for n in range(3):
+			quiz = Quiz.objects.create(
+				title=f"Quiz {n}", subject=self.subject, topic=self.topic, lesson=self.lesson
+			)
+			QuizQuestion.objects.create(quiz=quiz, question=self.question)
+			QuizAttempt.objects.create(
+				user=user, quiz=quiz, score=1, total_questions=1, completed_at=timezone.now()
+			)
+		self.client.force_login(user)
+
+		with CaptureQueriesContext(connection) as ctx:
+			response = self.client.get(reverse("quizzes:list"))
+
+		self.assertContains(response, "1 question")
+		self.assertNotContains(response, self.question.text)
+		self.assertContains(response, "Last attempt: 1 of 1")
+		self.assertEqual(len([q for q in ctx.captured_queries if "progress_quizattempt" in q["sql"]]), 1)
+		self.assertFalse([q for q in ctx.captured_queries if "questions_answer" in q["sql"]])
+
+	def test_detail_renders_questions_and_other_users_attempts_stay_hidden(self):
+		quiz = Quiz.objects.create(
+			title="Algebra quiz", subject=self.subject, topic=self.topic, lesson=self.lesson
+		)
+		QuizQuestion.objects.create(quiz=quiz, question=self.question)
+		other = User.objects.create_user(username="other", password="test-password")
+		QuizAttempt.objects.create(
+			user=other, quiz=quiz, score=1, total_questions=1, completed_at=timezone.now()
+		)
+		self.client.force_login(User.objects.create_user(username="me", password="test-password"))
+
+		response = self.client.get(reverse("quizzes:detail", args=[quiz.pk]))
+
+		self.assertContains(response, self.question.text)
+		self.assertNotContains(response, "Last attempt")
 
 	def test_quiz_index_shows_only_active_quizzes(self):
 		active_quiz = Quiz.objects.create(

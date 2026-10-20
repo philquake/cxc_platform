@@ -2,7 +2,7 @@ import math
 
 from django.http import Http404
 from django.shortcuts import render
-from django.db.models import Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 
 from apps.accounts.models import Profile
 from apps.subjects.lookup import get_subject_or_404
@@ -13,7 +13,7 @@ from .models import Quiz, QuizQuestion
 
 from apps.lessons.models import Lesson
 
-def quiz_queryset(subject=None, topic=None):
+def quiz_queryset(subject=None, topic=None, with_questions=False):
     quiz_questions = QuizQuestion.objects.filter(question__is_active=True)
     if subject is not None:
         quiz_questions = quiz_questions.filter(question__subject=subject)
@@ -29,13 +29,22 @@ def quiz_queryset(subject=None, topic=None):
         quiz_filters &= Q(subject=subject)
     if topic is not None:
         quiz_filters &= Q(topic=topic)
-    return Quiz.objects.filter(
+    quizzes = Quiz.objects.filter(
         quiz_filters,
     ).select_related(
         "lesson__subject",
         "subject",
         "topic",
-    ).prefetch_related(
+    )
+    if not with_questions:
+        # Listings only show a count; questions and answers load in quiz_detail.
+        question_filter = Q(quiz_questions__question__is_active=True)
+        if subject is not None:
+            question_filter &= Q(quiz_questions__question__subject=subject)
+        if topic is not None:
+            question_filter &= Q(quiz_questions__question__topic=topic)
+        return quizzes.annotate(question_count=Count("quiz_questions", filter=question_filter))
+    return quizzes.prefetch_related(
         Prefetch(
             "quiz_questions",
             queryset=quiz_questions.select_related("question").prefetch_related(
@@ -46,7 +55,7 @@ def quiz_queryset(subject=None, topic=None):
 
 
 def quiz_index(request):
-    quizzes = quiz_queryset()
+    quizzes = list(quiz_queryset())
     _add_latest_attempts(request, quizzes)
     return render(
         request,
@@ -58,7 +67,7 @@ def quiz_index(request):
 def subject_quizzes(request, subject_slug):
     subject = get_subject_or_404(subject_slug)
 
-    quizzes = quiz_queryset(subject=subject)
+    quizzes = list(quiz_queryset(subject=subject))
     _add_latest_attempts(request, quizzes)
     return render(
         request,
@@ -68,7 +77,7 @@ def subject_quizzes(request, subject_slug):
 
 
 def lesson_quizzes(request, lesson_id):
-    quizzes = quiz_queryset().filter(lesson_id=lesson_id)
+    quizzes = quiz_queryset(with_questions=True).filter(lesson_id=lesson_id)
     if not quizzes.exists():
         raise Http404("Quiz not found")
     quizzes = list(quizzes)
@@ -80,13 +89,14 @@ def lesson_quizzes(request, lesson_id):
             "subject": quizzes[0].subject,
             "topic": quizzes[0].topic,
             "quizzes": quizzes,
+            "show_questions": True,
             "result_attempt": _result_attempt(request),
         },
     )
 
 
 def quiz_detail(request, quiz_id):
-    quizzes = quiz_queryset().filter(pk=quiz_id)
+    quizzes = quiz_queryset(with_questions=True).filter(pk=quiz_id)
     quiz = quizzes.first()
     if quiz is None:
         raise Http404("Quiz not found")
@@ -98,6 +108,7 @@ def quiz_detail(request, quiz_id):
             "subject": quiz.subject,
             "topic": quiz.topic,
             "quizzes": [quiz],
+            "show_questions": True,
             "result_attempt": _result_attempt(request),
             "next_lesson": Lesson.objects.filter(
                 subject=quiz.subject,
@@ -125,7 +136,7 @@ def topic_quizzes(request, subject_slug, topic_slug):
     if topic is None:
         raise Http404("Topic not found")
 
-    quizzes = quiz_queryset(subject=subject, topic=topic)
+    quizzes = list(quiz_queryset(subject=subject, topic=topic))
     _add_latest_attempts(request, quizzes)
     return render(
         request,
@@ -164,7 +175,7 @@ def _add_latest_attempts(request, quizzes):
     latest_attempts = {}
     attempts = QuizAttempt.objects.filter(
         user=request.user,
-        quiz__in=quizzes,
+        quiz_id__in=[quiz.id for quiz in quizzes],
         completed_at__isnull=False,
     ).order_by("-completed_at")
     for attempt in attempts:

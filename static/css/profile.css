@@ -1,0 +1,132 @@
+/* Profile page. Palette and band come from base.css and learn.css. */
+
+:root { --gutter: clamp(16px, 2.2vw, 32px); }
+
+.profile-band { padding-bottom: 36px; }
+
+.profile-id { display: flex; align-items: center; gap: 20px; }
+.profile-id h1 { margin: 0 0 4px; }
+.profile-id p { margin: 0; font-size: 1rem; }
+
+.profile-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-radius: 50%;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.profile-id .profile-level {
+  margin-left: auto;
+  padding: 6px 14px;
+  color: var(--color-navy-deep);
+  background: var(--color-sky);
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 32px;
+  align-items: start;
+  padding: 36px 0 96px;
+}
+
+.profile-main { display: grid; gap: 24px; }
+
+.profile-totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  background: var(--color-panel);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius-md);
+}
+
+.profile-totals div { padding: 18px 20px; border-left: 1px solid var(--color-panel-border); }
+.profile-totals div:first-child { border-left: 0; }
+.profile-totals strong { display: block; color: var(--color-white); font-size: 2rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+.profile-totals span { color: var(--color-text-muted); font-size: 0.9rem; }
+
+.profile-panel,
+.profile-form {
+  padding: 24px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius-md);
+}
+
+.profile-panel h2 { margin: 0 0 6px; color: var(--color-white); font-family: var(--font-body); font-size: 1.25rem; font-weight: 800; }
+.profile-sub { max-width: 60ch; margin: 0 0 16px; color: var(--color-text-muted); }
+
+/* ---------- study log: weeks run left to right, Monday at the top ---------- */
+.study-log {
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  max-width: 560px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.study-log-day { aspect-ratio: 1; background: var(--color-bg-inset); border-radius: 4px; }
+.study-log-day.level-1 { background: var(--color-sky); }
+.study-log-day.level-2 { background: var(--color-navy); }
+.study-log-day.level-3 { background: var(--color-navy-deep); }
+
+/* ---------- subjects ---------- */
+.profile-subject { margin-bottom: 16px; }
+.profile-subject-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; font-weight: 700; }
+.profile-subject-head span { color: var(--color-text-muted); font-weight: 400; }
+.profile-track { height: 10px; background: var(--color-bg-inset); border-radius: var(--radius-pill); overflow: hidden; }
+.profile-track span { display: block; height: 100%; background: var(--color-reef); border-radius: inherit; }
+
+.profile-link { display: inline-block; margin-top: 4px; color: var(--color-navy-deep); font-weight: 700; }
+
+/* ---------- recent ---------- */
+.profile-recent { margin: 12px 0 0; padding: 0; list-style: none; }
+.profile-recent li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--color-panel-border); }
+.profile-recent small { display: block; color: var(--color-text-muted); }
+.profile-recent strong { color: var(--color-reef); white-space: nowrap; }
+
+/* ---------- settings ---------- */
+.profile-side { position: sticky; top: 24px; display: grid; gap: 16px; }
+.profile-side-title { margin: 0; color: var(--color-white); font-family: var(--font-body); font-size: 1.5rem; font-weight: 800; }
+.profile-form h3 { margin: 0 0 16px; color: var(--color-white); font-family: var(--font-body); font-size: 1.125rem; font-weight: 800; }
+.profile-password summary { cursor: pointer; color: var(--color-white); font-size: 1.125rem; font-weight: 800; }
+.profile-password[open] summary { margin-bottom: 16px; }
+.profile-signout .btn { width: 100%; min-height: 44px; }
+.profile-field { margin-bottom: 16px; }
+.profile-field label { display: block; margin-bottom: 4px; font-weight: 700; }
+.profile-field input { width: 100%; min-height: 44px; padding: 8px 12px; color: var(--color-text); background: #fff; border: 1px solid var(--color-control-border); border-radius: var(--radius-sm); }
+.profile-field small { display: block; margin-top: 4px; color: var(--color-text-muted); }
+.profile-field-errors,
+.profile-error { margin: 6px 0 0; padding: 0; color: var(--color-incorrect); list-style: none; font-weight: 700; }
+.profile-error { margin-bottom: 16px; padding: 10px 12px; background: var(--color-incorrect-bg); border-radius: var(--radius-sm); }
+.profile-form .btn { width: 100%; min-height: 44px; }
+.profile-note { margin: 0; padding: 12px 14px; background: var(--color-reef-bg); border-radius: var(--radius-sm); }
+
+@media (max-width: 900px) {
+  .profile-grid { grid-template-columns: 1fr; }
+  .profile-side { position: static; }
+  .profile-totals { grid-template-columns: repeat(2, 1fr); }
+  .profile-totals div:nth-child(3) { border-left: 0; }
+  .profile-totals div:nth-child(n+3) { border-top: 1px solid var(--color-panel-border); }
+}
+
+@media (max-width: 560px) {
+  .profile-id { flex-wrap: wrap; }
+  .profile-id .profile-level { margin-left: 0; }
+  .profile-avatar { width: 56px; height: 56px; font-size: 1.2rem; }
+  .profile-panel, .profile-form { padding: 18px; }
+}

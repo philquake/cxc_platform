@@ -162,3 +162,54 @@ class AuthFormAccessibilityTests(TestCase):
 
 		self.assertNotContains(response, 'role="alert"')
 		self.assertNotContains(response, 'aria-invalid')
+
+
+class ProfilePageTests(TestCase):
+	def setUp(self):
+		self.user = get_user_model().objects.create_user(
+			username="student", password="A-strong-password-123", first_name="Ada", last_name="Lee"
+		)
+		self.client.force_login(self.user)
+
+	def test_profile_renders_stats_and_study_log(self):
+		response = self.client.get(reverse("account"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.context["initials"], "AL")
+		self.assertEqual(response.context["days_studied"], 0)
+		self.assertContains(response, "Study log")
+
+	def test_profile_saves_display_name(self):
+		response = self.client.post(
+			reverse("account"),
+			{"display_name": "Ada L.", "first_name": "Ada", "last_name": "Lee", "email": "ada@example.com"},
+		)
+
+		self.assertRedirects(response, reverse("account"))
+		self.user.refresh_from_db()
+		self.assertEqual(self.user.profile.display_name, "Ada L.")
+
+	def test_profile_changes_password_and_keeps_session(self):
+		response = self.client.post(
+			reverse("account"),
+			{
+				"action": "password",
+				"old_password": "A-strong-password-123",
+				"new_password1": "Another-strong-pass-456",
+				"new_password2": "Another-strong-pass-456",
+			},
+		)
+
+		self.assertRedirects(response, reverse("account"))
+		self.user.refresh_from_db()
+		self.assertTrue(self.user.check_password("Another-strong-pass-456"))
+		self.assertEqual(self.client.get(reverse("account")).status_code, 200)
+
+	def test_profile_rejects_wrong_old_password(self):
+		response = self.client.post(
+			reverse("account"),
+			{"action": "password", "old_password": "nope", "new_password1": "x", "new_password2": "x"},
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "Your password was not changed")

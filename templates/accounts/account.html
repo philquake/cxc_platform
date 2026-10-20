@@ -1,29 +1,109 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Account settings | compile/</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;700&family=Imbue:wght@400&display=swap">
-    <link rel="stylesheet" href="{% static 'css/auth.css' %}?v=5">
-</head>
-<body>
-    <main class="auth-shell">
-        <section class="auth-panel" aria-labelledby="account-title">
-            <a href="{% url 'home' %}" class="logo">compile/</a>
-            <h1 id="account-title">Account settings</h1>
-            <p class="intro">Update the details connected to your study account.</p>
-            <form method="post" class="auth-form">
-                {% csrf_token %}
-                {% include "accounts/_form_fields.html" %}
-                <button type="submit">Save changes</button>
-            </form>
-            <p class="switch-link"><a href="{% url 'password_change' %}">Change password</a></p>
-            <p class="switch-link"><a href="{% url 'progress:dashboard' %}">Back to progress</a></p>
+{% extends "base.html" %}
+{% load static auth_extras %}
+
+{% block title %}Profile | compile/{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
+<link rel="stylesheet" href="{% static 'css/profile.css' %}?v=1.0">
+{% endblock %}
+
+{% block content %}
+<header class="learn-band profile-band">
+    <div class="learn-wrap profile-id">
+        <span class="profile-avatar" aria-hidden="true">{{ initials }}</span>
+        <div>
+            <h1>{{ display_name }}</h1>
+            <p>@{{ user.username }} &middot; joined {{ user.date_joined|date:"F Y" }}</p>
+        </div>
+        <p class="profile-level">Level {{ user_progress.level }}</p>
+    </div>
+</header>
+
+<div class="learn-wrap profile-grid">
+    <div class="profile-main">
+        <section aria-label="Totals" class="profile-totals">
+            <div><strong>{{ user_progress.total_xp }}</strong><span>XP earned</span></div>
+            <div><strong>{{ user_progress.current_streak }}</strong><span>day streak (best {{ user_progress.longest_streak }})</span></div>
+            <div><strong>{{ lessons_done }}</strong><span>lesson{{ lessons_done|pluralize }} completed</span></div>
+            <div><strong>{% if accuracy is None %}&ndash;{% else %}{{ accuracy }}%{% endif %}</strong><span>quiz accuracy over {{ quizzes_taken }} quiz{{ quizzes_taken|pluralize:"zes" }}</span></div>
         </section>
-    </main>
-</body>
-</html>
+
+        <section class="profile-panel" aria-labelledby="log-title">
+            <h2 id="log-title">Study log</h2>
+            <p class="profile-sub">You studied on {{ days_studied }} of the last {{ study_log_weeks }} weeks' days. Each square is a day, darker for more lessons and quizzes.</p>
+            <ol class="study-log" style="--weeks: {{ study_log_weeks }}">
+                {% for cell in study_log %}
+                    <li class="study-log-day level-{{ cell.level }}"{% if forloop.first %} style="grid-row-start: 1"{% endif %} title="{{ cell.day|date:'D j M' }}: {{ cell.count }} activit{{ cell.count|pluralize:'y,ies' }}"><span class="sr-only">{{ cell.day|date:"D j M" }}: {{ cell.count }}</span></li>
+                {% endfor %}
+            </ol>
+        </section>
+
+        <section class="profile-panel" aria-labelledby="subjects-title">
+            <h2 id="subjects-title">Lessons by subject</h2>
+            {% for subject in subjects %}
+                <div class="profile-subject">
+                    <div class="profile-subject-head">
+                        <a href="{% url 'subjects:detail' subject.name|slugify %}">{{ subject.name }}</a>
+                        <span>{{ subject.done }} of {{ subject.lesson_total }}</span>
+                    </div>
+                    <div class="profile-track" role="progressbar" aria-valuenow="{{ subject.percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ subject.name }} lessons completed"><span style="width: {{ subject.percent }}%"></span></div>
+                </div>
+            {% empty %}
+                <p class="profile-sub">No subjects are open yet.</p>
+            {% endfor %}
+            <a class="profile-link" href="{% url 'progress:dashboard' %}">See full progress</a>
+        </section>
+
+        <section class="profile-panel" aria-labelledby="recent-title">
+            <h2 id="recent-title">Recent activity</h2>
+            {% if recent %}
+                <ul class="profile-recent">
+                    {% for item in recent %}
+                        <li><span>{{ item.reason }}<small>{{ item.topic.name }}, {{ item.created_at|date:"j M" }}</small></span><strong>+{{ item.amount }} XP</strong></li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="profile-sub">Nothing yet. Finish a lesson or a quiz to start your log.</p>
+                <a class="profile-link" href="{% url 'subjects:list' %}">Choose a subject</a>
+            {% endif %}
+        </section>
+    </div>
+
+    <aside class="profile-side" aria-labelledby="settings-title">
+        <h2 id="settings-title" class="profile-side-title">Account settings</h2>
+        <form method="post" class="profile-form">
+            {% csrf_token %}
+            <h3>Your details</h3>
+            {% if form.errors or name_form.errors %}
+                <p class="profile-error" role="alert">Fix the highlighted fields and save again.</p>
+            {% endif %}
+            {% for f in name_form %}{% include "accounts/_profile_field.html" with field=f %}{% endfor %}
+            {% for f in form %}{% include "accounts/_profile_field.html" with field=f %}{% endfor %}
+            <button type="submit" class="btn btn-primary">Save details</button>
+        </form>
+
+        <details class="profile-form profile-password"{% if password_open %} open{% endif %}>
+            <summary>Change password</summary>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="password">
+                {% if password_form.errors %}
+                    <p class="profile-error" role="alert">Your password was not changed. Fix the highlighted fields.</p>
+                {% endif %}
+                {% for f in password_form %}{% include "accounts/_profile_field.html" with field=f %}{% endfor %}
+                <button type="submit" class="btn btn-primary">Change password</button>
+            </form>
+        </details>
+
+        {% if profile.time_multiplier > 1 %}
+            <p class="profile-note">Timed mock exams give you {{ profile.time_multiplier }}&times; the usual time.</p>
+        {% endif %}
+
+        <form method="post" action="{% url 'logout' %}" class="profile-signout">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">Sign out</button>
+        </form>
+    </aside>
+</div>
+{% endblock %}

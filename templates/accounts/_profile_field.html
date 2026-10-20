@@ -1,0 +1,7 @@
+{% load auth_extras %}
+<div class="profile-field">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {% a11y_field field %}
+    {% if field.help_text %}<small id="{{ field.auto_id }}-help">{{ field.help_text }}</small>{% endif %}
+    {% if field.errors %}<ul class="profile-field-errors" id="{{ field.auto_id }}-errors">{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+</div>

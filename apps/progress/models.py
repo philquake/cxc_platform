@@ -222,7 +222,7 @@ class FlashcardState(models.Model):
             elif self.reps == 1:
                 self.interval_days = 6
             else:
-                self.interval_days = int(self.interval_days * self.ease + 0.5)
+                self.interval_days = min(int(self.interval_days * self.ease + 0.5), 3650)
             self.reps += 1
 
         self.due_at = timezone.localdate(reviewed_at) + timedelta(days=self.interval_days)

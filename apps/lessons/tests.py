@@ -126,3 +126,14 @@ class LessonSaveSanitizeTests(TestCase):
 		self.assertIn('style="color:red"', lesson.content)
 		self.assertNotIn("script", lesson.content)
 		self.assertNotIn("javascript:", lesson.content)
+
+
+class OptimizeImagesFilterTests(TestCase):
+	def test_filter_strips_scripts_even_for_unsanitized_stored_content(self):
+		from apps.lessons.templatetags.lesson_extra import optimize_images
+
+		out = optimize_images('<p onclick="x()">Hi</p><script>alert(1)</script>')
+
+		self.assertNotIn("<script", out)
+		self.assertNotIn("onclick", out)
+		self.assertIn("Hi", out)

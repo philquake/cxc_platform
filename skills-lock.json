@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "skills": {
+    "shadcn-dashboard-free": {
+      "source": "shadcndashboard/shadcndashboard",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/shadcn-dashboard-free/SKILL.md",
+      "computedHash": "717e1a5b9a734db0dc0fbe41acdb89c0ef4aeda7f14dbfdb5001ff53a1c4b6f7"
+    }
+  }
+}

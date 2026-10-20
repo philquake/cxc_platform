@@ -4,6 +4,7 @@ import zipfile
 from pathlib import Path
 from xml.etree import ElementTree
 
+import nh3
 from django.db import transaction
 from django.utils.text import slugify
 
@@ -54,10 +55,8 @@ def _docx_to_html(upload):
 
 
 def _clean_html(raw):
-    raw = re.sub(r"(?is)<(script|style|iframe)\b.*?</\1\s*>", "", raw)
-    raw = re.sub(r"(?i)\son\w+\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)", "", raw)
     body = re.search(r"(?is)<body[^>]*>(.*)</body>", raw)
-    return (body.group(1) if body else raw).strip()
+    return nh3.clean(body.group(1) if body else raw).strip()
 
 
 def _txt_to_html(raw):

@@ -25,7 +25,7 @@
         {% for row in leaderboard %}
             <div class="leaderboard-row {% if row.user_id == user.id %}is-you{% endif %}">
                 <strong class="leaderboard-rank">#{{ row.rank }}</strong>
-                <span class="leaderboard-user">{{ row.user__username }}{% if row.user_id == user.id %} <small>(you)</small>{% endif %}</span>
+                <span class="leaderboard-user">{{ row.user__profile__display_name|default:row.user__username }}{% if row.user_id == user.id %} <small>(you)</small>{% endif %}</span>
                 <strong class="leaderboard-xp">{{ row.xp }} XP</strong>
             </div>
         {% empty %}

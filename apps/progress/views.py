@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, OuterRef, Q, Subquery, Sum
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 from apps.lessons.models import Lesson
 from apps.questions.models import Question
 from apps.quizzes.models import Quiz
+from apps.subjects.lookup import get_subject_or_404
 from apps.subjects.models import Subject, Topic
 
 from .analytics import difficulty_breakdown, estimated_readiness, mock_time_analytics, topic_mastery
@@ -209,20 +210,13 @@ def dashboard(request):
 
 @login_required
 def study_plan_view(request, subject_slug):
-	subject = next(
-		(
-			item
-			for item in Subject.objects.filter(is_active=True)
-			if subject_slug in {slugify(item.name), slugify(item.code)}
-		),
-		None,
-	)
-	if subject is None:
-		raise Http404("Subject not found")
+	subject = get_subject_or_404(subject_slug)
 
 	plan = subject.study_plans.filter(user=request.user, is_active=True).first()
 	if request.method == "POST":
 		if request.POST.get("complete_item"):
+			if not request.POST["complete_item"].isdigit():
+				return HttpResponseBadRequest("Invalid item")
 			item = get_object_or_404(
 				StudyPlanItem,
 				pk=request.POST["complete_item"],
@@ -391,6 +385,7 @@ def complete_lesson(request, lesson_id):
 
 @login_required
 @require_POST
+@transaction.atomic
 def submit_quiz(request, quiz_id):
 	quiz = get_object_or_404(
 		Quiz.objects.prefetch_related("quiz_questions__question__answers").filter(
@@ -439,6 +434,7 @@ def submit_quiz(request, quiz_id):
 		completed_at=timezone.now(),
 	)
 	score = 0
+	quiz_answers = []
 	for quiz_question in quiz_questions:
 		question = quiz_question.question
 		selected_answer = None
@@ -465,7 +461,7 @@ def submit_quiz(request, quiz_id):
 				_normalize_answer_text(selected_text)
 				== _normalize_answer_text(question.expected_answer)
 			)
-		elif question.format == Question.FORMAT_TRUE_FALSE and not question.answers.exists():
+		elif question.format == Question.FORMAT_TRUE_FALSE and not any(question.answers.all()):
 			selected_text = request.POST.get(f"question-{question.id}", "").strip()
 			is_correct = (
 				_normalize_answer_text(selected_text)
@@ -486,13 +482,14 @@ def submit_quiz(request, quiz_id):
 			score += 1
 		else:
 			_ensure_flashcard_state(request.user, question)
-		QuizAnswer.objects.create(
+		quiz_answers.append(QuizAnswer(
 			attempt=attempt,
 			question=question,
 			selected_answer=selected_answer,
 			selected_text=selected_text,
 			is_correct=is_correct,
-		)
+		))
+	QuizAnswer.objects.bulk_create(quiz_answers)
 	attempt.score = score
 	attempt.save(update_fields=["score"])
 	if quiz.topic_id:
@@ -509,26 +506,10 @@ def submit_quiz(request, quiz_id):
 	return redirect(f"{destination}{separator}attempt={attempt.id}")
 
 
-@login_required
-def leaderboard(request, subject_slug, topic_slug):
-	subject = next(
-		(
-			item
-			for item in Subject.objects.filter(is_active=True)
-			if subject_slug in {slugify(item.name), slugify(item.code)}
-		),
-		None,
-	)
-	if subject is None:
-		raise Http404("Subject not found")
-	topic = get_object_or_404(Topic, subject=subject, slug=topic_slug, is_active=True)
+def _render_leaderboard(request, subject, topic, xp_filter):
 	all_rows = list(
-		XPTransaction.objects.filter(
-			topic=topic,
-			user__is_staff=False,
-			user__is_superuser=False,
-		)
-		.values("user_id", "user__username")
+		XPTransaction.objects.filter(user__is_staff=False, user__is_superuser=False, **xp_filter)
+		.values("user_id", "user__username", "user__profile__display_name")
 		.annotate(xp=Sum("amount"))
 		.order_by("-xp", "user_id")
 	)
@@ -546,42 +527,19 @@ def leaderboard(request, subject_slug, topic_slug):
 		},
 	)
 
+
+@login_required
+def leaderboard(request, subject_slug, topic_slug):
+	subject = get_subject_or_404(subject_slug)
+	topic = get_object_or_404(Topic, subject=subject, slug=topic_slug, is_active=True)
+	return _render_leaderboard(request, subject, topic, {"topic": topic})
+
+
 @login_required
 def subject_leaderboard(request, subject_slug):
-	subject = next(
-		(
-			item
-			for item in Subject.objects.filter(is_active=True)
-			if subject_slug in {slugify(item.name), slugify(item.code)}
-		),
-		None,
-	)
-	if subject is None:
-		raise Http404("Subject not found")
+	subject = get_subject_or_404(subject_slug)
+	return _render_leaderboard(request, subject, None, {"topic__subject": subject})
 
-	all_rows = list(
-		XPTransaction.objects.filter(
-			topic__subject=subject,
-			user__is_staff=False,
-			user__is_superuser=False,
-		)
-		.values("user_id", "user__username")
-		.annotate(xp=Sum("amount"))
-		.order_by("-xp", "user_id")
-	)
-	for index, row in enumerate(all_rows, start=1):
-		row["rank"] = index
-	current_user_row = next((row for row in all_rows if row["user_id"] == request.user.id), None)
-	return render(
-		request,
-		"progress/leaderboard.html",
-		{
-			"subject": subject,
-			"topic": None,
-			"leaderboard": all_rows[:20],
-			"current_user_row": current_user_row,
-		},
-	)
 
 @login_required
 def mistake_bank(request):
@@ -656,16 +614,7 @@ def flashcard_hub(request):
 def flashcard_session(request, subject_slug=None, topic_slug=None):
 	subject = None
 	if subject_slug is not None:
-		subject = next(
-			(
-				item
-				for item in Subject.objects.filter(is_active=True)
-				if subject_slug in {slugify(item.name), slugify(item.code)}
-			),
-			None,
-		)
-		if subject is None:
-			raise Http404("Subject not found")
+		subject = get_subject_or_404(subject_slug)
 
 	topic = None
 	if topic_slug:
@@ -705,7 +654,7 @@ def flashcard_session(request, subject_slug=None, topic_slug=None):
 def review_flashcard(request):
 	question_id = request.POST.get("question_id")
 	rating = (request.POST.get("rating") or "").lower()
-	if question_id is None or rating == "":
+	if question_id is None or not question_id.isdigit() or rating == "":
 		return JsonResponse({"ok": False, "error": "Missing data"}, status=400)
 
 	if rating not in {"again", "hard", "good", "easy"}:

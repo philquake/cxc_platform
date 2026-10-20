@@ -2,10 +2,10 @@ import math
 
 from django.http import Http404
 from django.shortcuts import render
-from django.utils.text import slugify
 from django.db.models import Prefetch, Q
 
 from apps.accounts.models import Profile
+from apps.subjects.lookup import get_subject_or_404
 from apps.subjects.models import Subject, Topic
 from apps.progress.models import QuizAttempt
 
@@ -56,16 +56,7 @@ def quiz_index(request):
 
 
 def subject_quizzes(request, subject_slug):
-    subject = next(
-        (
-            item
-            for item in Subject.objects.filter(is_active=True)
-            if subject_slug in {slugify(item.name), slugify(item.code)}
-        ),
-        None,
-    )
-    if subject is None:
-        raise Http404("Subject not found")
+    subject = get_subject_or_404(subject_slug)
 
     quizzes = quiz_queryset(subject=subject)
     _add_latest_attempts(request, quizzes)
@@ -124,16 +115,7 @@ def quiz_detail(request, quiz_id):
 
 
 def topic_quizzes(request, subject_slug, topic_slug):
-    subject = next(
-        (
-            item
-            for item in Subject.objects.filter(is_active=True)
-            if subject_slug in {slugify(item.name), slugify(item.code)}
-        ),
-        None,
-    )
-    if subject is None:
-        raise Http404("Subject not found")
+    subject = get_subject_or_404(subject_slug)
 
     topic = Topic.objects.filter(
         subject=subject,
@@ -180,12 +162,13 @@ def _add_latest_attempts(request, quizzes):
     if not request.user.is_authenticated:
         return
     latest_attempts = {}
-    for quiz in quizzes:
-        latest_attempts[quiz.id] = QuizAttempt.objects.filter(
-            user=request.user,
-            quiz=quiz,
-            completed_at__isnull=False,
-        ).order_by("-completed_at").first()
+    attempts = QuizAttempt.objects.filter(
+        user=request.user,
+        quiz__in=quizzes,
+        completed_at__isnull=False,
+    ).order_by("-completed_at")
+    for attempt in attempts:
+        latest_attempts.setdefault(attempt.quiz_id, attempt)
     for quiz in quizzes:
         quiz.latest_attempt = latest_attempts.get(quiz.id)
 

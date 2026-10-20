@@ -116,8 +116,72 @@ class AdminImportTests(TestCase):
 		worded = Question.objects.get(format=Question.FORMAT_WORDED)
 		self.assertEqual((worded.marks, worded.estimated_time_minutes, worded.difficulty), (4, 4, "hard"))
 		self.assertTrue(worded.mark_scheme and worded.hint)
+		self.assertEqual((worded.for_guided, worded.for_adaptive, worded.for_practice), (True, False, True))
 		count, errors = import_questions(self._upload("bad.csv", "subject,topic,lesson,text,marks\nIT,Hardware,1,Q,two\n"))
 		self.assertEqual(errors, ["Row 2: 'marks' must be a whole number"])
+
+	def test_export_reimports_every_format_and_updates_by_id(self):
+		import csv
+		import io
+
+		from .importers import COLUMNS, import_questions
+
+		def make(fmt, **extra):
+			return Question.objects.create(
+				subject=self.subject, topic=self.topic, lesson=self.lesson, text=fmt, format=fmt, **extra
+			)
+
+		mcq = make(Question.FORMAT_MULTIPLE_CHOICE, for_adaptive=False)
+		options = [Answer.objects.create(question=mcq, text=t, is_correct=t == "B", order=i) for i, t in enumerate("ABC")]
+		tf = make(Question.FORMAT_TRUE_FALSE)
+		Answer.objects.create(question=tf, text="True", order=0)
+		Answer.objects.create(question=tf, text="False", is_correct=True, order=1)
+		match = make(Question.FORMAT_MATCHING)
+		Answer.objects.create(question=match, text="Mouse", match_text="Input", is_correct=True, order=0)
+		Answer.objects.create(question=match, text="Monitor", match_text="Output", is_correct=True, order=1)
+		make(Question.FORMAT_SHORT_ANSWER, expected_answer="RAM|random access memory")
+		make(Question.FORMAT_WORDED, expected_answer="volatile", marks=4, mark_scheme="2 points", hint="Power")
+
+		response = self.client.post(reverse("admin:questions_question_changelist"), {
+			"action": "export_questions", "_selected_action": list(Question.objects.values_list("pk", flat=True)),
+		})
+		rows = list(csv.DictReader(io.StringIO(response.content.decode("utf-8-sig"))))
+		self.assertEqual(list(rows[0]), COLUMNS)
+		by_format = {row["format"]: row for row in rows}
+		self.assertEqual(
+			[by_format["multiple_choice"][c] for c in ("option_1", "option_2", "option_3", "correct", "pathways")],
+			["A", "B", "C", "2", "guided|practice"],
+		)
+		self.assertEqual(by_format["true_false"]["correct"], "false")
+		self.assertEqual(by_format["matching"]["option_2"], "Monitor|Output")
+		self.assertEqual(by_format["worded"]["marks"], "4")
+
+		by_format["multiple_choice"]["text"] = "Edited"
+		rows.append({**by_format["short_answer"], "id": "", "text": "Brand new"})
+		out = io.StringIO()
+		writer = csv.DictWriter(out, COLUMNS)
+		writer.writeheader()
+		writer.writerows(rows)
+		count, errors = import_questions(self._upload("q.csv", out.getvalue()))
+		self.assertEqual((count, errors), (6, []))
+		self.assertEqual(Question.objects.count(), 6)
+		mcq.refresh_from_db()
+		self.assertEqual((mcq.text, mcq.for_adaptive), ("Edited", False))
+		self.assertEqual(list(mcq.answers.values_list("pk", "text", "is_correct")), [(a.pk, a.text, a.text == "B") for a in options])
+		self.assertEqual(Question.objects.get(pk=tf.pk).answers.get(is_correct=True).text, "False")
+
+	def test_import_rejects_unknown_id_and_pathway(self):
+		from .importers import import_questions
+
+		csv_text = (
+			"id,subject,topic,lesson,format,text,expected_answer,pathways\n"
+			"999,MATH,Algebra,1,short_answer,Q,x,\n"
+			",MATH,Algebra,1,short_answer,Q,x,exam\n"
+		)
+		count, errors = import_questions(self._upload("q.csv", csv_text))
+		self.assertEqual(count, 0)
+		self.assertIn("no question with id 999", errors[0])
+		self.assertIn("'pathways'", errors[1])
 
 	def test_question_csv_import_is_all_or_nothing(self):
 		csv_text = (

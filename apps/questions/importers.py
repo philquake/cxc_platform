@@ -7,15 +7,16 @@ from django.db import transaction
 from apps.lessons.models import Lesson
 from apps.subjects.models import Subject, Topic
 
-from .models import Answer, Question
+from .models import PATHWAY_CHOICES, Answer, Question
 
 OPTION_COLUMNS = ["option_1", "option_2", "option_3", "option_4"]
 COLUMNS = [
-    "subject", "topic", "lesson", "format", "text", "difficulty",
+    "id", "subject", "topic", "lesson", "format", "text", "difficulty",
     "explanation", "expected_answer", *OPTION_COLUMNS, "correct",
-    "marks", "mark_scheme", "hint", "estimated_time",
+    "marks", "mark_scheme", "hint", "estimated_time", "pathways",
 ]
-SAMPLE_ROWS = [
+PATHWAYS = [value for value, _ in PATHWAY_CHOICES]
+SAMPLE_ROWS = [[""] + row for row in [
     ["Information Technology", "Hardware", "1", "multiple_choice", "Which device is an input device?", "easy",
      "A keyboard sends data into the computer.", "", "Monitor", "Keyboard", "Printer", "Speaker", "2"],
     ["Information Technology", "Hardware", "1", "true_false", "RAM is volatile memory.", "easy",
@@ -28,8 +29,8 @@ SAMPLE_ROWS = [
      "RAM is temporary working memory; ROM holds start-up instructions.",
      "RAM is volatile and can be written to; ROM is non-volatile and read-only.", "", "", "", "", "",
      "4", "1 mark per correct difference (max 2), 1 mark each for explaining it (max 2).",
-     "Think about what happens when the power goes off.", "4"],
-]
+     "Think about what happens when the power goes off.", "4", "guided|practice"],
+]]
 FORMAT_ALIASES = {
     "mcq": "multiple_choice", "multiple choice": "multiple_choice", "true/false": "true_false",
     "true false": "true_false", "short answer": "short_answer", "worded answer": "worded",
@@ -41,6 +42,35 @@ def sample_csv():
     writer = csv.writer(out)
     writer.writerow(COLUMNS)
     writer.writerows(SAMPLE_ROWS)
+    return out.getvalue()
+
+
+def export_csv(questions):
+    """Questions as CSV in the import layout; edit and re-import to update them by id."""
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(COLUMNS)
+    for question in questions.select_related("subject", "topic", "lesson").prefetch_related("answers"):
+        answers = list(question.answers.all())
+        options, correct = [""] * len(OPTION_COLUMNS), ""
+        if question.format == Question.FORMAT_MATCHING:
+            for i, answer in enumerate(answers[: len(options)]):
+                options[i] = f"{answer.text}|{answer.match_text}"
+        elif question.format == Question.FORMAT_TRUE_FALSE:
+            correct = next((a.text for a in answers if a.is_correct), question.expected_answer).lower()
+        elif question.format == Question.FORMAT_MULTIPLE_CHOICE:
+            for i, answer in enumerate(answers[: len(options)]):
+                options[i] = answer.text
+                if answer.is_correct:
+                    correct = str(i + 1)
+        writer.writerow([
+            question.pk, question.subject.code or question.subject.name, question.topic.name,
+            question.lesson.lesson_number, question.format, question.text, question.difficulty,
+            question.explanation, "" if question.format == Question.FORMAT_TRUE_FALSE else question.expected_answer,
+            *options, correct, question.marks, question.mark_scheme, question.hint,
+            question.estimated_time_minutes or "",
+            "|".join(p for p in PATHWAYS if getattr(question, f"for_{p}")),
+        ])
     return out.getvalue()
 
 
@@ -93,7 +123,10 @@ def _build_answers(question, row, line):
 
 
 def import_questions(upload):
-    """Create questions from a CSV. All-or-nothing: returns (created_count, errors)."""
+    """Create questions from a CSV, or update them when the id column is filled.
+
+    All-or-nothing: returns (saved_count, errors).
+    """
     try:
         text = upload.read().decode("utf-8-sig")
     except UnicodeDecodeError:
@@ -108,12 +141,22 @@ def import_questions(upload):
     if missing:
         return 0, [f"Missing required column(s): {', '.join(missing)}. Download the template to see the layout."]
 
-    errors, built, cache = [], [], {}
+    errors, built, cache, seen_ids = [], [], {}, set()
     for line, row in enumerate(reader, start=2):
         row = {k: (v or "").strip() for k, v in row.items() if k}
         if not any(row.values()):
             continue
         try:
+            existing = None
+            if row.get("id"):
+                if not row["id"].isdigit():
+                    raise ValueError("'id' must be blank (new question) or an exported question id")
+                if row["id"] in seen_ids:
+                    raise ValueError(f"id {row['id']} appears more than once")
+                seen_ids.add(row["id"])
+                existing = Question.objects.filter(pk=int(row["id"])).first()
+                if not existing:
+                    raise ValueError(f"no question with id {row['id']}; clear the id to add it as new")
             subject = _lookup(cache, ("s", row["subject"].lower()), lambda: next(
                 (s for s in Subject.objects.all()
                  if row["subject"].lower() in (s.name.lower(), (s.code or "").lower())), None))
@@ -137,14 +180,21 @@ def import_questions(upload):
             for column in ("marks", "estimated_time"):
                 if row.get(column) and not row[column].isdigit():
                     raise ValueError(f"'{column}' must be a whole number")
-            question = Question(
+            pathways = {p.strip().lower() for p in row.get("pathways", "").split("|") if p.strip()}
+            if pathways - set(PATHWAYS):
+                raise ValueError(f"'pathways' must be blank (all) or {', '.join(PATHWAYS)} separated by |")
+            question = existing or Question()
+            fields = dict(
                 subject=subject, topic=topic, lesson=lesson, text=row["text"], format=fmt,
                 difficulty=difficulty, explanation=row.get("explanation", ""),
                 expected_answer=row.get("expected_answer", ""),
                 marks=int(row.get("marks") or 1), mark_scheme=row.get("mark_scheme", ""),
                 hint=row.get("hint", ""),
                 estimated_time_minutes=int(row["estimated_time"]) if row.get("estimated_time") else None,
+                **{f"for_{p}": not pathways or p in pathways for p in PATHWAYS},
             )
+            for name, value in fields.items():
+                setattr(question, name, value)
             answers = _build_answers(question, row, line)
             try:
                 question.full_clean()
@@ -159,7 +209,12 @@ def import_questions(upload):
     with transaction.atomic():
         for question, answers in built:
             question.save()
+            # Reuse existing answer rows by position so past attempts keep their selected option.
+            old = list(question.answers.order_by("order", "id"))
+            for answer, current in zip(answers, old):
+                answer.pk = current.pk
             for answer in answers:
                 answer.question = question
-            Answer.objects.bulk_create(answers)
+                answer.save()
+            Answer.objects.filter(pk__in=[a.pk for a in old[len(answers):]]).delete()
     return len(built), []

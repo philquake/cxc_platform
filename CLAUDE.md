@@ -77,6 +77,7 @@ static/css|js|admin/css|admin/js
 - **Mock exams**: generated from the Subject admin action (`quizzes/services.py`). Questions sampled per topic by weight. Shortages are not padded from other topics.
 - **Lesson quizzes**: the Lesson admin action calls `generate_lesson_quizzes` to make inactive Easy (MCQ), Medium (T/F, MCQ, short answer) and Hard (worded) practice quizzes from one topic+lesson, optionally one pathway. Format rules apply only here, not in `Question.clean()`. Any shortage raises unless "allow fewer" is ticked.
 - **Search**: Postgres full-text (`SearchVector`/`SearchRank`) when available, `icontains` fallback otherwise (used in tests on SQLite).
+- **Question CSV** (`questions/importers.py`): the "Export selected questions to CSV" admin action writes the same columns the importer reads (`COLUMNS`). A blank `id` adds a question; an exported `id` updates it, reusing answer rows by position so past attempts keep their selected option. `pathways` is `guided|adaptive|practice` (blank = all). Imports are all-or-nothing.
 - **Quiz page**: question order is shuffled on every render unless `Quiz.shuffle_questions` is off (prefetched as `quiz.question_list`). Hints show on non-mock quizzes.
 - **Lesson images**: `optimize_images` filter injects Cloudinary transforms into `res.cloudinary.com/.../image/upload/` URLs in lesson HTML.
 

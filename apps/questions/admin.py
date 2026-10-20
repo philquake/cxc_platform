@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from django.http import HttpResponse
 from django.db.models import Count, Exists, F, OuterRef, Q
 from django.utils.html import format_html, format_html_join
 from django.utils.text import Truncator
@@ -10,7 +11,7 @@ from apps.quizzes.admin import tag_subjects
 from apps.quizzes.models import QuizQuestion
 from apps.subjects.models import Topic
 
-from .importers import import_questions, sample_csv
+from .importers import export_csv, import_questions, sample_csv
 from .models import PATHWAY_CHOICES, Answer, Question
 
 
@@ -144,6 +145,15 @@ def deactivate_questions(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{count} questions deactivated.")
 
 
+@admin.action(description="Export selected questions to CSV")
+def export_questions(modeladmin, request, queryset):
+    questions = Question.objects.filter(pk__in=list(queryset.values_list("pk", flat=True))).order_by("id")
+    # BOM so Excel opens accents and symbols correctly; the importer strips it.
+    response = HttpResponse("\ufeff" + export_csv(questions), content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="questions.csv"'
+    return response
+
+
 @admin.register(Question)
 class QuestionAdmin(ImportAdminMixin, admin.ModelAdmin):
     form = QuestionAdminForm
@@ -152,12 +162,17 @@ class QuestionAdmin(ImportAdminMixin, admin.ModelAdmin):
     import_template_csv = staticmethod(sample_csv)
     import_help = (
         "Upload a CSV with one question per row. Subjects, topics and lessons must already exist "
-        "(lesson is the lesson number). If any row has a problem, nothing is imported."
+        "(lesson is the lesson number). Leave id blank to add a question; keep the id from an export "
+        "to update that question. Options: up to four; multiple choice marks the right one in 'correct' "
+        "(1-4), true/false puts true or false in 'correct', matching writes each option as left|right, "
+        "short answer and worded use expected_answer (alternatives separated by |). pathways is "
+        "guided, adaptive and/or practice separated by |, or blank for all. "
+        "If any row has a problem, nothing is imported."
     )
 
     def run_import(self, request, form):
         count, errors = import_questions(form.cleaned_data["file"])
-        return ([f"{count} questions added"] if count else []), errors
+        return ([f"{count} questions saved"] if count else []), errors
     fieldsets = (
         ("Question", {"fields": ("subject", "topic", "lesson", "format", "text")}),
         ("Answer and marking", {"fields": ("expected_answer", "marks", "mark_scheme", "explanation", "hint")}),
@@ -216,7 +231,7 @@ class QuestionAdmin(ImportAdminMixin, admin.ModelAdmin):
         "=id",
     )
     search_help_text = "Searches question text, answers and options, explanations, mark schemes, topic, lesson, subject code, or an exact ID."
-    actions = (activate_questions, deactivate_questions)
+    actions = (export_questions, activate_questions, deactivate_questions)
     inlines = [AnswerInline]
     readonly_fields = ("response_accuracy", "quality_flag", "distractor_analysis")
 

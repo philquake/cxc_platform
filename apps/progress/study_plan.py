@@ -56,6 +56,7 @@ def _review_topic_ids(user, subject):
 			question__subject=subject,
 			question__is_active=True,
 			is_correct=False,
+			marks_awarded__isnull=False,
 		).values_list("question__topic_id", flat=True)
 	)
 

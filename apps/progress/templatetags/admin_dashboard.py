@@ -45,7 +45,7 @@ def admin_dashboard(context):
 
     if user.has_perm("questions.view_question"):
         answered = Question.objects.filter(is_active=True).annotate(
-            total=Count("attempt_answers"),
+            total=Count("attempt_answers", filter=Q(attempt_answers__marks_awarded__isnull=False)),
             correct=Count("attempt_answers", filter=Q(attempt_answers__is_correct=True)),
         )
         # Same thresholds as QuestionAdmin.quality_flag: below 20% or above 95% correct.

@@ -12,7 +12,7 @@ Owner: Phil (IT/CS teacher, Jamaica). Repo: `github.com/philquake/cxc_platform`.
 
 - Django 6.1, Python, PostgreSQL on Supabase (`DATABASE_URL`; `sslmode` comes from `DB_SSLMODE`, default `require`, set `disable` for local Postgres without SSL). Port 6543 (transaction pooler) switches to `CONN_MAX_AGE=0` and no server-side cursors; otherwise `CONN_MAX_AGE=600`
 - Templates in top-level `templates/`, static in `static/` (plain CSS, no build step)
-- django-bootstrap5 (base CSS/JS only; most styling is custom in `static/css/`), django-browser-reload (dev)
+- django-bootstrap5 (base CSS only, no Bootstrap JS; most styling is custom in `static/css/`)
 - Django admin is restyled with `static/admin/css/shadcn.css` and `templates/admin/` (custom index with a stats dashboard)
 - django-ckeditor-5 for lesson content (config name `extends`)
 - Cloudinary for media via `apps.core.storage.SeekSafeCloudinaryStorage`
@@ -43,7 +43,7 @@ python manage.py collectstatic --noinput
 ```
 config/            settings, root urls, wsgi/asgi
 apps/
-  core/            home, search, terms/privacy, ads.txt, Cloudinary storage (empty models.py)
+  core/            home, search, terms/privacy, ads.txt, Cloudinary storage (no models)
   accounts/        signup/login/logout, account edit, password reset/change, Profile model + admin inline, `auth_extras` templatetags
   subjects/        Subject, Topic (exam_weight), subject/lesson views
   lessons/         Lesson (CKEditor5 content), LessonImage, `optimize_images` template filter
@@ -64,14 +64,14 @@ static/css|js|admin/css|admin/js
   - `marks` (default 1), `mark_scheme`, `hint`, `estimated_time_minutes`, and pathway flags `for_guided`/`for_adaptive`/`for_practice` (default all on). True/false may have no `Answer` rows (uses `expected_answer`). Matching uses `Answer.text` + `Answer.match_text`.
 - `Quiz` is either a **practice quiz** (requires topic + lesson) or a **mock exam** (`is_mock=True`, no topic/lesson, optional `time_limit_minutes`). Enforced in `clean()` and a DB check constraint.
 - `QuizQuestion` through table. For practice quizzes the question must match the quiz topic and lesson; for mocks only the subject.
-- `progress`: `UserProgress` (XP, streak, level = 500 XP/level), `LessonProgress`, `QuizAttempt`/`QuizAnswer`, `XPTransaction` (one per lesson completion or quiz attempt), `MistakeReview`, `FlashcardState` (SM-2), `StudyPlan`/`StudyPlanItem`.
+- `progress`: `UserProgress` (XP, streak, level = 500 XP/level), `LessonProgress`, `QuizAttempt`/`QuizAnswer`, `XPTransaction` (one per lesson completion or quiz attempt), `FlashcardState` (SM-2), `TopicMasteryStat`, `StudyPlan`/`StudyPlanItem`.
 - Only one active `StudyPlan` per user+subject; saving an active plan deactivates the others.
 
 ## Key behaviours
 
-- **XP**: lesson complete = 50 XP, quiz = `25 + percentage // 5`, awarded only on a first completion or a strictly higher percentage than the user's previous best for that quiz (the submit locks the user's `UserProgress` row so concurrent requests can't double-award; attempts are always recorded; past XP is untouched). Streak updates in `_award_xp`. Staff/superusers are excluded from leaderboards.
-- **Quiz scoring** (`progress.views.submit_quiz`): `QuizAttempt.score` is marks awarded out of `total_marks` (`total_questions` is just the count). Objective formats score all-or-nothing; text is normalized for short answer, true/false-without-answers and matching. Non-blank worded answers get `marks_awarded=None` and the attempt is `awaiting_review`; teachers mark them in the QuizAnswer admin ("Awaiting marking" filter, editable in the list), and the last mark calls `finalize_attempt` (score, flashcards, `record_attempt`, XP, no streak change). Pending attempts are excluded from best-score, lesson mastery, readiness and the admin average. Answers short of full marks create or reset a `FlashcardState` due today.
-- **Flashcards**: `FlashcardState.review()` implements SM-2 with ratings `again/hard/good/easy`. Reviews are posted via fetch from `flashcards.html`.
+- **XP**: lesson complete = 50 XP, quiz = `25 + percentage // 5`, awarded only on a first completion or a strictly higher percentage than the user's previous best for that quiz (`finalize_attempt` and `complete_lesson` lock the user's `UserProgress` row so concurrent requests can't double-award; attempts are always recorded; past XP is untouched). Streak updates in `_award_xp`. Staff/superusers are excluded from leaderboards.
+- **Quiz scoring** (`progress.views.submit_quiz`): `QuizAttempt.score` is marks awarded out of `total_marks` (`total_questions` is just the count). Objective formats score all-or-nothing; text is normalized for short answer, true/false-without-answers and matching. Non-blank worded answers get `marks_awarded=None` and the attempt is `awaiting_review`; teachers mark them in the QuizAnswer admin ("Awaiting marking" filter, editable in the list), and the last mark calls `finalize_attempt` (score, flashcards, `record_attempt`, XP, no streak change). Pending attempts are excluded from best-score, lesson mastery, readiness and the admin average, and unmarked answers from the mistake bank, profile accuracy and study-plan mistake reviews. A student can't resubmit a quiz while an earlier attempt of it still has unmarked answers. Question statistics (admin list, quality flag, dashboard) count marked answers only, and the student dashboard shows "Being marked" instead of a provisional score. Answers short of full marks create or reset a `FlashcardState` due today.
+- **Flashcards**: `FlashcardState.review()` implements SM-2 with ratings `again/hard/good/easy`. Reviews are posted via fetch from `flashcards.html`, which alerts the student if a rating fails to save.
 - **Mastery** (`progress/analytics.py`): recency-weighted accuracy, 14-day half-life, needs 5+ answers (`MIN_EVIDENCE`) before a topic counts. Totals live in `TopicMasteryStat` (user+topic+difficulty), updated by `record_attempt` at the end of `submit_quiz`, so reads never scan answer history. Anything that creates `QuizAnswer` rows directly (tests, imports) must call `record_attempt`. Totals are frozen at answer time: later topic/difficulty edits or deleted attempts don't change them. Readiness = 70% topic mastery + 30% latest mock when a mock exists.
 - **Study plan** (`progress/study_plan.py`): remaining lessons sorted by `exam_weight * (1 - accuracy)`, max 3 lessons/day, flashcard review after each lesson, mistake review for topics with misses, a quiz every 4th lesson.
 - **Mock exams**: generated from the Subject admin action (`quizzes/services.py`). Questions sampled per topic by weight. Shortages are not padded from other topics.
@@ -97,7 +97,7 @@ static/css|js|admin/css|admin/js
 - Page CSS lives in `static/css/<feature>.css` and is loaded through `{% block extra_css %}`. Bump the `?v=` query string when a cached stylesheet changes (currently `3.0` for `base.css` and `layout.css`).
 - Views use function-based style. Many files indent with tabs (progress/views, quizzes/views, tests). Match the file you're editing; don't reformat whole files.
 - Auth templates (`templates/accounts/*.html`) are standalone pages using `auth.css`, not `base.html`.
-- Admin customisation matters: dashboard on the admin index (`templates/admin/index.html`, gated per view permission), question analytics, quiz question filtering by subject/topic/lesson (`static/admin/js/quiz_admin.js`), lesson image picker (`static/admin/js/lesson_media.js`).
+- Admin customisation matters: dashboard on the admin index (`templates/admin/index.html`, gated per view permission, with an "Awaiting marking" count), question analytics and filters (subject-scoped topic/lesson, pathway, usage, content gaps, response quality), CSV import/export, the marking queue (QuizAnswer admin; no add page), the Lesson "Generate Easy/Medium/Hard quizzes" action, topic/lesson filtering by subject on the quiz and question forms (`static/admin/js/quiz_admin.js`, options tagged by `quizzes.admin.tag_subjects`), lesson image picker (`static/admin/js/lesson_media.js`).
 
 ## Deployment gotchas
 
@@ -110,10 +110,10 @@ static/css|js|admin/css|admin/js
 ## Known issues and cleanup candidates
 
 - `apps.core` is not in `INSTALLED_APPS`. It works because it has no models, but add it if you introduce any.
-- `progress/tests.py` still has duplicated test methods (`test_flashcard_reviews_apply_sm2_growth_ease_and_reset`, `test_flashcard_review_rejects_unknown_rating`, `test_study_plan_items_require_one_same_subject_target_and_valid_date`); later definitions shadow earlier ones, so delete the first copies.
-- `StudyPlanItem` ordering and constraints changed in migration 0006; the admin for `progress` registers only `UserProgress`, `XPTransaction`, `LessonProgress`, `QuizAttempt` and `QuizAnswer`, not `StudyPlan`/`StudyPlanItem`/`FlashcardState`/`MistakeReview`.
+- Mock exam timers restart on page reload (the start time is signed per render), so recorded mock times can be gamed. Accepted for self-practice; store the start in the session if mocks ever count for grades.
+- `StudyPlanItem` ordering and constraints changed in migration 0006; the admin for `progress` registers only `UserProgress`, `XPTransaction`, `LessonProgress`, `QuizAttempt` and `QuizAnswer`, not `StudyPlan`/`StudyPlanItem`/`FlashcardState`/`TopicMasteryStat`.
 - Templates now use "compile/" consistently; the repo name and README title still say "CXC Platform".
-- `dashboard` and the study plan view run several queries per subject. Watch performance as content grows.
+- `dashboard` runs several queries per subject, and the study plan view one flashcard count per plan item. Watch performance as content grows.
 - `AGENTS.md` holds separate agent-behaviour guidance ("lazy senior dev" style); keep it consistent with this file.
 - `ads.txt` is read from the repo root; the test expects `google.com` in it.
 
@@ -121,4 +121,5 @@ static/css|js|admin/css|admin/js
 
 - Tests use `TestCase` and create their own Subject/Topic/Lesson/Question fixtures inline. There are no shared fixtures.
 - Search tests patch `apps.core.views.connection` to simulate SQLite when needed.
+- `QuizAnswer` rows created directly in tests need `marks_awarded` (e.g. `int(is_correct)`); without it they count as unmarked and are skipped by the mistake bank, accuracy and question statistics.
 - When adding a feature, add a test in the owning app's `tests.py`. Cross-app flows (quiz submit, XP, flashcards) are tested in `apps/progress/tests.py`.

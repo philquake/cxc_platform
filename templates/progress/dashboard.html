@@ -196,7 +196,7 @@
                             <span class="tick" aria-hidden="true"></span>
                             <span class="progress-lesson-copy">
                                 <strong>{{ lesson.title }}</strong>
-                                <small>{% if lesson.is_completed %}Completed{% else %}Not started{% endif %}{% if lesson.latest_quiz_attempt %}, quiz {{ lesson.latest_quiz_attempt.percentage }}%{% endif %}</small>
+                                <small>{% if lesson.is_completed %}Completed{% else %}Not started{% endif %}{% if lesson.latest_quiz_attempt.awaiting_review %}, quiz being marked{% elif lesson.latest_quiz_attempt %}, quiz {{ lesson.latest_quiz_attempt.percentage }}%{% endif %}</small>
                             </span>
                                                     </a>
                     {% empty %}
@@ -215,11 +215,13 @@
             <div class="progress-trend-row">
                 <div class="progress-trend-heading">
                     <span><strong>{{ attempt.quiz.title }}{% if attempt.quiz.is_mock %} <em class="progress-mock-badge">Mock</em>{% endif %}</strong><small>{{ attempt.completed_at|date:"M j, Y" }}</small></span>
-                    <strong>{{ attempt.percentage }}%</strong>
+                    <strong>{% if attempt.awaiting_review %}Being marked{% else %}{{ attempt.percentage }}%{% endif %}</strong>
                 </div>
+                {% if not attempt.awaiting_review %}
                 <div class="progress-track" role="progressbar" aria-valuenow="{{ attempt.percentage }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ attempt.quiz.title }} score">
                     <span style="width: {{ attempt.percentage }}%"></span>
                 </div>
+                {% endif %}
             </div>
         {% empty %}
             <p class="progress-empty">Completed quiz and mock scores will appear here.</p>

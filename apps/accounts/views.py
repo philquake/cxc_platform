@@ -99,7 +99,7 @@ def account(request):
 		return redirect("account")
 
 	user_progress, _ = UserProgress.objects.get_or_create(user=request.user)
-	answers = QuizAnswer.objects.filter(attempt__user=request.user)
+	answers = QuizAnswer.objects.filter(attempt__user=request.user, marks_awarded__isnull=False)
 	answered = answers.count()
 	correct = answers.filter(is_correct=True).count()
 	completed_by_subject = {

@@ -343,6 +343,8 @@ def _normalize_answer_text(value):
 def complete_lesson(request, lesson_id):
 	lesson = get_object_or_404(Lesson, pk=lesson_id, is_active=True)
 	with transaction.atomic():
+		# Row lock: a double click waits here instead of both awarding XP and the second hitting the unique key.
+		UserProgress.objects.select_for_update().get_or_create(user=request.user)
 		lesson_progress, _ = LessonProgress.objects.get_or_create(
 			user=request.user,
 			lesson=lesson,
@@ -435,6 +437,13 @@ def submit_quiz(request, quiz_id):
 		pk=quiz_id,
 		is_active=True,
 	)
+	# Checks for unmarked answers, not just the flag: deleting a question can leave a flagged attempt with nothing to mark.
+	if QuizAttempt.objects.filter(
+		user=request.user, quiz=quiz, awaiting_review=True, answers__marks_awarded__isnull=True
+	).exists():
+		# Only the latest attempt matters, so retakes would just pile up in the marking queue.
+		messages.info(request, "Your last attempt is still being marked. You can retake the quiz once it is.")
+		return redirect("quizzes:detail", quiz_id=quiz.id)
 	# Same filter as the quiz page, so a deactivated question can't be marked wrong unseen.
 	quiz_questions = [qq for qq in quiz.quiz_questions.all() if qq.question.is_active]
 	selected_answers = {}
@@ -588,7 +597,7 @@ def subject_leaderboard(request, subject_slug):
 def mistake_bank(request):
 	# Latest miss per question, picked in the database so history size doesn't matter.
 	latest_miss_ids = (
-		QuizAnswer.objects.filter(attempt__user=request.user, is_correct=False)
+		QuizAnswer.objects.filter(attempt__user=request.user, is_correct=False, marks_awarded__isnull=False)
 		.values("question_id")
 		.annotate(latest=Max("id"))
 		.values("latest")

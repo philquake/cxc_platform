@@ -368,13 +368,13 @@ class ProgressFlowTests(TestCase):
 				question=math_question,
 				text="5",
 			),
-			is_correct=False,
+			is_correct=False, marks_awarded=0,
 		)
 		QuizAnswer.objects.create(
 			attempt=math_attempt,
 			question=geometry_question,
 			selected_answer=geometry_wrong_answer,
-			is_correct=False,
+			is_correct=False, marks_awarded=0,
 		)
 
 		science = Subject.objects.create(name="Science", code="SCI")
@@ -416,7 +416,7 @@ class ProgressFlowTests(TestCase):
 			attempt=science_attempt,
 			question=science_question,
 			selected_answer=science_wrong_answer,
-			is_correct=False,
+			is_correct=False, marks_awarded=0,
 		)
 		self.client.force_login(self.user)
 
@@ -890,7 +890,7 @@ class AdminDashboardTests(TestCase):
 		attempt = QuizAttempt.objects.create(
 			user=student, quiz=self.quiz, score=0, total_questions=1, total_marks=1, completed_at=timezone.now()
 		)
-		QuizAnswer.objects.create(attempt=attempt, question=self.hard, is_correct=False)
+		QuizAnswer.objects.create(attempt=attempt, question=self.hard, is_correct=False, marks_awarded=0)
 
 	def test_dashboard_shows_stats_flags_and_recent_attempts(self):
 		self.client.force_login(self.admin_user)
@@ -1065,19 +1065,41 @@ class QuizXPPolicyTests(TestCase):
 		self.assertFalse(attempt.awaiting_review)
 		self.assertEqual((attempt.score, attempt.total_marks), (1, 5))
 
-	def test_pending_attempt_does_not_count_as_previous_best(self):
+	def test_pending_answers_are_not_mistakes_and_block_retakes_until_marked(self):
 		worded = self._worded(marks=1)
 		self.client.post(
 			reverse("progress:submit-quiz", args=[self.quiz.id]),
 			{f"question-{self.question.id}": self.right.id, f"question-{worded.id}": "volatile"},
 		)
-		self.client.post(
+		self.assertNotContains(self.client.get(reverse("progress:mistake-bank")), "Explain")
+		self.assertEqual(self.client.get(reverse("account")).context["accuracy"], 100)
+		response = self.client.post(
 			reverse("progress:submit-quiz", args=[self.quiz.id]),
 			{f"question-{self.question.id}": self.right.id},
+			follow=True,
 		)
-		self.assertEqual(self.xp(), 25 + 50 // 5)
-		self._mark(QuizAnswer.objects.get(question=worded, marks_awarded__isnull=True), 1)  # 100% beats 50%
-		self.assertEqual(self.xp(), (25 + 50 // 5) + (25 + 100 // 5))
+		self.assertContains(response, "still being marked")
+		self.assertEqual(QuizAttempt.objects.filter(user=self.user).count(), 1)
+		self._mark(QuizAnswer.objects.get(question=worded), 0)
+		self.assertContains(self.client.get(reverse("progress:mistake-bank")), "Explain")
+		self.client.post(reverse("progress:submit-quiz", args=[self.quiz.id]), {f"question-{self.question.id}": self.right.id})
+		self.assertEqual(QuizAttempt.objects.filter(user=self.user).count(), 2)
+
+	def test_unmarked_answers_stay_out_of_stats_and_deleting_the_question_unblocks_retakes(self):
+		worded = self._worded()
+		self.client.post(
+			reverse("progress:submit-quiz", args=[self.quiz.id]),
+			{f"question-{self.question.id}": self.right.id, f"question-{worded.id}": "It is volatile."},
+		)
+		self.assertContains(self.client.get(reverse("progress:dashboard")), "Being marked")
+		self.client.force_login(get_user_model().objects.create_superuser("teacher", "t@example.com", "pw"))
+		self.assertContains(self.client.get(reverse("admin:questions_question_change", args=[worded.id])), "No responses")
+		self.assertEqual(self.client.get(reverse("admin:progress_quizanswer_add")).status_code, 403)
+
+		worded.delete()  # takes its unmarked answer with it, leaving the attempt flagged with nothing to mark
+		self.client.force_login(self.user)
+		self.submit(self.right)
+		self.assertEqual(QuizAttempt.objects.filter(user=self.user).count(), 2)
 
 	def test_marks_cannot_exceed_question_marks(self):
 		worded = self._worded(marks=2)

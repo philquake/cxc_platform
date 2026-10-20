@@ -62,7 +62,7 @@ class QuestionAnalyticsAdminTests(TestCase):
 					if is_correct
 					else dominant_distractor if index < 8 else other_distractor
 				),
-				is_correct=is_correct,
+				is_correct=is_correct, marks_awarded=int(is_correct),
 			)
 		self.client.force_login(staff)
 
@@ -303,7 +303,7 @@ class QuestionAdminFilterTests(TestCase):
 			attempt = QuizAttempt.objects.create(
 				user=student, quiz=self.quiz, total_questions=1, total_marks=1, completed_at=timezone.now()
 			)
-			QuizAnswer.objects.create(attempt=attempt, question=self.ram, is_correct=is_correct)
+			QuizAnswer.objects.create(attempt=attempt, question=self.ram, is_correct=is_correct, marks_awarded=int(is_correct))
 		response = self.changelist("?q=RAM")
 		self.assertEqual(list(response.context["cl"].result_list), [self.ram])
 		self.assertContains(response, "50.0% (2)")

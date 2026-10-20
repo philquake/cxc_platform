@@ -101,6 +101,9 @@ class QuizAnswerAdmin(admin.ModelAdmin):
     search_fields = ("attempt__user__username", "question__text", "selected_text")
     readonly_fields = ("attempt", "question", "selected_answer", "selected_text", "is_correct")
 
+    def has_add_permission(self, request):
+        return False
+
     @admin.display(description="Student answer")
     def student_answer(self, obj):
         return obj.selected_answer.text if obj.selected_answer else obj.selected_text or "No answer"

@@ -245,7 +245,10 @@ class QuestionAdmin(ImportAdminMixin, admin.ModelAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
             # distinct: searching answer options joins Answer rows, which would multiply these counts.
-            response_count=Count("attempt_answers", distinct=True),
+            # Unmarked worded answers are left out so they don't read as wrong.
+            response_count=Count(
+                "attempt_answers", filter=Q(attempt_answers__marks_awarded__isnull=False), distinct=True
+            ),
             correct_response_count=Count(
                 "attempt_answers",
                 filter=Q(attempt_answers__is_correct=True),
@@ -255,22 +258,14 @@ class QuestionAdmin(ImportAdminMixin, admin.ModelAdmin):
 
     @admin.display(description="Correct")
     def response_accuracy(self, obj):
-        total = getattr(obj, "response_count", None)
-        correct = getattr(obj, "correct_response_count", None)
-        if total is None:
-            total = obj.attempt_answers.count()
-            correct = obj.attempt_answers.filter(is_correct=True).count()
+        total, correct = obj.response_count, obj.correct_response_count
         if not total:
             return "No responses"
         return f"{correct * 100 / total:.1f}% ({total})"
 
     @admin.display(description="Quality flag")
     def quality_flag(self, obj):
-        total = getattr(obj, "response_count", None)
-        correct = getattr(obj, "correct_response_count", None)
-        if total is None:
-            total = obj.attempt_answers.count()
-            correct = obj.attempt_answers.filter(is_correct=True).count()
+        total, correct = obj.response_count, obj.correct_response_count
         if not total:
             return "No response data"
         percentage = correct * 100 / total
@@ -282,7 +277,7 @@ class QuestionAdmin(ImportAdminMixin, admin.ModelAdmin):
 
     @admin.display(description="Distractor analysis")
     def distractor_analysis(self, obj):
-        total = obj.attempt_answers.count()
+        total = obj.response_count
         if not total:
             return "No response data"
         distractors = Answer.objects.filter(

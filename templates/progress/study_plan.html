@@ -5,14 +5,14 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/progress.css' %}?v=9.0">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
+<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.0">
 {% endblock %}
 
 {% block content %}
 <div class="progress-page">
-    <a href="{% url 'subjects:detail' subject.name|slugify %}" class="content-back">&larr; {{ subject.name }}</a>
-
     <header class="progress-header study-plan-header">
-        <span class="content-card-label">Exam preparation</span>
+        <a href="{% url 'subjects:detail' subject.name|slugify %}" class="crumb-back">&larr; {{ subject.name }}</a>
         <h1>{{ subject.name }} study plan</h1>
         <p>A day-by-day schedule that counts back from your exam. Topics worth more marks, and topics you find hard, come first.</p>
     </header>
@@ -51,14 +51,13 @@
             <section class="progress-subject study-plan-day" aria-label="Study plan for {{ day.grouper|date:'F j, Y' }}">
                 <header class="progress-subject-heading">
                     <div>
-                        <span class="content-card-label">{% if day.grouper == today %}Today{% else %}Up next{% endif %}</span>
-                        <h2>{{ day.grouper|date:"l, F j" }}</h2>
+                        <h2>{{ day.grouper|date:"l, F j" }}{% if day.grouper == today %} <span class="today-chip">Today</span>{% endif %}</h2>
                     </div>
                 </header>
                 <div class="progress-lessons">
                     {% for item in day.list %}
-                        <article class="progress-lesson study-plan-item {% if item.completed %}is-complete{% endif %}">
-                            <span class="progress-lesson-status" aria-hidden="true">{% if item.completed %}✓{% else %}○{% endif %}</span>
+                        <article class="progress-lesson study-plan-item {% if item.completed %}is-complete is-done{% endif %}">
+                            <span class="tick" aria-hidden="true"></span>
                             <span class="progress-lesson-copy">
                                 {% if item.item_type == "lesson" %}
                                     <strong>Lesson {{ item.lesson.lesson_number }}: {{ item.lesson.title }}</strong>

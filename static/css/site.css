@@ -2,7 +2,8 @@
    Direction: the sentence is the layout. Large display type, flat fields, one pair of margins. */
 
 :root {
-  --font-body: "Albert Sans", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Figtree", "Segoe UI", system-ui, sans-serif;
   --font-masthead: "Imbue", "Bricolage Grotesque", Georgia, serif;
 
   --gutter: clamp(16px, 2.2vw, 32px);
@@ -31,17 +32,18 @@ body {
   gap: 32px;
   min-height: var(--nav-h);
   padding: 0 var(--gutter);
-  background: var(--color-bg-body);
+  background: var(--color-panel);
+  border-bottom: 1px solid var(--color-panel-border);
 }
 
 .logo {
-  color: var(--color-white);
-  font-family: var(--font-masthead);
-  font-size: 28px;
+  color: var(--color-navy);
+  font-family: var(--font-body);
+  font-size: 24px;
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   text-decoration: none;
-  text-transform: uppercase;
 }
 
 .nav-links {
@@ -69,10 +71,12 @@ body {
 }
 
 .nav-links a.active {
-  color: var(--color-white);
+  color: var(--color-navy);
+  font-weight: 700;
   text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 8px;
+  text-decoration-thickness: 3px;
+  text-decoration-color: var(--color-accent);
+  text-underline-offset: 10px;
 }
 
 .nav-actions {
@@ -100,7 +104,7 @@ body {
   color: var(--color-on-accent);
   background: var(--color-accent);
   border: 0;
-  border-radius: var(--radius-site);
+  border-radius: 8px;
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 700;
@@ -124,7 +128,7 @@ body {
 
 /* ---------- footer: three labelled columns, the name as a closing mark ---------- */
 .footer {
-  padding: 72px var(--gutter) 28px;
+  padding: 56px var(--gutter) 28px;
   color: var(--color-white);
   background: var(--color-sky);
 }
@@ -143,10 +147,11 @@ body {
 .footer-brand {
   display: inline-block;
   margin-bottom: 12px;
-  font-family: var(--font-masthead);
-  font-size: 28px;
+  font-family: var(--font-body);
+  font-size: 24px;
+  font-weight: 800;
   line-height: 1;
-  text-transform: uppercase;
+  letter-spacing: -0.02em;
 }
 
 .footer-note {
@@ -174,8 +179,6 @@ body {
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .footer a {
@@ -190,17 +193,6 @@ body {
 .footer a:hover {
   text-decoration: underline;
   text-underline-offset: 4px;
-}
-
-.footer-name {
-  margin: 72px 0 24px;
-  font-family: var(--font-masthead);
-  font-size: clamp(4rem, 18vw, 16rem);
-  line-height: 0.82;
-  letter-spacing: -0.01em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
 }
 
 .footer .credits {
@@ -243,7 +235,6 @@ body {
 @media (max-width: 560px) {
   .footer { padding-top: 56px; }
   .footer-top { row-gap: 32px; }
-  .footer-name { margin-top: 48px; }
   .footer-meta { flex-direction: column; }
   .nav-actions { gap: 14px; }
 }

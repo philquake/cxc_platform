@@ -1,0 +1,146 @@
+/* Progress section, restyled to match the learning pages (see learn.css).
+   Loaded after progress.css, flashcards.css and mistake_bank.css, so rules here win on equal specificity. */
+
+.progress-page { padding-top: 0; }
+
+/* ---------- navy page band (full bleed without extra markup) ---------- */
+.progress-page .progress-header {
+  display: block;
+  max-width: none;
+  margin: 0 0 32px;
+  padding: 36px 0 40px;
+  color: #fff;
+  background: var(--color-navy);
+  border: 0;
+  box-shadow: 0 0 0 100vmax var(--color-navy);
+  clip-path: inset(0 -100vmax);
+}
+
+.progress-page .progress-header h1 {
+  margin: 0 0 10px;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.progress-page .progress-header p { max-width: 60ch; margin: 0; color: #e4eef5; font-size: 1.125rem; }
+
+.crumb-back {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: var(--color-sky);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.crumb-back:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+
+.progress-page .progress-header-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+
+.progress-header .btn.btn-secondary {
+  min-height: 44px;
+  color: #fff;
+  background: transparent;
+  border: 2px solid var(--color-sky);
+  border-radius: 8px;
+}
+
+.progress-header .btn.btn-secondary:hover { color: var(--color-navy); background: var(--color-sky); }
+
+/* ---------- shared panels ---------- */
+.progress-stat,
+.progress-subject,
+.progress-score-trend,
+.study-plan-day,
+.study-plan-date-form {
+  border-radius: 12px;
+}
+
+.progress-stat strong { font-family: var(--font-body); font-weight: 800; letter-spacing: -0.02em; }
+.progress-stat-level { border: 1px solid var(--color-panel-border); border-top: 6px solid var(--color-accent); }
+.progress-stats .progress-stat:nth-child(2) { border-top: 6px solid var(--color-navy); }
+.progress-stats .progress-stat:nth-child(3) { border-top: 6px solid var(--color-reef); }
+.progress-stat-label { color: var(--color-text-muted); }
+
+.progress-track { height: 10px; border: 0; }
+.progress-subject .progress-track { height: 10px; }
+
+.progress-subject > summary { align-items: center; }
+.progress-subject h2 { font-family: var(--font-body); font-weight: 800; }
+.progress-subject .content-card-label { color: var(--color-text-muted); }
+.progress-percent { font-family: var(--font-body); font-weight: 800; }
+.progress-subject-summary .chev { grid-column: auto; }
+.progress-subject[open] .chev { transform: rotate(-135deg); }
+
+.progress-block h3 { font-family: var(--font-body); font-weight: 800; }
+
+/* buttons inside panels */
+.progress-page .btn { min-height: 44px; border-radius: 8px; font-weight: 700; }
+.progress-page .btn-primary { color: var(--color-on-accent); background: var(--color-accent); }
+.progress-page .btn-primary:hover { background: var(--color-accent-hover); }
+.progress-page .progress-header .btn-secondary { border-width: 2px; }
+.progress-page .btn-accent { min-height: 44px; border-radius: 8px; }
+
+/* lesson rows: same status circle as the course page */
+.progress-lesson { grid-template-columns: 24px minmax(0, 1fr); min-height: 56px; background: var(--color-panel); border-radius: 10px; }
+.progress-lesson:hover { background: var(--color-sky-bg); border-color: var(--color-navy); }
+.progress-lesson-copy strong { font-weight: 700; }
+
+.progress-topic-links a { border-radius: 999px; }
+.progress-topic-links a:hover { background: var(--color-sky-bg); border-color: var(--color-navy); color: var(--color-navy); }
+
+.progress-mock-badge { color: var(--color-navy); border-color: var(--color-navy); }
+.today-chip { margin-left: 8px; padding: 2px 10px; color: var(--color-on-accent); background: var(--color-accent); border-radius: 999px; font-size: 14px; font-weight: 800; vertical-align: middle; }
+
+/* ---------- study plan ---------- */
+.study-plan-header { grid-template-columns: none; }
+.study-plan-date-form { margin-top: 0; }
+.study-plan-date-form input { border-width: 2px; border-radius: 8px; }
+.study-plan-date-form input:focus-visible { border-color: var(--color-navy); }
+.study-plan-item { border-radius: 10px; }
+
+/* ---------- leaderboard ---------- */
+.leaderboard-you { color: var(--color-text); background: var(--color-sky-bg); border: 0; border-left: 6px solid var(--color-navy); border-radius: 10px; font-size: 1.0625rem; }
+.leaderboard-row { border-radius: 10px; }
+.leaderboard-row.is-you { background: var(--color-sky-bg); border-color: var(--color-navy); }
+
+/* ---------- flashcards ---------- */
+.flashcard-page .progress-suggested-next { border-left: 6px solid var(--color-accent); border-radius: 12px; }
+.flashcard-page .progress-subject { border-radius: 12px; }
+.flashcard-page .progress-subject a,
+.flashcard-page > .progress-suggested-next a { min-height: 44px; padding: 0 20px; color: var(--color-on-accent); background: var(--color-accent); border: 0; border-radius: 8px; font-size: 16px; font-weight: 700; }
+.flashcard-page .progress-subject a:hover,
+.flashcard-page > .progress-suggested-next a:hover { color: var(--color-on-accent); background: var(--color-accent-hover); }
+.flashcard-page .progress-subject a.btn-secondary { color: var(--color-navy); background: transparent; border: 2px solid var(--color-control-border); }
+
+.flashcard-progress { width: 100%; margin: 0 0 14px; color: var(--color-text-muted); background: none; border: 0; padding: 0; font-size: 15px; }
+.flashcard-progress .flashcard-bar > span { background: var(--color-navy); }
+.flashcard-bar { height: 10px; border: 0; }
+
+.flashcard-face { border: 1px solid var(--color-panel-border); border-top: 6px solid var(--color-navy); border-radius: 12px; }
+.flashcard-front .content-card-label { color: var(--color-text-muted); background: none; border: 0; padding: 0; }
+.flashcard-text { font-weight: 700; }
+.flashcard-flip-btn { min-height: 48px; padding: 0 28px; border: 0; border-radius: 8px; font-size: 16px; font-weight: 700; }
+.flashcard-flip-btn:hover { box-shadow: none; }
+
+.rate-btn { border-width: 2px; border-radius: 10px; background: var(--color-panel); }
+.rate-again { border-color: var(--color-incorrect); }
+.rate-hard { border-color: var(--color-amber); }
+.rate-good { border-color: var(--color-reef); }
+.rate-easy { border-color: var(--color-reef); }
+
+.flashcard-empty-state,
+.flashcard-done { border-radius: 12px; border-top: 6px solid var(--color-navy); }
+
+/* ---------- mistake bank ---------- */
+.mistake-bank-page .progress-header { max-width: none; margin-bottom: 32px; padding-bottom: 40px; }
+.mistake-bank-page .mistake-subject { background: var(--color-panel); border-color: var(--color-panel-border); border-radius: 12px; }
+.mistake-bank-page .mistake-subject[open] { border-color: var(--color-navy); }
+.mistake-bank-page .mistake-topic { background: var(--color-bg-body); border-radius: 10px; }
+.mistake-answer { border-radius: 10px; }
+
+@media (max-width: 560px) {
+  .progress-page .progress-header { padding: 28px 0 32px; }
+}

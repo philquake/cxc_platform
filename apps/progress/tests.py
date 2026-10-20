@@ -256,7 +256,7 @@ class ProgressFlowTests(TestCase):
 
 		self.assertContains(response, "Topic mastery")
 		self.assertContains(response, "Estimated readiness")
-		self.assertContains(response, "Unknown · 1/5 answers")
+		self.assertContains(response, "Unknown, 1/5 answers")
 		self.assertContains(response, "Quiz and mock score trend")
 		self.assertContains(response, "Algebra quiz")
 		self.assertContains(

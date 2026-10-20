@@ -90,6 +90,7 @@ static/css|js|admin/css|admin/js
 - Pedagogy first: every question should carry a real explanation.
 - Light theme: navy (`--color-navy`, header/footer), apricot accent (`--color-accent`; use `--color-accent-ink` for apricot-toned text), sky, warm-white body (`--color-bg-body`, `--color-panel`). Use the CSS variables in `static/css/base.css`. Don't hard-code colors.
 - Mobile breakpoints in use: 900px, 760px, 560px (a few pages also use 959px, 680px, 640px, 480px, 420px). New components need at least the 560px rule.
+- Learning pages (landing page, courses, course page with expandable units and mastery meters, lesson reader with unit outline, stepped practice quiz) share `static/css/learn.css` and `static/js/quiz_stepper.js`. UI font is Figtree; the home page still uses the Imbue masthead. Lesson mastery (Attempted/Familiar/Proficient/Mastered) comes from the best quiz score per lesson (`subjects/views.py::_lesson_mastery`). Progress pages share a navy page band via `static/css/progress_learn.css` (loaded after `progress.css`). `static/css/pages.css` is now unused by templates.
 - Page CSS lives in `static/css/<feature>.css` and is loaded through `{% block extra_css %}`. Bump the `?v=` query string when a cached stylesheet changes (currently `3.0` for `base.css` and `layout.css`).
 - Views use function-based style. Many files indent with tabs (progress/views, quizzes/views, tests). Match the file you're editing; don't reformat whole files.
 - Auth templates (`templates/accounts/*.html`) are standalone pages using `auth.css`, not `base.html`.

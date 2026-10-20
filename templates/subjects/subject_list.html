@@ -1,43 +1,34 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Subjects | compile/{% endblock %}
+{% block title %}Courses | compile/{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages.css' %}?v=1.0">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
 {% endblock %}
 
 {% block content %}
-<div class="page">
-    <div class="page-split">
-        <header class="page-head">
-            <h1 data-reveal>Choose a subject.</h1>
-            <p data-reveal="2">Pick the CSEC or CAPE course you are studying. Lessons are grouped by topic, in syllabus order, and every quiz question explains its answer.</p>
-        </header>
-        <figure class="page-picture" data-reveal="3">
-            <img src="{% static 'img/found/view-of-port-royal-and-kingston-harbours.jpg' %}" width="1920" height="1425" alt="Engraved view of Port Royal and Kingston harbours, with ships on the water and mountains behind" decoding="async">
-        </figure>
+<div class="learn-band">
+    <div class="learn-wrap">
+        <h1>Courses</h1>
+        <p>Pick your CSEC or CAPE course. Each one is split into syllabus units, with a reading, a quiz and flashcards for every lesson.</p>
     </div>
+</div>
 
-    <ul class="row-list" data-reveal>
+<div class="learn-wrap learn-body">
+    <ul class="course-grid">
         {% for subject in subjects %}
         <li>
-            <a class="row" href="{% url 'subjects:detail' subject.name|slugify %}">
-                <span class="row-kind">{{ subject.code }}</span>
-                <span class="row-main">
-                    <span class="row-title">{{ subject.name }}</span>
-                    {% if subject.description %}<span class="row-text">{{ subject.description }}</span>{% endif %}
-                </span>
-                <span class="row-go">See lessons <span aria-hidden="true">&rarr;</span></span>
+            <a class="course-card" href="{% url 'subjects:detail' subject.name|slugify %}">
+                <span class="course-code">{{ subject.code }}</span>
+                <span class="course-name">{{ subject.name }}</span>
+                {% if subject.description %}<span class="course-text">{{ subject.description|truncatewords:28 }}</span>{% endif %}
+                <span class="course-foot">{{ subject.lesson_count }} lesson{{ subject.lesson_count|pluralize }}</span>
             </a>
         </li>
         {% empty %}
-        <li class="row-empty">No subjects are open yet. Check back soon.</li>
+        <li class="learn-empty">No courses are open yet. Check back soon.</li>
         {% endfor %}
     </ul>
 </div>
-{% endblock %}
-
-{% block credits %}
-<p class="credits">Picture: <a href="https://commons.wikimedia.org/w/index.php?curid=36224649">View of Port Royal and Kingston Harbours</a> (Wellcome Collection, CC BY 4.0), via Wikimedia Commons.</p>
 {% endblock %}

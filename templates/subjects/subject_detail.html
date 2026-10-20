@@ -1,47 +1,84 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ subject.name }} lessons | compile/{% endblock %}
+{% block title %}{{ subject.name }} | compile/{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages.css' %}?v=1.0">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
 {% endblock %}
 
 {% block content %}
-<div class="page">
-    <header class="page-head">
+<div class="learn-band">
+    <div class="learn-wrap">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="{% url 'subjects:list' %}">Courses</a> <span aria-hidden="true">/</span> <span>{{ subject.code }}</span></nav>
         <h1>{{ subject.name }}</h1>
         {% if subject.description %}<p>{{ subject.description }}</p>{% endif %}
-        <p class="page-progress-links"><a class="page-link" href="{% url 'subjects:list' %}">All subjects</a></p>
-        {% if user.is_authenticated and lesson_total %}
-            <p class="page-progress">{{ lesson_done }} of {{ lesson_total }} lessons complete</p>
-            <div class="page-actions">
-                {% if next_lesson %}
-                    <a class="btn-accent btn-big" href="{% url 'subjects:lesson-detail' subject.name|slugify next_lesson.slug %}">{% if lesson_done %}Continue with lesson {{ next_lesson.lesson_number }}{% else %}Start lesson {{ next_lesson.lesson_number }}{% endif %}</a>
-                {% endif %}
-                <a class="page-link" href="{% url 'progress:study-plan' subject.name|slugify %}">Plan for your exam</a>
-            </div>
+        {% if next_lesson %}
+        <div class="band-actions">
+            <a class="btn-primary-lg" href="{% url 'subjects:lesson-detail' subject.name|slugify next_lesson.slug %}">{% if lesson_done %}Continue: {{ next_lesson.title }}{% else %}Start: {{ next_lesson.title }}{% endif %}</a>
+            <a class="btn-outline-lg" href="{% url 'progress:study-plan' subject.name|slugify %}">Plan for your exam</a>
+        </div>
+        {% elif not user.is_authenticated and lesson_total %}
+        <div class="band-actions">
+            <a class="btn-primary-lg" href="{% url 'signup' %}">Sign up free to track mastery</a>
+        </div>
         {% endif %}
-    </header>
+    </div>
+</div>
 
-    {% regroup subject.active_lessons by section_number as lesson_sections %}
-    {% for section in lesson_sections %}
-        <section class="group">
-            <h2>{% if section.list.0.section_title %}{{ section.list.0.section_title }}{% else %}More lessons{% endif %}</h2>
-            <ol class="row-list">
-                {% for lesson in section.list %}
+<div class="learn-wrap learn-body course-layout">
+    <div class="units">
+        {% for unit in units %}
+        <details class="unit"{% if unit.number == open_unit %} open{% endif %}>
+            <summary>
+                <span class="unit-name">
+                    <span class="unit-title">{% if unit.title %}{{ unit.title }}{% else %}Unit {{ unit.number }}{% endif %}</span>
+                    <span class="unit-count">{{ unit.total }} lesson{{ unit.total|pluralize }}{% if user.is_authenticated %}, {{ unit.done }} complete{% endif %}</span>
+                </span>
+                {% if user.is_authenticated %}
+                <span class="bar" role="img" aria-label="{{ unit.percent }}% of this unit complete"><span style="width: {{ unit.percent }}%"></span></span>
+                {% endif %}
+                <span class="chev" aria-hidden="true"></span>
+            </summary>
+            <ol class="lesson-rows">
+                {% for lesson in unit.lessons %}
                 <li>
-                    <a class="row{% if lesson.id in completed_ids %} is-complete{% endif %}" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
-                        <span class="row-kind">Lesson {{ lesson.lesson_number }}</span>
-                        <span class="row-main"><span class="row-title">{{ lesson.title }}</span></span>
-                        <span class="row-go">{% if lesson.id in completed_ids %}Completed{% else %}Read <span aria-hidden="true">&rarr;</span>{% endif %}</span>
+                    <a class="lesson-row{% if lesson.id in completed_ids %} is-done{% endif %}" href="{% url 'subjects:lesson-detail' subject.name|slugify lesson.slug %}">
+                        <span class="tick" aria-hidden="true"></span>
+                        <span class="lesson-row-title">{{ lesson.title }}</span>
+                        <span class="meter meter-{{ lesson.mastery_level }}" role="img" aria-label="Mastery: {{ lesson.mastery_label }}">
+                            <i class="{% if lesson.mastery_step >= 1 %}on{% endif %}"></i><i class="{% if lesson.mastery_step >= 2 %}on{% endif %}"></i><i class="{% if lesson.mastery_step >= 3 %}on{% endif %}"></i><i class="{% if lesson.mastery_step >= 4 %}on{% endif %}"></i>
+                        </span>
+                        <span class="lesson-row-state">{% if lesson.mastery_step %}{{ lesson.mastery_label }}{% elif lesson.id in completed_ids %}Read{% else %}Not started{% endif %}</span>
                     </a>
                 </li>
                 {% endfor %}
             </ol>
-        </section>
-    {% empty %}
-        <p class="row-empty">No lessons here yet. Lessons for {{ subject.name }} are being written, so check back soon.</p>
-    {% endfor %}
+        </details>
+        {% empty %}
+        <p class="learn-empty">No lessons here yet. Lessons for {{ subject.name }} are being written, so check back soon.</p>
+        {% endfor %}
+    </div>
+
+    {% if lesson_total %}
+    <aside class="mastery-panel" aria-labelledby="mastery-title">
+        <h2 id="mastery-title">Course mastery</h2>
+        {% if user.is_authenticated %}
+            <p class="mastery-big">{{ lesson_percent }}%</p>
+            <div class="bar bar-lg" role="img" aria-label="{{ lesson_percent }}% of lessons complete"><span style="width: {{ lesson_percent }}%"></span></div>
+            <p class="mastery-sub">{{ lesson_done }} of {{ lesson_total }} lessons complete. {{ mastered_total }} at proficient or mastered.</p>
+        {% else %}
+            <p class="mastery-sub">Sign in to see which lessons you have read and how well you did on each quiz.</p>
+            <a class="btn-outline" href="{% url 'login' %}?next={{ request.path|urlencode }}">Sign in</a>
+        {% endif %}
+        <dl class="legend">
+            <dt><span class="meter meter-attempted"><i class="on"></i><i></i><i></i><i></i></span>Attempted</dt><dd>Quiz score under 60%</dd>
+            <dt><span class="meter meter-familiar"><i class="on"></i><i class="on"></i><i></i><i></i></span>Familiar</dt><dd>60% to 79%</dd>
+            <dt><span class="meter meter-proficient"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>Proficient</dt><dd>80% to 99%</dd>
+            <dt><span class="meter meter-mastered"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>Mastered</dt><dd>100%</dd>
+        </dl>
+        <p class="mastery-sub">Mastery uses your best score on each lesson's quiz.</p>
+    </aside>
+    {% endif %}
 </div>
 {% endblock %}

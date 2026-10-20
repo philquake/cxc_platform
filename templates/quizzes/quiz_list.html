@@ -6,10 +6,11 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/subjects.css' %}">
 <link rel="stylesheet" href="{% static 'css/quizzes.css' %}">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
 {% endblock %}
 
 {% block content %}
-<div class="content-column">
+<div class="content-column quiz-page">
     {% if result_attempt %}
         <dialog id="quiz-result-dialog" class="quiz-result-dialog" aria-labelledby="quiz-result-title">
             <div class="quiz-result-dialog-content">
@@ -101,7 +102,7 @@
     <div class="quiz-list">
         {% for quiz in quizzes %}
             <article class="quiz-card">
-                <form method="post" action="{% url 'progress:submit-quiz' quiz.id %}" class="quiz-form" data-quiz-form>
+                <form method="post" action="{% url 'progress:submit-quiz' quiz.id %}" class="quiz-form" data-quiz-form{% if not quiz.is_mock %} data-stepper{% endif %}>
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <div class="quiz-card-heading">
@@ -193,5 +194,5 @@
         {% endfor %}
     </div>
 </div>
-{% if quizzes %}<script src="{% static 'js/quiz_progress.js' %}" defer></script><script src="{% static 'js/mock_exam_timer.js' %}" defer></script>{% endif %}
+{% if quizzes %}<script src="{% static 'js/quiz_progress.js' %}" defer></script><script src="{% static 'js/quiz_stepper.js' %}" defer></script><script src="{% static 'js/mock_exam_timer.js' %}" defer></script>{% endif %}
 {% endblock %}

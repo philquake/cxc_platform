@@ -5,13 +5,14 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/progress.css' %}?v=9.0">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
+<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.0">
 {% endblock %}
 
 {% block content %}
 <div class="progress-page leaderboard-page">
-    <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
     <header class="progress-header">
-        <span class="content-card-label">{{ subject.code }}{% if topic %} / {{ topic.name }}{% endif %}</span>
+        <a href="{% url 'progress:dashboard' %}" class="crumb-back">&larr; Progress</a>
 <h1>{% if topic %}{{ topic.name }} leaderboard{% else %}{{ subject.name }} leaderboard{% endif %}</h1>
 <p>{% if topic %}Ranked by XP earned from lessons and quizzes in {{ topic.name }}.{% else %}Ranked by total XP earned across all topics in {{ subject.name }}.{% endif %}</p>
     </header>

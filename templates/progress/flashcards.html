@@ -6,15 +6,15 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/progress.css' %}?v=9.0">
 <link rel="stylesheet" href="{% static 'css/flashcards.css' %}?v=9.0">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
+<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.0">
 {% endblock %}
 
 {% block content %}
 <div class="progress-page flashcard-page">
-    <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
-
     <header class="progress-header">
-        <span class="content-card-label">{% if is_all_subjects %}all subjects{% else %}{{ subject.code }}{% endif %}{% if topic %} / {{ topic.name }}{% endif %} flashcards</span>
-        <h1>Flashcard review</h1>
+        <a href="{% url 'progress:flashcard-hub' %}" class="crumb-back">&larr; Flashcards</a>
+        <h1>{% if is_all_subjects %}All due cards{% elif topic %}{{ topic.name }} cards{% else %}{{ subject.name }} cards{% endif %}</h1>
         <p>{{ due_count }} card{{ due_count|pluralize }} due today. Try to answer in your head before you reveal it.</p>
     </header>
 
@@ -31,7 +31,7 @@
                           data-question-id="{{ card.question.id }}">
                     <div class="flashcard-inner">
                         <div class="flashcard-face flashcard-front" data-face="front">
-                            <span class="content-card-label">{{ card.question.difficulty|upper }}</span>
+                            <span class="content-card-label">{{ card.question.difficulty|capfirst }}</span>
                             <p class="flashcard-text">{{ card.question.text }}</p>
                             <button type="button" class="flashcard-flip-btn">Show answer</button>
                         </div>
@@ -55,7 +55,6 @@
             {% endfor %}
 
             <div class="flashcard-done is-hidden" tabindex="-1">
-                <p class="content-card-label">Session complete</p>
                 <h2>Session complete</h2>
                 <p>You reviewed {{ cards|length }} card{{ cards|length|pluralize }}. Cards you rated Again or Hard come back sooner.</p>
                 <a class="btn btn-primary" href="{% url 'progress:flashcard-hub' %}">Back to flashcards</a>
@@ -71,7 +70,6 @@
         </form>
     {% else %}
         <section class="flashcard-empty-state" role="status" aria-label="Flashcard session status">
-            <span class="content-card-label">Session clear</span>
             <h2>You are all caught up</h2>
             <p>Cards are added when you miss a quiz question, and come back when you are likely to forget them. Take a quiz to build your deck.</p>
             <a class="btn btn-primary" href="{% url 'quizzes:list' %}">Take a quiz</a>

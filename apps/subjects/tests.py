@@ -152,7 +152,7 @@ class SubjectDetailProgressTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertContains(response, "1 of 2 lessons complete")
-        self.assertContains(response, "Continue with lesson 2")
+        self.assertContains(response, "Continue: Algebra")
         self.assertEqual(response.context["next_lesson"], self.second)
 
     def test_anonymous_visitor_sees_lessons_without_progress(self):
@@ -190,17 +190,45 @@ class LessonPagerTests(TestCase):
         self.assertEqual(response.context["previous_lesson"], self.lessons[0])
         self.assertEqual(response.context["next_lesson"], self.lessons[2])
         self.assertEqual(response.context["lesson_position"], 2)
-        self.assertContains(response, "Next lesson")
+        self.assertContains(response, 'rel="next"')
         self.assertContains(response, "Geometry")
 
     def test_first_lesson_has_no_previous_link(self):
         response = self._get("number-sense")
 
         self.assertIsNone(response.context["previous_lesson"])
-        self.assertNotContains(response, "Previous lesson")
+        self.assertNotContains(response, 'rel="prev"')
 
     def test_last_lesson_points_back_to_the_subject(self):
         response = self._get("geometry")
 
         self.assertIsNone(response.context["next_lesson"])
-        self.assertContains(response, "That is the last lesson")
+        self.assertContains(response, "Back to course")
+
+
+class LessonMasteryTests(TestCase):
+    def test_best_quiz_score_sets_mastery_level_and_unit_progress(self):
+        user = User.objects.create_user("student", password="pw")
+        subject = Subject.objects.create(name="Mathematics", code="MATH")
+        topic = Topic.objects.create(subject=subject, name="Number", slug="number")
+        lesson = Lesson.objects.create(
+            subject=subject, title="Number sense", slug="number-sense",
+            lesson_number=1, section_number=1, section_title="Foundations", content="x",
+        )
+        quiz = Quiz.objects.create(
+            subject=subject, topic=topic, lesson=lesson, title="Number quiz"
+        )
+        for score in (3, 9):
+            QuizAttempt.objects.create(
+                user=user, quiz=quiz, score=score, total_questions=10,
+                completed_at=timezone.now(),
+            )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("subjects:detail", kwargs={"slug": "mathematics"}))
+
+        unit = response.context["units"][0]
+        self.assertEqual(unit["title"], "Foundations")
+        self.assertEqual(unit["lessons"][0].mastery_level, "proficient")
+        self.assertEqual(unit["lessons"][0].mastery_step, 3)
+        self.assertEqual(response.context["mastered_total"], 1)

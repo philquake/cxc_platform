@@ -7,14 +7,14 @@
 <link rel="stylesheet" href="{% static 'css/progress.css' %}?v=9.0">
 <link rel="stylesheet" href="{% static 'css/quizzes.css' %}">
 <link rel="stylesheet" href="{% static 'css/mistake_bank.css' %}">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
+<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.0">
 {% endblock %}
 
 {% block content %}
 <div class="progress-page mistake-bank-page">
-    <a href="{% url 'progress:dashboard' %}" class="content-back">&larr; Progress</a>
-
     <header class="progress-header">
-        <span class="content-card-label">Review</span>
+        <a href="{% url 'progress:dashboard' %}" class="crumb-back">&larr; Progress</a>
         <h1>Mistake bank</h1>
         <p>Every question you have missed, with the right answer and why. Go through these before an exam.</p>
     </header>
@@ -24,7 +24,7 @@
             <details class="mistake-subject">
                 <summary>
                     <span class="mistake-group-title">{{ subject_group.subject.name }}</span>
-                    <span class="mistake-group-meta">{{ subject_group.subject.code }} · {{ subject_group.topics|length }} topics</span>
+                    <span class="mistake-group-meta">{{ subject_group.subject.code }}, {{ subject_group.topics|length }} topic{{ subject_group.topics|length|pluralize }}</span>
                 </summary>
                 <div class="mistake-topics">
                     {% for topic_group in subject_group.topics %}

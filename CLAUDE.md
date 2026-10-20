@@ -23,6 +23,7 @@ Owner: Phil (IT/CS teacher, Jamaica). Repo: `github.com/philquake/cxc_platform`.
 ## Environment variables
 
 Required: `DJANGO_SECRET_KEY`, `DATABASE_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
+Login throttling: django-axes locks a username for 15 min after 5 failed logins (`/accounts/login/` and `/admin/`); it adds `axes_*` tables, so run `migrate` on deploy. When `DEBUG` is false, session/CSRF cookies are secure and HSTS is on (Render terminates HTTPS and sets `X-Forwarded-Proto`).
 Optional: `DEBUG`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `EMAIL_BACKEND` (defaults to console), `DEFAULT_FROM_EMAIL`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DB_SSLMODE`.
 Loaded from `.env` at the repo root via django-environ. Never commit it.
 

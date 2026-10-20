@@ -2,6 +2,7 @@
 Django settings for config project.
 """
 
+from datetime import timedelta
 from pathlib import Path
 import environ
 
@@ -35,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'cloudinary_storage',
+    'axes',
     'cloudinary',
 
     # Third-party
@@ -101,7 +103,21 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',  # keep last
 ]
+
+# Brute-force protection for /accounts/login/ and /admin/login/: 5 failures lock that username for 15 minutes.
+# Locking by username only (not IP) because a school shares one IP and the proxy chain on Render is unverified;
+# switch to [["ip_address", "username"]] with AXES_IPWARE_PROXY_COUNT once the real client IP is trustworthy.
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(minutes=15)
+AXES_LOCKOUT_PARAMETERS = ["username"]
+AXES_RESET_ON_SUCCESS = True
+SILENCED_SYSTEM_CHECKS = ['axes.W006']  # username-only lockout is deliberate, see above
 
 ROOT_URLCONF = 'config.urls'
 

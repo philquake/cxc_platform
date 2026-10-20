@@ -113,6 +113,28 @@ class AccountFlowTests(TestCase):
 		self.assertContains(response, "Please enter a correct username and password.")
 		self.assertFalse(response.wsgi_request.user.is_authenticated)
 
+	def test_repeated_failed_logins_lock_account_login_and_admin_login(self):
+		get_user_model().objects.create_user(username="student", password="A-strong-password-123")
+		for url_name in ("login", "admin:login"):
+			with self.subTest(url_name):
+				for _ in range(5):
+					self.client.post(reverse(url_name), {"username": "student", "password": "wrong"})
+				response = self.client.post(
+					reverse(url_name), {"username": "student", "password": "A-strong-password-123"}
+				)
+				self.assertEqual(response.status_code, 429)
+				self.assertNotIn("_auth_user_id", self.client.session)
+
+	def test_other_users_are_not_locked_out(self):
+		get_user_model().objects.create_user(username="student", password="A-strong-password-123")
+		get_user_model().objects.create_user(username="friend", password="A-strong-password-123")
+		for _ in range(5):
+			self.client.post(reverse("login"), {"username": "student", "password": "wrong"})
+		response = self.client.post(
+			reverse("login"), {"username": "friend", "password": "A-strong-password-123"}
+		)
+		self.assertEqual(response.status_code, 302)
+
 	def test_logout_requires_post_and_clears_session(self):
 		user = get_user_model().objects.create_user(
 			username="student",

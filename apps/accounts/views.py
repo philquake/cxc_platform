@@ -44,7 +44,7 @@ def signup(request):
 	form = SignupForm(request.POST or None)
 	if request.method == "POST" and form.is_valid():
 		user = form.save()
-		login(request, user)
+		login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 		messages.success(
 			request,
 			f"Welcome to compile/, {user.username}. Pick a subject to start your first lesson.",

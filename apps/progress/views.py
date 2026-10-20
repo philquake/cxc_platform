@@ -1,11 +1,13 @@
 import re
+import time
 from datetime import date, timedelta
 
 from django.contrib import messages
+from django.core import signing
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, Max, OuterRef, Q, Subquery, Sum
-from django.http import Http404, HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -27,14 +29,14 @@ from .analytics import (
 	topic_mastery,
 )
 from .models import (
-    FlashcardState,
-    LessonProgress,
-    QuizAnswer,
-    QuizAttempt,
-	StudyPlanItem,
+	FlashcardState,
+	LessonProgress,
+	QuizAnswer,
+	QuizAttempt,
 	StudyPlan,
-    UserProgress,
-    XPTransaction,
+	StudyPlanItem,
+	UserProgress,
+	XPTransaction,
 )
 from .study_plan import due_flashcard_count, generate_plan
 
@@ -94,17 +96,26 @@ def dashboard(request):
 			completed=True,
 		).values_list("lesson_id", flat=True)
 	)
-	latest_attempts = {}
-	for attempt in QuizAttempt.objects.filter(
-		user=request.user,
+	latest_attempt_for_quiz = QuizAttempt.objects.filter(
+		user=OuterRef("user"),
+		quiz=OuterRef("quiz"),
 		completed_at__isnull=False,
-		quiz__is_active=True,
-		quiz__lesson__is_active=True,
-	).select_related("quiz", "quiz__lesson"):
-		latest_attempts.setdefault(attempt.quiz_id, attempt)
+	).order_by("-completed_at", "-started_at", "-pk")
+	score_trend = list(
+		QuizAttempt.objects.filter(
+			user=request.user,
+			completed_at__isnull=False,
+			quiz__is_active=True,
+		).filter(
+			Q(quiz__is_mock=True) | Q(quiz__lesson__is_active=True),
+			pk=Subquery(latest_attempt_for_quiz.values("pk")[:1]),
+		).select_related("quiz").order_by("-completed_at", "-started_at")
+	)
+
 	latest_by_lesson = {}
-	for attempt in latest_attempts.values():
-		latest_by_lesson.setdefault(attempt.quiz.lesson_id, attempt)
+	for attempt in score_trend:
+		if not attempt.quiz.is_mock:
+			latest_by_lesson.setdefault(attempt.quiz.lesson_id, attempt)
 
 	subjects = list(
 		Subject.objects.filter(is_active=True).prefetch_related("lessons", "topics")
@@ -185,22 +196,6 @@ def dashboard(request):
 			(topic for topic in active_topics if topic.mastery_available),
 			key=lambda topic: topic.mastery["accuracy"],
 		)[:3]
-
-	latest_attempt_for_quiz = QuizAttempt.objects.filter(
-		user=OuterRef("user"),
-		quiz=OuterRef("quiz"),
-		completed_at__isnull=False,
-	).order_by("-completed_at", "-started_at", "-pk")
-	score_trend = list(
-		QuizAttempt.objects.filter(
-			user=request.user,
-			completed_at__isnull=False,
-			quiz__is_active=True,
-		).filter(
-			Q(quiz__is_mock=True) | Q(quiz__lesson__is_active=True),
-			pk=Subquery(latest_attempt_for_quiz.values("pk")[:1]),
-		).select_related("quiz").order_by("-completed_at", "-started_at")
-	)
 
 	return render(
 		request,
@@ -297,12 +292,6 @@ def study_plan_view(request, subject_slug):
 					item.scheduled_date,
 				)
 
-		StudyPlanItem.objects.filter(
-			plan=plan,
-			item_type=StudyPlanItem.LESSON,
-			lesson_id__in=completed_lesson_ids,
-		).update(completed=True, completed_at=timezone.now())
-
 	return render(
 		request,
 		"progress/study_plan.html",
@@ -333,6 +322,16 @@ def _safe_next_url(request, fallback):
 	):
 		return redirect_to
 	return fallback
+
+
+def _matches_expected(answer, expected, contains=False):
+	"""Expected answers may list alternatives separated by "|"; worded answers may contain one."""
+	answer = _normalize_answer_text(answer)
+	options = [_normalize_answer_text(option) for option in (expected or "").split("|")]
+	options = [option for option in options if option]
+	if contains:
+		return any(option in answer for option in options)
+	return answer in options
 
 
 def _normalize_answer_text(value):
@@ -413,23 +412,23 @@ def submit_quiz(request, quiz_id):
 			selected_answers[question.id] = int(value)
 
 	time_taken = None
-	raw_time_taken = request.POST.get("time_taken_seconds")
-	if quiz.is_mock and raw_time_taken is not None:
+	if quiz.is_mock:
+		# The page signs its start time, so the recorded duration can't be made up by the browser.
 		try:
-			parsed_time_taken = int(raw_time_taken)
-		except (TypeError, ValueError):
-			parsed_time_taken = -1
-		if parsed_time_taken >= 0:
-			time_taken = parsed_time_taken
+			signed_quiz_id, signed_user_id, started = signing.loads(request.POST.get("mock_started", ""))
+			if (signed_quiz_id, signed_user_id) == (quiz.id, request.user.id):
+				time_taken = max(int(time.time() - started), 0)
+		except (signing.BadSignature, TypeError, ValueError):
+			pass
 
 	# Row lock serialises this user's submissions, so the best-score check below can't race.
 	UserProgress.objects.select_for_update().get_or_create(user=request.user)
 	previous_best = max(
 		(
-			previous.percentage
-			for previous in QuizAttempt.objects.filter(
+			round(score * 100 / total) if total else 0
+			for score, total in QuizAttempt.objects.filter(
 				user=request.user, quiz=quiz, completed_at__isnull=False
-			)
+			).values_list("score", "total_questions")
 		),
 		default=-1,
 	)
@@ -465,9 +464,8 @@ def submit_quiz(request, quiz_id):
 			)
 		elif question.format in {Question.FORMAT_SHORT_ANSWER, Question.FORMAT_WORDED}:
 			selected_text = selected_text_answers.get(question.id, "")
-			is_correct = (
-				_normalize_answer_text(selected_text)
-				== _normalize_answer_text(question.expected_answer)
+			is_correct = _matches_expected(
+				selected_text, question.expected_answer, contains=question.format == Question.FORMAT_WORDED
 			)
 		elif question.format == Question.FORMAT_TRUE_FALSE and not any(question.answers.all()):
 			selected_text = request.POST.get(f"question-{question.id}", "").strip()
@@ -576,46 +574,47 @@ def subject_leaderboard(request, subject_slug):
 
 @login_required
 def mistake_bank(request):
-    # Latest miss per question, picked in the database so history size doesn't matter.
-    latest_miss_ids = (
-        QuizAnswer.objects.filter(attempt__user=request.user, is_correct=False)
-        .values("question_id")
-        .annotate(latest=Max("id"))
-        .values("latest")
-    )
-    wrong_answers = (
-        QuizAnswer.objects.filter(id__in=latest_miss_ids)
-        .select_related("question", "question__subject", "question__topic", "selected_answer")
-        .prefetch_related("question__answers")
-        .order_by("-attempt__completed_at")
-    )
+	# Latest miss per question, picked in the database so history size doesn't matter.
+	latest_miss_ids = (
+		QuizAnswer.objects.filter(attempt__user=request.user, is_correct=False)
+		.values("question_id")
+		.annotate(latest=Max("id"))
+		.values("latest")
+	)
+	wrong_answers = (
+		QuizAnswer.objects.filter(id__in=latest_miss_ids)
+		.select_related("question", "question__subject", "question__topic", "selected_answer")
+		.prefetch_related("question__answers")
+		.order_by("-attempt__completed_at")
+	)
 
-    grouped = {}
-    for mistake in wrong_answers:
-        subject = mistake.question.subject
-        topic = mistake.question.topic
-        subject_group = grouped.setdefault(
-            subject.id,
-            {"subject": subject, "topics": {}},
-        )
-        topic_group = subject_group["topics"].setdefault(
-            topic.id,
-            {"topic": topic, "mistakes": []},
-        )
-        topic_group["mistakes"].append(mistake)
+	grouped = {}
+	for mistake in wrong_answers:
+		subject = mistake.question.subject
+		topic = mistake.question.topic
+		subject_group = grouped.setdefault(
+			subject.id,
+			{"subject": subject, "topics": {}},
+		)
+		topic_group = subject_group["topics"].setdefault(
+			topic.id,
+			{"topic": topic, "mistakes": []},
+		)
+		topic_group["mistakes"].append(mistake)
 
-    mistake_groups = [
-        {
-            "subject": subject_group["subject"],
-            "topics": list(subject_group["topics"].values()),
-        }
-        for subject_group in grouped.values()
-    ]
+	mistake_groups = [
+		{
+			"subject": subject_group["subject"],
+			"topics": list(subject_group["topics"].values()),
+		}
+		for subject_group in grouped.values()
+	]
 
-    return render(request, "progress/mistake_bank.html", {
-        "mistake_groups": mistake_groups,
-    })
-    
+	return render(request, "progress/mistake_bank.html", {
+		"mistake_groups": mistake_groups,
+	})
+
+
 @login_required
 def flashcard_hub(request):
 	subjects = list(Subject.objects.filter(is_active=True).order_by("name"))

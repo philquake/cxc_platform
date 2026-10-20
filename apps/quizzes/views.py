@@ -1,12 +1,14 @@
 import math
+import time
 
+from django.core import signing
 from django.http import Http404
 from django.shortcuts import render
 from django.db.models import Count, Prefetch, Q
 
 from apps.accounts.models import Profile
 from apps.subjects.lookup import get_subject_or_404
-from apps.subjects.models import Subject, Topic
+from apps.subjects.models import Topic
 from apps.progress.models import QuizAttempt
 
 from .models import Quiz, QuizQuestion
@@ -115,11 +117,11 @@ def quiz_detail(request, quiz_id):
                 is_active=True,
                 lesson_number__gt=quiz.lesson.lesson_number,
             ).order_by("lesson_number", "section_number").first() if quiz.lesson_id else None,
-            "medium_quiz": Quiz.objects.filter(
+            "other_quiz": Quiz.objects.filter(
                 subject=quiz.subject,
                 topic=quiz.topic,
                 is_active=True,
-                title__icontains="medium",
+                is_mock=False,
             ).exclude(pk=quiz.pk).first() if quiz.topic_id else None,
         },
     )
@@ -166,6 +168,8 @@ def _add_time_limits(request, quizzes):
             math.ceil(minutes * multiplier) if minutes else minutes
         )
         quiz.has_extra_time = bool(minutes) and quiz.effective_time_limit_minutes > minutes
+        if quiz.is_mock and request.user.is_authenticated:
+            quiz.start_token = signing.dumps([quiz.id, request.user.id, int(time.time())])
 
 
 def _add_latest_attempts(request, quizzes):

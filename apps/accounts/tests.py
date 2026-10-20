@@ -252,3 +252,20 @@ class ProfilePageTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "Your password was not changed")
+
+
+class SignupAbuseTests(TestCase):
+	data = {
+		"username": "bot", "first_name": "B", "last_name": "Ot", "email": "dup@example.com",
+		"password1": "A-strong-password-123", "password2": "A-strong-password-123",
+	}
+
+	def test_honeypot_field_blocks_signup(self):
+		self.client.post(reverse("signup"), {**self.data, "website": "http://spam"})
+		self.assertFalse(get_user_model().objects.filter(username="bot").exists())
+
+	def test_duplicate_email_is_rejected_case_insensitively(self):
+		get_user_model().objects.create_user(username="first", email="Dup@Example.com", password="x")
+		response = self.client.post(reverse("signup"), self.data)
+		self.assertContains(response, "already exists")
+		self.assertFalse(get_user_model().objects.filter(username="bot").exists())

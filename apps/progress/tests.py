@@ -1,5 +1,7 @@
+import time
+
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core import signing
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -203,13 +205,14 @@ class ProgressFlowTests(TestCase):
 			reverse("progress:submit-quiz", args=[mock.id]),
 			{
 				f"question-{question.id}": "",
-				"time_taken_seconds": "75",
+				"time_taken_seconds": "1",  # ignored: the server times the exam itself
+				"mock_started": signing.dumps([mock.id, self.user.id, int(time.time()) - 75]),
 			},
 		)
 
 		self.assertEqual(response.status_code, 302)
 		attempt = QuizAttempt.objects.get(user=self.user, quiz=mock)
-		self.assertEqual(attempt.time_taken_seconds, 75)
+		self.assertIn(attempt.time_taken_seconds, range(75, 80))
 		self.assertFalse(attempt.answers.get().is_correct)
 		self.assertTrue(FlashcardState.objects.filter(user=self.user, question=question).exists())
 
@@ -967,6 +970,27 @@ class QuizXPPolicyTests(TestCase):
 			{f"question-{open_question.id}": "  central processing unit. "},
 		)
 		self.assertTrue(QuizAnswer.objects.get(question=open_question).is_correct)
+
+	def test_expected_answer_alternatives_and_worded_containment(self):
+		short = Question.objects.create(
+			subject=self.quiz.subject, topic=self.quiz.topic, lesson=self.quiz.lesson, text="Short",
+			format=Question.FORMAT_SHORT_ANSWER, expected_answer="RAM|random access memory",
+		)
+		worded = Question.objects.create(
+			subject=self.quiz.subject, topic=self.quiz.topic, lesson=self.quiz.lesson, text="Explain",
+			format=Question.FORMAT_WORDED, expected_answer="volatile",
+		)
+		for order, question in enumerate([short, worded], start=1):
+			QuizQuestion.objects.create(quiz=self.quiz, question=question, order=order)
+		self.client.post(
+			reverse("progress:submit-quiz", args=[self.quiz.id]),
+			{
+				f"question-{short.id}": "Random Access Memory",
+				f"question-{worded.id}": "It is volatile, so it loses data when power is off.",
+			},
+		)
+		self.assertTrue(QuizAnswer.objects.get(question=short).is_correct)
+		self.assertTrue(QuizAnswer.objects.get(question=worded).is_correct)
 
 	def test_matching_dropdown_options_are_not_in_answer_order(self):
 		match = Question.objects.create(

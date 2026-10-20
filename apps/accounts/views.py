@@ -41,6 +41,9 @@ def login_view(request):
 
 
 def signup(request):
+	# Hidden "website" field: people never fill it, bots usually do.
+	if request.POST.get("website"):
+		return redirect("home")
 	form = SignupForm(request.POST or None)
 	if request.method == "POST" and form.is_valid():
 		user = form.save()

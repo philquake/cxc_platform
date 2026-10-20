@@ -80,7 +80,7 @@ class Question(models.Model):
     @property
     def correct_answer_text(self):
         if self.is_open_ended:
-            return self.expected_answer.strip() or None
+            return self.expected_answer.replace("|", " / ").strip() or None
 
         answers = list(self.answers.all())
         if self.format == self.FORMAT_MATCHING and answers:

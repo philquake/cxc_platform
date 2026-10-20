@@ -60,3 +60,8 @@ temp/
 
 ### Design tooling scratch output
 .taste-skill/
+
+### Local agent tooling (kept on disk, not tracked)
+.agents/
+.claude/
+skills-lock.json

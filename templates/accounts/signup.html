@@ -20,6 +20,7 @@
             <form method="post" class="auth-form">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ next }}">
+                <input type="text" name="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
                 {% include "accounts/_form_fields.html" %}
                 <button type="submit">Create account</button>
             </form>

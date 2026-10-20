@@ -42,8 +42,8 @@
                 {% if result_attempt.percentage >= 70 %}
                     <p>You passed. Keep going while it is fresh.</p>
                     <div class="quiz-result-actions">
-                        {% if medium_quiz %}
-                            <a class="btn btn-primary" href="{% url 'quizzes:detail' medium_quiz.id %}">Try the medium quiz</a>
+                        {% if other_quiz %}
+                            <a class="btn btn-primary" href="{% url 'quizzes:detail' other_quiz.id %}">Try another quiz</a>
                         {% endif %}
                         {% if next_lesson %}
                             <a class="btn btn-secondary" href="{% url 'subjects:lesson-detail' next_lesson.subject.slug next_lesson.slug %}">Move to next lesson</a>
@@ -127,7 +127,7 @@
                         <strong class="mock-exam-countdown" role="timer">{{ quiz.effective_time_limit_minutes }}:00</strong>
                     </div>
                     <p class="mock-exam-warning" role="status" aria-live="polite"></p>
-                    <input type="hidden" name="time_taken_seconds" value="0">
+                    <input type="hidden" name="mock_started" value="{{ quiz.start_token }}">
                 {% endif %}
 
                 {% if show_questions %}

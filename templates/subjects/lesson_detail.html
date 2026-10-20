@@ -52,7 +52,7 @@
                     <span class="practice-icon" aria-hidden="true">?</span>
                     <span class="practice-text">
                         <strong>{{ quiz.title }}</strong>
-                        <small>{{ quiz.quiz_questions.count }} questions{% if quiz.latest_attempt %}. Last score {{ quiz.latest_attempt.percentage }}%{% endif %}</small>
+                        <small>{{ quiz.question_count }} questions{% if quiz.latest_attempt %}. Last score {{ quiz.latest_attempt.percentage }}%{% endif %}</small>
                     </span>
                     <span class="practice-go">{% if quiz.latest_attempt %}Try again{% else %}Start{% endif %}</span>
                 </a>

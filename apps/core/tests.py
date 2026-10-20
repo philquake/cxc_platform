@@ -7,12 +7,8 @@ from django.urls import reverse
 
 from apps.core.storage import SeekSafeCloudinaryStorage
 from apps.lessons.models import Lesson
-from apps.questions.models import Question
-from apps.subjects.models import Subject, Topic
-
-from apps.lessons.models import Lesson
 from apps.questions.models import Answer, Question
-from apps.subjects.models import Topic
+from apps.subjects.models import Subject, Topic
 
 
 class CoreViewTests(TestCase):

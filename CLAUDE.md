@@ -60,7 +60,7 @@ static/css|js|admin/css|admin/js
 - `Subject` 1─* `Lesson` (unique `subject+slug` and `subject+lesson_number`; slug auto-generated from title on save)
 - `Question` belongs to Subject, Topic **and** Lesson (all required). `clean()` enforces they agree.
   - Formats: `multiple_choice`, `true_false`, `short_answer`, `matching`, `worded`
-  - Open-ended formats need `expected_answer`. True/false may have no `Answer` rows (uses `expected_answer`). Matching uses `Answer.text` + `Answer.match_text`.
+  - Open-ended formats need `expected_answer`; it may list alternatives separated by `|`, and worded answers are correct if they contain any alternative (punctuation and case are ignored). True/false may have no `Answer` rows (uses `expected_answer`). Matching uses `Answer.text` + `Answer.match_text`.
 - `Quiz` is either a **practice quiz** (requires topic + lesson) or a **mock exam** (`is_mock=True`, no topic/lesson, optional `time_limit_minutes`). Enforced in `clean()` and a DB check constraint.
 - `QuizQuestion` through table. For practice quizzes the question must match the quiz topic and lesson; for mocks only the subject.
 - `progress`: `UserProgress` (XP, streak, level = 500 XP/level), `LessonProgress`, `QuizAttempt`/`QuizAnswer`, `XPTransaction` (one per lesson completion or quiz attempt), `MistakeReview`, `FlashcardState` (SM-2), `StudyPlan`/`StudyPlanItem`.
@@ -110,7 +110,6 @@ static/css|js|admin/css|admin/js
 - `progress/tests.py` still has duplicated test methods (`test_flashcard_reviews_apply_sm2_growth_ease_and_reset`, `test_flashcard_review_rejects_unknown_rating`, `test_study_plan_items_require_one_same_subject_target_and_valid_date`); later definitions shadow earlier ones, so delete the first copies.
 - `StudyPlanItem` ordering and constraints changed in migration 0006; the admin for `progress` registers only `UserProgress`, `XPTransaction`, `LessonProgress`, `QuizAttempt` and `QuizAnswer`, not `StudyPlan`/`StudyPlanItem`/`FlashcardState`/`MistakeReview`.
 - Templates now use "compile/" consistently; the repo name and README title still say "CXC Platform".
-- `templates/subjects/lesson_detail.html` calls `quiz.quiz_questions.count()` per quiz (extra queries).
 - `dashboard` and the study plan view run several queries per subject. Watch performance as content grows.
 - `AGENTS.md` holds separate agent-behaviour guidance ("lazy senior dev" style); keep it consistent with this file.
 - `ads.txt` is read from the repo root; the test expects `google.com` in it.

@@ -307,7 +307,7 @@ class QuizModelTests(TestCase):
 		self.assertEqual(response.context["topic"], self.topic)
 		self.assertEqual(list(response.context["quizzes"]), [quiz])
 
-	def test_quiz_detail_includes_next_lesson_and_medium_quiz(self):
+	def test_quiz_detail_includes_next_lesson_and_other_quiz(self):
 		quiz = Quiz.objects.create(
 			title="Algebra quiz",
 			subject=self.subject,
@@ -325,7 +325,7 @@ class QuizModelTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.context["next_lesson"], self.other_lesson)
-		self.assertEqual(response.context["medium_quiz"], medium_quiz)
+		self.assertEqual(response.context["other_quiz"], medium_quiz)
 
 	def test_lesson_quiz_page_returns_404_when_no_quiz_exists(self):
 		response = self.client.get(reverse("quizzes:lesson-list", args=[self.other_lesson.pk]))

@@ -118,30 +118,28 @@ def lesson_detail(request, subject_slug, lesson_slug):
         is_active=True,
     )
 
-    quizzes = Quiz.objects.filter(
+    quizzes = list(Quiz.objects.filter(
         lesson=lesson,
         is_active=True,
-    ).prefetch_related(
-        "quiz_questions__question__answers"
-    )
+    ).annotate(
+        question_count=Count("quiz_questions", filter=Q(quiz_questions__question__is_active=True))
+    ))
     lesson_progress = None
-    latest_attempts = {}
     if request.user.is_authenticated:
         lesson_progress = LessonProgress.objects.filter(
             user=request.user,
             lesson=lesson,
             completed=True,
         ).first()
-        latest_attempts = {
-            quiz.id: QuizAttempt.objects.filter(
-                user=request.user,
-                quiz=quiz,
-                completed_at__isnull=False,
-            ).order_by("-completed_at").first()
-            for quiz in quizzes
-        }
+        latest_attempts = {}
+        for attempt in QuizAttempt.objects.filter(
+            user=request.user,
+            quiz__in=quizzes,
+            completed_at__isnull=False,
+        ).order_by("-completed_at"):
+            latest_attempts.setdefault(attempt.quiz_id, attempt)
         for quiz in quizzes:
-            quiz.latest_attempt = latest_attempts[quiz.id]
+            quiz.latest_attempt = latest_attempts.get(quiz.id)
 
     ordered = list(
         Lesson.objects.filter(subject=subject, is_active=True).order_by(

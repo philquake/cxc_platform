@@ -165,13 +165,13 @@ class QuestionAdmin(ImportAdminMixin, admin.ModelAdmin):
         "(lesson is the lesson number). Leave id blank to add a question; keep the id from an export "
         "to update that question. Options: up to four; multiple choice marks the right one in 'correct' "
         "(1-4), true/false puts true or false in 'correct', matching writes each option as left|right, "
-        "short answer and worded use expected_answer (alternatives separated by |). pathways is "
-        "guided, adaptive and/or practice separated by |, or blank for all. "
+        "short answer and worded use expected_answer (alternatives separated by |). pathways is required: "
+        "guided, adaptive and/or practice separated by |, or none. "
         "If any row has a problem, nothing is imported."
     )
 
     def run_import(self, request, form):
-        count, errors = import_questions(form.cleaned_data["file"])
+        count, errors = import_questions(form.cleaned_data["file"], allow_update=self.has_change_permission(request))
         return ([f"{count} questions saved"] if count else []), errors
     fieldsets = (
         ("Question", {"fields": ("subject", "topic", "lesson", "format", "text")}),

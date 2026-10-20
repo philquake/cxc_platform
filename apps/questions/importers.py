@@ -18,13 +18,17 @@ COLUMNS = [
 PATHWAYS = [value for value, _ in PATHWAY_CHOICES]
 SAMPLE_ROWS = [[""] + row for row in [
     ["Information Technology", "Hardware", "1", "multiple_choice", "Which device is an input device?", "easy",
-     "A keyboard sends data into the computer.", "", "Monitor", "Keyboard", "Printer", "Speaker", "2"],
+     "A keyboard sends data into the computer.", "", "Monitor", "Keyboard", "Printer", "Speaker", "2",
+     "", "", "", "", "guided|adaptive|practice"],
     ["Information Technology", "Hardware", "1", "true_false", "RAM is volatile memory.", "easy",
-     "RAM loses its contents when power is removed.", "", "", "", "", "", "true"],
+     "RAM loses its contents when power is removed.", "", "", "", "", "", "true",
+     "", "", "", "", "guided|adaptive|practice"],
     ["Information Technology", "Hardware", "1", "short_answer", "What does CPU stand for?", "easy",
-     "CPU is the main processing unit.", "Central Processing Unit", "", "", "", "", ""],
+     "CPU is the main processing unit.", "Central Processing Unit", "", "", "", "", "",
+     "", "", "", "", "guided|practice"],
     ["Information Technology", "Hardware", "1", "matching", "Match each device to its type.", "medium",
-     "Devices are grouped by whether they send or show data.", "", "Mouse|Input", "Monitor|Output", "", "", ""],
+     "Devices are grouped by whether they send or show data.", "", "Mouse|Input", "Monitor|Output", "", "", "",
+     "", "", "", "", "adaptive"],
     ["Information Technology", "Hardware", "1", "worded", "Explain two differences between RAM and ROM.", "hard",
      "RAM is temporary working memory; ROM holds start-up instructions.",
      "RAM is volatile and can be written to; ROM is non-volatile and read-only.", "", "", "", "", "",
@@ -69,7 +73,7 @@ def export_csv(questions):
             question.explanation, "" if question.format == Question.FORMAT_TRUE_FALSE else question.expected_answer,
             *options, correct, question.marks, question.mark_scheme, question.hint,
             question.estimated_time_minutes or "",
-            "|".join(p for p in PATHWAYS if getattr(question, f"for_{p}")),
+            "|".join(p for p in PATHWAYS if getattr(question, f"for_{p}")) or "none",
         ])
     return out.getvalue()
 
@@ -122,9 +126,10 @@ def _build_answers(question, row, line):
     return []
 
 
-def import_questions(upload):
+def import_questions(upload, allow_update=True):
     """Create questions from a CSV, or update them when the id column is filled.
 
+    allow_update=False rejects rows with an id (for staff who may add but not change questions).
     All-or-nothing: returns (saved_count, errors).
     """
     try:
@@ -137,7 +142,7 @@ def import_questions(upload):
         dialect = csv.excel
     reader = csv.DictReader(io.StringIO(text), dialect=dialect)
     reader.fieldnames = [(f or "").strip().lower() for f in (reader.fieldnames or [])]
-    missing = [c for c in ("subject", "topic", "lesson", "text") if c not in reader.fieldnames]
+    missing = [c for c in ("subject", "topic", "lesson", "text", "pathways") if c not in reader.fieldnames]
     if missing:
         return 0, [f"Missing required column(s): {', '.join(missing)}. Download the template to see the layout."]
 
@@ -149,6 +154,8 @@ def import_questions(upload):
         try:
             existing = None
             if row.get("id"):
+                if not allow_update:
+                    raise ValueError("you can add questions but not change them; clear the id")
                 if not row["id"].isdigit():
                     raise ValueError("'id' must be blank (new question) or an exported question id")
                 if row["id"] in seen_ids:
@@ -181,8 +188,10 @@ def import_questions(upload):
                 if row.get(column) and not row[column].isdigit():
                     raise ValueError(f"'{column}' must be a whole number")
             pathways = {p.strip().lower() for p in row.get("pathways", "").split("|") if p.strip()}
-            if pathways - set(PATHWAYS):
-                raise ValueError(f"'pathways' must be blank (all) or {', '.join(PATHWAYS)} separated by |")
+            if pathways == {"none"}:
+                pathways = set()
+            elif not pathways or pathways - set(PATHWAYS):
+                raise ValueError(f"'pathways' must be {', '.join(PATHWAYS)} separated by |, or none")
             question = existing or Question()
             fields = dict(
                 subject=subject, topic=topic, lesson=lesson, text=row["text"], format=fmt,
@@ -191,7 +200,7 @@ def import_questions(upload):
                 marks=int(row.get("marks") or 1), mark_scheme=row.get("mark_scheme", ""),
                 hint=row.get("hint", ""),
                 estimated_time_minutes=int(row["estimated_time"]) if row.get("estimated_time") else None,
-                **{f"for_{p}": not pathways or p in pathways for p in PATHWAYS},
+                **{f"for_{p}": p in pathways for p in PATHWAYS},
             )
             for name, value in fields.items():
                 setattr(question, name, value)
@@ -207,14 +216,28 @@ def import_questions(upload):
     if errors or not built:
         return 0, errors or ["The file has no question rows."]
     with transaction.atomic():
+        new_answers, changed_answers, dropped = [], [], []
         for question, answers in built:
+            is_new = question.pk is None
             question.save()
-            # Reuse existing answer rows by position so past attempts keep their selected option.
-            old = list(question.answers.order_by("order", "id"))
-            for answer, current in zip(answers, old):
-                answer.pk = current.pk
             for answer in answers:
                 answer.question = question
-                answer.save()
-            Answer.objects.filter(pk__in=[a.pk for a in old[len(answers):]]).delete()
+            if is_new:
+                new_answers += answers
+                continue
+            # Keep each option's row (and the past picks pointing at it): same text first, then by position.
+            spare = list(question.answers.order_by("order", "id"))
+            for answer in answers:
+                match = next((a for a in spare if a.text.lower() == answer.text.lower()), None)
+                if match:
+                    answer.pk = match.pk
+                    spare.remove(match)
+            for answer in answers:
+                if answer.pk is None and spare:
+                    answer.pk = spare.pop(0).pk
+                (changed_answers if answer.pk else new_answers).append(answer)
+            dropped += [a.pk for a in spare]
+        Answer.objects.filter(pk__in=dropped).delete()
+        Answer.objects.bulk_update(changed_answers, ["text", "match_text", "is_correct", "order"])
+        Answer.objects.bulk_create(new_answers)
     return len(built), []

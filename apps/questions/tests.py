@@ -92,10 +92,10 @@ class AdminImportTests(TestCase):
 
 	def test_question_csv_import_creates_questions_and_answers(self):
 		csv_text = (
-			"subject,topic,lesson,format,text,option_1,option_2,correct,expected_answer\n"
-			"MATH,Algebra,1,multiple_choice,2+2?,3,4,b,\n"
-			"MATH,Algebra,1,true_false,1>0,,,true,\n"
-			"MATH,Algebra,1,short_answer,Name x,,,,unknown\n"
+			"subject,topic,lesson,format,text,option_1,option_2,correct,expected_answer,pathways\n"
+			"MATH,Algebra,1,multiple_choice,2+2?,3,4,b,,guided\n"
+			"MATH,Algebra,1,true_false,1>0,,,true,,practice\n"
+			"MATH,Algebra,1,short_answer,Name x,,,,unknown,guided|adaptive\n"
 		)
 		response = self.client.post(
 			reverse("admin:questions_question_import"), {"file": self._upload("q.csv", csv_text)}
@@ -117,7 +117,7 @@ class AdminImportTests(TestCase):
 		self.assertEqual((worded.marks, worded.estimated_time_minutes, worded.difficulty), (4, 4, "hard"))
 		self.assertTrue(worded.mark_scheme and worded.hint)
 		self.assertEqual((worded.for_guided, worded.for_adaptive, worded.for_practice), (True, False, True))
-		count, errors = import_questions(self._upload("bad.csv", "subject,topic,lesson,text,marks\nIT,Hardware,1,Q,two\n"))
+		count, errors = import_questions(self._upload("bad.csv", "subject,topic,lesson,text,marks,pathways\nIT,Hardware,1,Q,two,guided\n"))
 		self.assertEqual(errors, ["Row 2: 'marks' must be a whole number"])
 
 	def test_export_reimports_every_format_and_updates_by_id(self):
@@ -140,7 +140,10 @@ class AdminImportTests(TestCase):
 		Answer.objects.create(question=match, text="Mouse", match_text="Input", is_correct=True, order=0)
 		Answer.objects.create(question=match, text="Monitor", match_text="Output", is_correct=True, order=1)
 		make(Question.FORMAT_SHORT_ANSWER, expected_answer="RAM|random access memory")
-		make(Question.FORMAT_WORDED, expected_answer="volatile", marks=4, mark_scheme="2 points", hint="Power")
+		worded = make(
+			Question.FORMAT_WORDED, expected_answer="volatile", marks=4, mark_scheme="2 points", hint="Power",
+			for_guided=False, for_adaptive=False, for_practice=False,
+		)
 
 		response = self.client.post(reverse("admin:questions_question_changelist"), {
 			"action": "export_questions", "_selected_action": list(Question.objects.values_list("pk", flat=True)),
@@ -154,7 +157,7 @@ class AdminImportTests(TestCase):
 		)
 		self.assertEqual(by_format["true_false"]["correct"], "false")
 		self.assertEqual(by_format["matching"]["option_2"], "Monitor|Output")
-		self.assertEqual(by_format["worded"]["marks"], "4")
+		self.assertEqual((by_format["worded"]["marks"], by_format["worded"]["pathways"]), ("4", "none"))
 
 		by_format["multiple_choice"]["text"] = "Edited"
 		rows.append({**by_format["short_answer"], "id": "", "text": "Brand new"})
@@ -169,25 +172,60 @@ class AdminImportTests(TestCase):
 		self.assertEqual((mcq.text, mcq.for_adaptive), ("Edited", False))
 		self.assertEqual(list(mcq.answers.values_list("pk", "text", "is_correct")), [(a.pk, a.text, a.text == "B") for a in options])
 		self.assertEqual(Question.objects.get(pk=tf.pk).answers.get(is_correct=True).text, "False")
+		worded.refresh_from_db()
+		self.assertFalse(worded.for_guided or worded.for_adaptive or worded.for_practice)
+
+		# Swapping two options keeps each option's own row, so past picks still point at the same text.
+		rows = [{**by_format["multiple_choice"], "option_1": "B", "option_2": "A", "correct": "1"}]
+		out = io.StringIO()
+		writer = csv.DictWriter(out, COLUMNS)
+		writer.writeheader()
+		writer.writerows(rows)
+		self.assertEqual(import_questions(self._upload("q.csv", out.getvalue())), (1, []))
+		ids = {a.text: a.pk for a in options}
+		self.assertEqual(
+			list(mcq.answers.values_list("pk", "text", "is_correct")),
+			[(ids["B"], "B", True), (ids["A"], "A", False), (ids["C"], "C", False)],
+		)
 
 	def test_import_rejects_unknown_id_and_pathway(self):
 		from .importers import import_questions
 
 		csv_text = (
 			"id,subject,topic,lesson,format,text,expected_answer,pathways\n"
-			"999,MATH,Algebra,1,short_answer,Q,x,\n"
+			"999,MATH,Algebra,1,short_answer,Q,x,guided\n"
 			",MATH,Algebra,1,short_answer,Q,x,exam\n"
+			",MATH,Algebra,1,short_answer,Q,x,\n"
 		)
 		count, errors = import_questions(self._upload("q.csv", csv_text))
 		self.assertEqual(count, 0)
 		self.assertIn("no question with id 999", errors[0])
 		self.assertIn("'pathways'", errors[1])
+		self.assertIn("'pathways'", errors[2])
+		count, errors = import_questions(self._upload("q.csv", "subject,topic,lesson,text\nMATH,Algebra,1,Q\n"))
+		self.assertIn("pathways", errors[0])
+
+	def test_staff_without_change_permission_cannot_update_by_id(self):
+		from django.contrib.auth.models import Permission
+
+		question = Question.objects.create(subject=self.subject, topic=self.topic, lesson=self.lesson, text="Old")
+		adder = get_user_model().objects.create_user("adder", password="pw", is_staff=True)
+		adder.user_permissions.add(*Permission.objects.filter(codename__in=["add_question", "view_question"]))
+		self.client.force_login(adder)
+		csv_text = (
+			"id,subject,topic,lesson,format,text,expected_answer,pathways\n"
+			f"{question.pk},MATH,Algebra,1,short_answer,Hacked,x,guided\n"
+		)
+		response = self.client.post(reverse("admin:questions_question_import"), {"file": self._upload("q.csv", csv_text)})
+		self.assertContains(response, "you can add questions but not change them")
+		question.refresh_from_db()
+		self.assertEqual(question.text, "Old")
 
 	def test_question_csv_import_is_all_or_nothing(self):
 		csv_text = (
-			"subject,topic,lesson,format,text,option_1,option_2,correct\n"
-			"MATH,Algebra,1,multiple_choice,Good?,a,b,1\n"
-			"MATH,Nope,1,multiple_choice,Bad?,a,b,1\n"
+			"subject,topic,lesson,format,text,option_1,option_2,correct,pathways\n"
+			"MATH,Algebra,1,multiple_choice,Good?,a,b,1,guided\n"
+			"MATH,Nope,1,multiple_choice,Bad?,a,b,1,guided\n"
 		)
 		response = self.client.post(
 			reverse("admin:questions_question_import"), {"file": self._upload("q.csv", csv_text)}

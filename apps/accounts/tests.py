@@ -201,6 +201,23 @@ class ProfilePageTests(TestCase):
 		self.assertEqual(response.context["days_studied"], 0)
 		self.assertContains(response, "Study log")
 
+	def test_study_log_buckets_by_jamaica_day(self):
+		from datetime import date, datetime, timezone as dt_timezone
+		from unittest import mock
+
+		from apps.accounts.views import _study_log
+		from apps.progress.models import XPTransaction
+		from apps.subjects.models import Subject, Topic
+
+		topic = Topic.objects.create(subject=Subject.objects.create(name="Maths", code="M"), name="A", slug="a")
+		# 22:00 Mar 1 Jamaica is already Mar 2 in UTC; it must count toward Mar 1.
+		tx = XPTransaction.objects.create(user=self.user, topic=topic, amount=10, reason="t")
+		XPTransaction.objects.filter(pk=tx.pk).update(created_at=datetime(2026, 3, 2, 3, 0, tzinfo=dt_timezone.utc))
+		with mock.patch("django.utils.timezone.now", return_value=datetime(2026, 3, 2, 15, 0, tzinfo=dt_timezone.utc)):
+			cells, days = _study_log(self.user)
+		self.assertEqual(days, 1)
+		self.assertEqual([c["day"] for c in cells if c["count"]], [date(2026, 3, 1)])
+
 	def test_profile_saves_display_name(self):
 		response = self.client.post(
 			reverse("account"),

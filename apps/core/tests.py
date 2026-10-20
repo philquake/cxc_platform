@@ -40,7 +40,7 @@ class CoreViewTests(TestCase):
 
 		listed = response.context["subjects"][0]
 		self.assertEqual((listed.lesson_count, listed.question_count), (1, 2))
-		self.assertContains(response, "1 lesson &middot; 2 questions", html=False)
+		self.assertContains(response, "1 lesson, 2 questions", html=False)
 
 	def test_legal_pages_render(self):
 		for page_name in ("terms", "privacy"):

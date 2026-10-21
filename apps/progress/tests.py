@@ -1168,6 +1168,9 @@ class QuizXPPolicyTests(TestCase):
 		self.assertEqual(
 			groups[0]["topics"][0]["mistakes"][0].attempt_id, QuizAttempt.objects.order_by("-id").first().id
 		)
+		self.assertContains(response, "You picked this")
+		self.assertNotContains(response, "Correct answer")
+		self.assertNotContains(response, "mistake-answer-correct")
 
 	def test_failed_submission_rolls_back_attempt_and_xp(self):
 		from unittest import mock

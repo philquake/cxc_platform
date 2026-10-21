@@ -49,32 +49,22 @@
                 </div>
 
                 <fieldset class="quiz-question">
-                    <legend>Your answer vs. the correct one</legend>
-
+                    <legend>Your answer</legend>
+                    {# The correct answer is left out so the student retries the question instead of memorising it. #}
                     {% for answer in mistake.question.answers.all %}
-                        <label class="mistake-answer
-                            {% if answer.is_correct %}mistake-answer-correct{% endif %}
-                            {% if mistake.selected_answer_id == answer.id and not answer.is_correct %}mistake-answer-wrong{% endif %}">
-                            {% if answer.is_correct %}
-                                <span aria-hidden="true">✓</span>
-                            {% elif mistake.selected_answer_id == answer.id %}
-                                <span aria-hidden="true">✗</span>
-                            {% else %}
-                                <span aria-hidden="true">&nbsp;</span>
-                            {% endif %}
+                        <label class="mistake-answer{% if mistake.selected_answer_id == answer.id %} mistake-answer-wrong{% endif %}">
+                            <span aria-hidden="true">{% if mistake.selected_answer_id == answer.id %}✗{% else %}&nbsp;{% endif %}</span>
                             {{ answer.text }}
-                            {% if answer.is_correct %}<small>Correct answer</small>{% endif %}
-                            {% if mistake.selected_answer_id == answer.id and not answer.is_correct %}<small>You picked this</small>{% endif %}
+                            {% if mistake.selected_answer_id == answer.id %}<small>You picked this</small>{% endif %}
                         </label>
                     {% empty %}
                         {% if mistake.selected_text %}<p class="mistake-answer mistake-answer-wrong"><span aria-hidden="true">✗</span> {{ mistake.selected_text }} <small>You answered this</small></p>{% endif %}
-                        {% if mistake.question.correct_answer_text %}<p class="mistake-answer mistake-answer-correct"><span aria-hidden="true">✓</span> {{ mistake.question.correct_answer_text }} <small>Correct answer</small></p>{% endif %}
                     {% endfor %}
                 </fieldset>
 
                 {% if mistake.question.explanation %}
                     <p class="quiz-card-description mistake-explanation">
-                        <strong>Why this is the answer:</strong> {{ mistake.question.explanation }}
+                        <strong>Hint:</strong> {{ mistake.question.explanation }}
                     </p>
                 {% endif %}
 

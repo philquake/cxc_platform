@@ -16,8 +16,8 @@
     {% block extra_css %}{% endblock %}
     <script>document.documentElement.classList.add("js");</script>
     <title>{% block title %}compile/ | CSEC and CAPE exam prep{% endblock %}</title>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1230806752235689"
-     crossorigin="anonymous"></script>
+    {# Ads load only on content pages that fill this block (AdSense inventory policy). #}
+    {% block adsense %}{% endblock %}
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>

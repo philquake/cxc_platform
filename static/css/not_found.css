@@ -1,0 +1,124 @@
+/* 404 page: copy and search on the left, a small terminal on the right. */
+.not-found {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+  gap: var(--space-5);
+  align-items: center;
+  min-height: 60vh;
+}
+
+.not-found-code {
+  margin: 0;
+  color: var(--color-accent-ink);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+}
+
+.not-found h1 {
+  margin: 8px 0 12px;
+  color: var(--color-white);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.1;
+}
+
+.not-found-copy > p:not(.not-found-code) {
+  max-width: 34em;
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+}
+
+.not-found-search {
+  display: flex;
+  gap: var(--space-1);
+  max-width: 30rem;
+  margin-bottom: var(--space-2);
+}
+
+.not-found-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  color: var(--color-text);
+  background: var(--color-panel);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+
+.not-found-search input:focus-visible {
+  outline: 2px solid var(--color-navy);
+  outline-offset: 2px;
+}
+
+.not-found-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.not-found-terminal {
+  margin: 0;
+  padding: var(--space-3);
+  overflow: hidden;
+  color: var(--color-sky-bg);
+  background: var(--color-navy-deep);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px var(--color-shadow);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.nf-prompt {
+  color: var(--color-sky);
+}
+
+.nf-error {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.nf-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  vertical-align: text-bottom;
+  background: var(--color-accent);
+  animation: nf-blink 1s steps(1) infinite;
+}
+
+@keyframes nf-blink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nf-cursor { animation: none; }
+}
+
+@media (max-width: 760px) {
+  .not-found {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+    min-height: 0;
+  }
+
+  .not-found-terminal {
+    order: -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .not-found-search {
+    flex-direction: column;
+  }
+
+  .not-found-actions .btn {
+    flex: 1;
+  }
+}

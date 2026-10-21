@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}{% if query %}Results for "{{ query }}"{% else %}Search{% endif %} | Compile{% endblock %}
+{% block adsense %}{% if lesson_results or question_results %}{% include "_adsense.html" %}{% endif %}{% endblock %}
 
 {% block extra_css %}
 {% load static %}

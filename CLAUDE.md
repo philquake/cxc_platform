@@ -18,7 +18,7 @@ Owner: Phil (IT/CS teacher, Jamaica). Repo: `github.com/philquake/cxc_platform`.
 - Cloudinary for media via `apps.core.storage.SeekSafeCloudinaryStorage`
 - WhiteNoise (`CompressedManifestStaticFilesStorage`) for static files
 - Deployed on Render (HTTPS proxy: `SECURE_PROXY_SSL_HEADER`, `CSRF_TRUSTED_ORIGINS`)
-- Google AdSense script in `base.html`; `ads.txt` served from repo root via `apps/core/urls.py`
+- Google AdSense script in `templates/_adsense.html`, included via `{% block adsense %}` only on content pages (home, courses, course, lesson, terms, privacy, search with results). Keep it off quiz, progress, account and error pages (AdSense inventory policy). `ads.txt` served from repo root via `apps/core/urls.py`
 
 ## Environment variables
 

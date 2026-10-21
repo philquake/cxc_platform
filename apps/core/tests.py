@@ -43,6 +43,17 @@ class CoreViewTests(TestCase):
 			with self.subTest(page=page_name):
 				self.assertEqual(self.client.get(reverse(page_name)).status_code, 200)
 
+	def test_privacy_page_discloses_ad_cookies(self):
+		self.assertContains(self.client.get(reverse("privacy")), "adssettings.google.com")
+
+	def test_404_page_renders_without_ads(self):
+		response = self.client.get("/no-such-page/")
+
+		self.assertContains(response, "We can't find that page", status_code=404)
+		self.assertNotContains(response, "adsbygoogle", status_code=404)
+		self.assertContains(self.client.get(reverse("home")), "adsbygoogle")
+		self.assertNotContains(self.client.get(reverse("search")), "adsbygoogle")
+
 	def test_ads_txt_is_served_as_plain_text(self):
 		response = self.client.get("/ads.txt")
 

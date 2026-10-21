@@ -1,16 +1,33 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Page not found | Compile{% endblock %}
+{% block title %}Page not found | compile/{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/not_found.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="content-column">
-    <header class="content-header">
+<div class="content-column not-found">
+    <div class="not-found-copy">
+        <p class="not-found-code" aria-hidden="true">404</p>
         <h1>We can't find that page</h1>
-        <p>The link may be old, or the lesson may have moved. Search for what you were looking for, or head back to your subjects.</p>
-    </header>
-    <div class="progress-header-links not-found-actions">
-        <a class="btn btn-primary" href="{% url 'subjects:list' %}">Browse subjects</a>
-        <a class="btn btn-secondary" href="{% url 'home' %}">Go to the home page</a>
+        <p>The link may be old, or the lesson may have moved. Search for it, or pick up where you left off.</p>
+
+        <form method="get" action="{% url 'search' %}" class="not-found-search" role="search">
+            <label class="sr-only" for="not-found-q">Search lessons and questions</label>
+            <input id="not-found-q" type="search" name="q" placeholder="Try binary or spreadsheet">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+
+        <div class="not-found-actions">
+            <a class="btn btn-secondary" href="{% url 'subjects:list' %}">Browse subjects</a>
+            <a class="btn btn-secondary" href="{% url 'home' %}">Home page</a>
+        </div>
     </div>
+
+    <pre class="not-found-terminal" aria-hidden="true"><span class="nf-prompt">$</span> open {{ request.path|truncatechars:40 }}
+<span class="nf-error">error:</span> page not found
+<span class="nf-prompt">$</span> <span class="nf-cursor"></span></pre>
 </div>
 {% endblock %}

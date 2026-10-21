@@ -18,8 +18,9 @@ from django.urls import reverse
 from django.utils import timezone
 from django.shortcuts import redirect, render
 from django.utils.encoding import force_bytes
-from django.utils.http import url_has_allowed_host_and_scheme, urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_POST
+from apps.core.http import safe_next_url
 from apps.progress.models import LessonProgress, QuizAnswer, QuizAttempt, UserProgress, XPTransaction
 from apps.subjects.models import Subject
 from .forms import AccountProfileForm, DisplayNameForm, ResendVerificationForm, SignupForm
@@ -36,17 +37,6 @@ def _cooling_down(email):
 	return not cache.add(f"email-link:{email.lower()}", True, RESEND_COOLDOWN)
 
 STUDY_LOG_WEEKS = 12
-
-def _redirect_after_auth(request):
-	redirect_to = request.POST.get("next") or request.GET.get("next")
-	if redirect_to and url_has_allowed_host_and_scheme(
-		redirect_to,
-		allowed_hosts={request.get_host()},
-		require_https=request.is_secure(),
-	):
-		return redirect(redirect_to)
-	return redirect("progress:dashboard")
-
 
 def _pending_users():
 	# Never-used signups only, so a teacher's deactivation can't be undone with a verification link.
@@ -69,7 +59,7 @@ def login_view(request):
 	form = AuthenticationForm(request, data=request.POST or None)
 	if request.method == "POST" and form.is_valid():
 		login(request, form.get_user())
-		return _redirect_after_auth(request)
+		return redirect(safe_next_url(request, reverse("progress:dashboard")))
 	unverified = False
 	if request.method == "POST" and not getattr(request, "axes_locked_out", False):
 		# Explain the failed sign-in only to someone who knows the password.
@@ -87,6 +77,13 @@ def signup(request):
 	# Hidden "website" field: people never fill it, bots usually do.
 	if request.POST.get("website"):
 		return redirect("home")
+	if request.method == "POST":
+		# Unverified signups hold no data, so a retry (say after a mistyped email) replaces them instead of being blocked.
+		taken = Q(pk__in=[])
+		for field in ("username", "email"):
+			if request.POST.get(field, "").strip():
+				taken |= Q(**{f"{field}__iexact": request.POST[field].strip()})
+		_pending_users().filter(taken).delete()
 	form = SignupForm(request.POST or None)
 	if request.method == "POST" and form.is_valid():
 		try:

@@ -23,23 +23,33 @@ class UserProgress(models.Model):
     last_activity_date = models.DateField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    LEVEL_XP = 500
+    # Level 1 to 2 takes FIRST_LEVEL_XP; each later level takes LEVEL_XP_STEP more than the one before.
+    FIRST_LEVEL_XP = 500
+    LEVEL_XP_STEP = 100
+
+    def _level_state(self):
+        """(level, XP earned inside it, XP that level needs)."""
+        level, remaining, needed = 1, self.total_xp, self.FIRST_LEVEL_XP
+        while remaining >= needed:
+            level, remaining, needed = level + 1, remaining - needed, needed + self.LEVEL_XP_STEP
+        return level, remaining, needed
 
     @property
     def level(self):
-        return (self.total_xp // self.LEVEL_XP) + 1
+        return self._level_state()[0]
 
     @property
     def level_xp(self):
-        return self.total_xp % self.LEVEL_XP
+        return self._level_state()[1]
 
     @property
     def level_progress(self):
-        return round((self.level_xp / self.LEVEL_XP) * 100)
+        _, earned, needed = self._level_state()
+        return round(earned * 100 / needed)
 
     @property
     def level_xp_required(self):
-        return self.LEVEL_XP
+        return self._level_state()[2]
 
     def __str__(self):
         return f"{self.user.username} - Level {self.level}"

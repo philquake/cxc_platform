@@ -103,6 +103,8 @@ def import_lessons(subject, uploads, publish):
 
     with transaction.atomic():
         number = max(Lesson.objects.filter(subject=subject).values_list("lesson_number", flat=True), default=0)
+        # New notes go at the end of the course, so into its last unit.
+        section = max(Lesson.objects.filter(subject=subject).values_list("section_number", flat=True), default=1)
         slugs = set(Lesson.objects.filter(subject=subject).values_list("slug", flat=True))
         created = []
         for title, content in built:
@@ -112,7 +114,7 @@ def import_lessons(subject, uploads, publish):
             while slug in slugs:
                 slug, n = f"{base}-{n}", n + 1
             slugs.add(slug)
-            Lesson.objects.create(subject=subject, title=title, lesson_number=number,
+            Lesson.objects.create(subject=subject, title=title, lesson_number=number, section_number=section,
                                   slug=slug, content=content, is_active=publish)
             created.append(f"{number}. {title}")
     return created, []

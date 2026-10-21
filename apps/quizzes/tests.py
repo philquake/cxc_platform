@@ -286,11 +286,14 @@ class QuizModelTests(TestCase):
 			lesson=self.lesson,
 			is_active=False,
 		)
+		hidden = Subject.objects.create(name="Hidden", code="HID", is_active=False)
+		hidden_mock = Quiz.objects.create(title="Hidden mock", subject=hidden, is_mock=True)
 
 		response = self.client.get(reverse("quizzes:list"))
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(list(response.context["quizzes"]), [active_quiz])
+		self.assertEqual(self.client.get(reverse("quizzes:detail", args=[hidden_mock.pk])).status_code, 404)
 
 	def test_topic_quiz_page_filters_to_active_topic_quizzes(self):
 		quiz = Quiz.objects.create(

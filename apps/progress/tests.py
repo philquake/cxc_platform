@@ -297,6 +297,23 @@ class ProgressFlowTests(TestCase):
 		)
 		self.assertContains(response, reverse("progress:mistake-bank"))
 
+	def test_dashboard_level_ring_and_streak_flame(self):
+		self.client.force_login(self.user)
+		progress, _ = UserProgress.objects.get_or_create(user=self.user)
+		progress.total_xp = 750
+		progress.save()
+
+		response = self.client.get(reverse("progress:dashboard"))
+		self.assertContains(response, 'aria-valuenow="%s"' % progress.level_progress)
+		self.assertFalse(response.context["studied_today"])
+		self.assertContains(response, "Study today to keep it going.")
+
+		progress.last_activity_date = timezone.localdate()
+		progress.save()
+		response = self.client.get(reverse("progress:dashboard"))
+		self.assertTrue(response.context["studied_today"])
+		self.assertContains(response, "streak-flame is-lit")
+
 	def test_dashboard_shows_only_latest_completed_attempt_per_quiz(self):
 		now = timezone.now()
 		older_attempt = QuizAttempt.objects.create(
@@ -1319,3 +1336,13 @@ class StudyPlanGenerationTests(TestCase):
 		self.assertFalse(StudyPlanItem.objects.filter(plan_id=first.pk).exists())
 		with self.assertRaises(ValueError):
 			generate_plan(self.user, self.subject, timezone.localdate())
+
+
+class LevelCurveTests(TestCase):
+	def test_each_level_needs_100_more_xp_than_the_last(self):
+		cases = {0: (1, 0, 500), 499: (1, 499, 500), 500: (2, 0, 600), 1099: (2, 599, 600), 1100: (3, 0, 700), 1500: (3, 400, 700)}
+		for total_xp, expected in cases.items():
+			with self.subTest(total_xp=total_xp):
+				progress = UserProgress(total_xp=total_xp)
+				self.assertEqual((progress.level, progress.level_xp, progress.level_xp_required), expected)
+		self.assertEqual(UserProgress(total_xp=1500).level_progress, 57)

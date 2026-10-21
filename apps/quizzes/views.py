@@ -24,7 +24,7 @@ def quiz_queryset(subject=None, topic=None, with_questions=False):
         quiz_questions = quiz_questions.filter(question__topic=topic)
 
 
-    quiz_filters = Q(is_active=True) & (Q(lesson__is_active=True) | Q(is_mock=True))
+    quiz_filters = Q(is_active=True, subject__is_active=True) & (Q(lesson__is_active=True) | Q(is_mock=True))
     if subject is not None:
         quiz_filters &= Q(subject=subject)
     if topic is not None:

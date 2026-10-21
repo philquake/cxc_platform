@@ -11,9 +11,9 @@ from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from apps.core.http import safe_next_url
 from apps.lessons.models import Lesson
 from apps.questions.models import Question
 from apps.quizzes.models import Quiz
@@ -205,6 +205,7 @@ def dashboard(request):
 		{
 			"subjects": subjects,
 			"user_progress": user_progress,
+			"studied_today": user_progress.last_activity_date == timezone.localdate(),
 			"score_trend": score_trend,
 		},
 	)
@@ -315,17 +316,6 @@ def study_plan_view(request, subject_slug):
 	)
 
 
-def _safe_next_url(request, fallback):
-	redirect_to = request.POST.get("next", "")
-	if redirect_to and url_has_allowed_host_and_scheme(
-		redirect_to,
-		allowed_hosts={request.get_host()},
-		require_https=request.is_secure(),
-	):
-		return redirect_to
-	return fallback
-
-
 def _matches_expected(answer, expected):
 	"""Expected answers may list alternatives separated by "|"."""
 	answer = _normalize_answer_text(answer)
@@ -375,7 +365,7 @@ def complete_lesson(request, lesson_id):
 			"lesson_slug": lesson.slug,
 		},
 	)
-	return redirect(_safe_next_url(request, fallback))
+	return redirect(safe_next_url(request, fallback))
 
 
 @transaction.atomic
@@ -436,6 +426,7 @@ def submit_quiz(request, quiz_id):
 		),
 		pk=quiz_id,
 		is_active=True,
+		subject__is_active=True,
 	)
 	# Checks for unmarked answers, not just the flag: deleting a question can leave a flagged attempt with nothing to mark.
 	if QuizAttempt.objects.filter(
@@ -545,7 +536,7 @@ def submit_quiz(request, quiz_id):
 	else:
 		finalize_attempt(attempt)
 
-	destination = _safe_next_url(request, reverse("quizzes:list"))
+	destination = safe_next_url(request, reverse("quizzes:list"))
 	separator = "&" if "?" in destination else "?"
 	return redirect(f"{destination}{separator}attempt={attempt.id}")
 

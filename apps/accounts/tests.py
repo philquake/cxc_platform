@@ -4,6 +4,7 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
+from django.utils import timezone
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.test import TestCase, override_settings
@@ -352,6 +353,20 @@ class EmailVerificationTests(TestCase):
 			self.assertRedirects(response, reverse("verify-email-sent"))
 
 		self.assertEqual([message.to for message in mail.outbox], [["new@example.com"]])
+
+	def test_retrying_signup_replaces_an_unverified_account(self):
+		self.client.post(reverse("signup"), {**self.data, "email": "typo@exmaple.com"})
+
+		response = self.client.post(reverse("signup"), self.data)
+
+		self.assertRedirects(response, reverse("verify-email-sent"))
+		self.assertEqual(
+			list(get_user_model().objects.filter(username="newstudent").values_list("email", flat=True)),
+			["new@example.com"],
+		)
+		# A verified account is never replaced.
+		get_user_model().objects.filter(username="newstudent").update(is_active=True, last_login=timezone.now())
+		self.assertContains(self.client.post(reverse("signup"), {**self.data, "email": "other@example.com"}), "already exists")
 
 	def test_resend_is_limited_to_one_email_per_address_every_few_minutes(self):
 		self.signup()

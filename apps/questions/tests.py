@@ -234,6 +234,8 @@ class AdminImportTests(TestCase):
 		self.assertEqual(Question.objects.count(), 0)
 
 	def test_lesson_import_numbers_and_titles_from_files(self):
+		self.lesson.section_number = 3
+		self.lesson.save()
 		html = "<h1>Networks</h1><p>Body</p><script>x</script>"
 		response = self.client.post(
 			reverse("admin:lessons_lesson_import"),
@@ -246,6 +248,8 @@ class AdminImportTests(TestCase):
 		self.assertNotIn("script", lessons[1].content)
 		self.assertEqual(lessons[2].title, "B Notes")
 		self.assertFalse(lessons[2].is_active)
+		# New notes join the course's last unit, not unit 1.
+		self.assertEqual({l.section_number for l in lessons}, {3})
 
 	def test_changelists_show_import_buttons(self):
 		self.assertContains(self.client.get(reverse("admin:questions_question_changelist")), "Import questions")

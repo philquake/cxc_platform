@@ -1,11 +1,17 @@
+import re
+from unittest import mock
+
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.cache import cache
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
 
 class AccountFlowTests(TestCase):
-	def test_signup_creates_and_logs_in_user(self):
+	def test_signup_creates_inactive_user_and_emails_a_link(self):
 		response = self.client.post(
 		reverse("signup"),
 		{
@@ -18,15 +24,13 @@ class AccountFlowTests(TestCase):
 		},
 	)
 
-		self.assertRedirects(response, reverse("progress:dashboard"))
-		self.assertTrue(response.wsgi_request.user.is_authenticated)
-		self.assertTrue(
-			get_user_model().objects.filter(username="newstudent").exists()
-		)
-		self.assertEqual(
-			get_user_model().objects.get(username="newstudent").email,
-			"newstudent@example.com",
-		)
+		self.assertRedirects(response, reverse("verify-email-sent"))
+		self.assertFalse(response.wsgi_request.user.is_authenticated)
+		user = get_user_model().objects.get(username="newstudent")
+		self.assertEqual(user.email, "newstudent@example.com")
+		self.assertFalse(user.is_active)
+		self.assertEqual(len(mail.outbox), 1)
+		self.assertEqual(mail.outbox[0].to, ["newstudent@example.com"])
 
 	def test_login_authenticates_existing_user(self):
 		get_user_model().objects.create_user(
@@ -80,7 +84,16 @@ class AccountFlowTests(TestCase):
 		user.refresh_from_db()
 		self.assertEqual(user.first_name, "Updated")
 		self.assertEqual(user.last_name, "Student")
+		# The new address only takes effect from the link sent to it.
+		self.assertEqual(user.email, "before@example.com")
+		self.assertEqual(mail.outbox[-1].to, ["updated@example.com"])
+		link = re.search(r"https?://\S+", mail.outbox[-1].body).group(0)
+
+		self.assertRedirects(self.client.get(link), reverse("account"))
+		user.refresh_from_db()
 		self.assertEqual(user.email, "updated@example.com")
+		self.client.get(link)
+		self.assertEqual(get_user_model().objects.filter(email="updated@example.com").count(), 1)
 
 	def test_password_change_updates_password_and_keeps_user_logged_in(self):
 		user = get_user_model().objects.create_user(
@@ -278,3 +291,102 @@ class SignupAbuseTests(TestCase):
 		self.assertContains(response, "already exists")
 		me.refresh_from_db()
 		self.assertEqual(me.email, "me@example.com")
+
+
+class EmailVerificationTests(TestCase):
+	def setUp(self):
+		cache.clear()
+
+	data = {
+		"username": "newstudent", "first_name": "New", "last_name": "Student", "email": "new@example.com",
+		"password1": "A-strong-password-123", "password2": "A-strong-password-123",
+	}
+
+	def signup(self):
+		self.client.post(reverse("signup"), self.data)
+		return re.search(r"https?://\S+", mail.outbox[-1].body).group(0)
+
+	def test_link_activates_and_signs_in_once(self):
+		link = self.signup()
+
+		response = self.client.get(link)
+
+		self.assertRedirects(response, reverse("progress:dashboard"))
+		user = get_user_model().objects.get(username="newstudent")
+		self.assertTrue(user.is_active)
+		self.assertFalse(user.profile.awaiting_verification)
+		self.client.logout()
+		self.assertContains(self.client.get(link), "That link has expired")
+
+	def test_bad_link_is_rejected(self):
+		self.signup()
+		user = get_user_model().objects.get(username="newstudent")
+		uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+		for path in (f"/accounts/verify/{uid}/wrong-token/", "/accounts/verify/!!/x/"):
+			with self.subTest(path=path):
+				self.assertContains(self.client.get(path), "That link has expired")
+		user.refresh_from_db()
+		self.assertFalse(user.is_active)
+
+	def test_unverified_login_explains_only_with_the_right_password(self):
+		self.signup()
+		url = reverse("login")
+
+		right = self.client.post(url, {"username": "newstudent", "password": "A-strong-password-123"})
+		wrong = self.client.post(url, {"username": "newstudent", "password": "nope"})
+
+		self.assertFalse(right.wsgi_request.user.is_authenticated)
+		self.assertContains(right, "isn't verified yet")
+		self.assertNotContains(wrong, "isn't verified yet")
+
+	def test_resend_only_reaches_pending_signups(self):
+		self.signup()
+		banned = get_user_model().objects.create_user(username="banned", email="banned@example.com", password="x")
+		banned.is_active = False
+		banned.save()
+		mail.outbox.clear()
+
+		for email in ("NEW@example.com", "banned@example.com", "nobody@example.com"):
+			response = self.client.post(reverse("verify-email-resend"), {"email": email})
+			self.assertRedirects(response, reverse("verify-email-sent"))
+
+		self.assertEqual([message.to for message in mail.outbox], [["new@example.com"]])
+
+	def test_resend_is_limited_to_one_email_per_address_every_few_minutes(self):
+		self.signup()
+		mail.outbox.clear()
+
+		for _ in range(3):
+			self.client.post(reverse("verify-email-resend"), {"email": "new@example.com"})
+
+		self.assertEqual(len(mail.outbox), 1)
+
+	def test_email_change_link_is_void_once_the_email_changes_another_way(self):
+		user = get_user_model().objects.create_user(username="me", email="me@example.com", password="x")
+		self.client.force_login(user)
+		self.client.post(reverse("account"), {"first_name": "M", "last_name": "E", "email": "first@example.com"})
+		stale = re.search(r"https?://\S+", mail.outbox[-1].body).group(0)
+		user.email = "other@example.com"
+		user.save()
+
+		self.client.get(stale)
+		self.client.get(stale.replace("/confirm/", "/confirm/x"))
+
+		user.refresh_from_db()
+		self.assertEqual(user.email, "other@example.com")
+
+	def test_failed_email_rolls_back_signup(self):
+		with mock.patch("apps.accounts.views.send_mail", side_effect=OSError):
+			response = self.client.post(reverse("signup"), self.data)
+
+		self.assertContains(response, "send the verification email")
+		self.assertFalse(get_user_model().objects.filter(username="newstudent").exists())
+
+	def test_users_without_email_are_asked_to_add_one(self):
+		user = get_user_model().objects.create_user(username="old", password="x")
+		self.client.force_login(user)
+		self.assertContains(self.client.get(reverse("home")), "Add your email")
+		user.email = "old@example.com"
+		user.save()
+		self.assertNotContains(self.client.get(reverse("home")), "Add your email")

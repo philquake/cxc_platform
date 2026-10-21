@@ -21,6 +21,10 @@ class SignupForm(UserCreationForm):
         return email
 
 
+class ResendVerificationForm(forms.Form):
+    email = forms.EmailField(label="Email address")
+
+
 class AccountProfileForm(forms.ModelForm):
     class Meta:
         model = User

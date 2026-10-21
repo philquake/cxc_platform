@@ -1,0 +1,6 @@
+Hi {{ user.first_name|default:user.username }},
+
+Someone asked to use this address for the compile/ account "{{ user.username }}". Open this link to confirm the change:
+{{ link }}
+
+The link expires in 3 days. If you did not ask for this, ignore this email and nothing will change.

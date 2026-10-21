@@ -1,11 +1,15 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
-from .views import account, login_view, logout_view, signup
+from .views import account, confirm_email_change, login_view, logout_view, resend_verification, signup, verify_email, verify_email_sent
 
 urlpatterns = [
     path("login/", login_view, name="login"),
     path("signup/", signup, name="signup"),
+    path("verify/sent/", verify_email_sent, name="verify-email-sent"),
+    path("verify/resend/", resend_verification, name="verify-email-resend"),
+    path("verify/<uidb64>/<token>/", verify_email, name="verify-email"),
+    path("email/confirm/<token>/", confirm_email_change, name="confirm-email-change"),
     path("profile/", account, name="account"),
     path(
         "password-reset/",

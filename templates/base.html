@@ -9,9 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Imbue:wght@400&family=IBM+Plex+Mono:wght@500;600&display=swap"> <!-- taste-skill-ignore: Plex Mono is for literal code only -->
     {% bootstrap_css %}
-    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=3.0">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=3.1">
     <link rel="stylesheet" href="{% static 'css/layout.css' %}?v=3.0">
-    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=2.0">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=2.1">
 
     {% block extra_css %}{% endblock %}
     <script>document.documentElement.classList.add("js");</script>
@@ -43,6 +43,11 @@
   </nav>
 
   <main id="main" tabindex="-1">
+    {% if user.is_authenticated and not user.email %}
+      <ul class="messages" role="status">
+        <li class="message message-warning">Add an email address so you can reset your password if you forget it. <a href="{% url 'account' %}">Add your email</a></li>
+      </ul>
+    {% endif %}
     {% if messages %}
       <ul class="messages" role="status">
         {% for message in messages %}

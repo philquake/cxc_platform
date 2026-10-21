@@ -19,6 +19,8 @@ class Profile(models.Model):
         validators=[MinValueValidator(Decimal("1.00")), MaxValueValidator(Decimal("3.00"))],
         help_text="Extra time on timed mock exams, e.g. 1.25 gives 25% more time. Set by staff for students with accommodations.",
     )
+    # Set at signup; the account stays inactive until the emailed link clears it.
+    awaiting_verification = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

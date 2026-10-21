@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Terms of Service | compile{% endblock %}
+{% block title %}Terms of Use | compile{% endblock %}
 {% block adsense %}{% include "_adsense.html" %}{% endblock %}
 
 {% block extra_css %}
@@ -12,155 +12,169 @@
 <div class="content-column legal-page">
     <header class="content-header">
         <span class="content-card-label">Legal</span>
-        <h1>Terms of Service</h1>
-        <p>Last updated: {{ legal_updated_date|default:"September 21, 2026" }}</p>
+        <h1>Terms of Use</h1>
+        <p>Version 2.0. Last updated: {{ legal_updated_date|default:"October 21, 2026" }}</p>
     </header>
 
     <div class="legal-body">
         <p>
-            These Terms of Service ("Terms") govern your access to and use of compile/
-            (the "Service"), operated by us ("compile", "we", "us", or "our"). By
-            creating an account or otherwise using the Service, you agree to these
-            Terms. If you do not agree, please do not use the Service.
+            compile/ (the "Site") is an exam-prep platform owned and operated by
+            compile/ ("we", "us", or "our"). These Terms of Use ("Terms") govern
+            your use of the Site. Some features may have extra guidelines posted
+            on the Site; those guidelines form part of these Terms.
+        </p>
+        <p>
+            By creating an account or otherwise using the Site, you agree to these
+            Terms. If you do not agree, please do not use the Site.
         </p>
 
         <section class="legal-section">
             <h2>1. Who can use compile/</h2>
             <p>
                 compile/ is built for students preparing for CSEC and CAPE
-                examinations, and is intended for use by students, teachers, and
-                anyone supporting Caribbean secondary and post-secondary exam
-                preparation. If you are under the age of majority in your
-                jurisdiction, you confirm that you have the permission of a parent
-                or guardian to use the Service, and that they have read these Terms
-                and our Privacy Policy on your behalf.
+                examinations, and for the teachers and parents who support them.
+                It is not directed at children under 13. If you are under the age
+                of majority where you live, you confirm that a parent or guardian
+                has agreed to your use of the Site and has read these Terms and our
+                <a href="{% url 'privacy' %}">Privacy Policy</a>.
             </p>
         </section>
 
         <section class="legal-section">
-            <h2>2. Your account</h2>
+            <h2>2. Accounts</h2>
             <ul>
-                <li>You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account.</li>
-                <li>You agree to provide accurate information when creating your account and to keep it up to date.</li>
-                <li>You must notify us promptly if you believe your account has been accessed without authorization.</li>
-                <li>We may suspend or terminate accounts that violate these Terms, that are inactive for an extended period, or that we reasonably believe are being used fraudulently or abusively.</li>
+                <li><strong>Creating an account.</strong> Some features need an account. Give accurate information when you sign up and keep it current. You can ask us to delete your account at any time (see section 12).</li>
+                <li><strong>Account security.</strong> Keep your password private. You are responsible for activity under your account. Tell us straight away if you think someone else has used it. We are not responsible for losses caused by you sharing or failing to protect your login details.</li>
             </ul>
         </section>
 
         <section class="legal-section">
-            <h2>3. Acceptable use</h2>
-            <p>When using compile/, you agree not to:</p>
+            <h2>3. Using the Site</h2>
             <ul>
-                <li>Copy, scrape, redistribute, or resell lessons, quiz questions, explanations, or other content from the Service without our prior written permission;</li>
-                <li>Attempt to circumvent, disable, or interfere with any security or access-control feature of the Service;</li>
-                <li>Use automated means (bots, scripts, scrapers) to access the Service except where we explicitly allow it;</li>
-                <li>Upload or transmit content that is unlawful, harassing, or infringes another person's rights;</li>
-                <li>Misrepresent your identity or impersonate another person, including another student, for the purpose of quizzes, leaderboards, or progress tracking;</li>
-                <li>Interfere with other users' access to or enjoyment of the Service.</li>
+                <li><strong>Licence.</strong> Subject to these Terms, we give you a limited, non-exclusive, non-transferable, revocable licence to use the Site for your own personal, non-commercial study. Teachers may use it with their own students.</li>
+                <li><strong>Restrictions.</strong> You may not: (i) copy, scrape, republish, sell or redistribute lessons, questions, explanations or other content from the Site without our written permission; (ii) modify, reverse-engineer or create derivative works from any part of the Site; (iii) use the Site to build a competing product; (iv) use bots, scripts or other automated means to access the Site, except where we allow it; (v) try to get around or interfere with any security or access-control feature; or (vi) remove any copyright or ownership notice.</li>
+                <li><strong>Fair play.</strong> Do not impersonate another person, share accounts to inflate scores, or otherwise manipulate quizzes, XP, streaks or leaderboards. Do not upload or post anything unlawful, abusive, or that infringes someone else's rights.</li>
+                <li><strong>Changes to the Site.</strong> We may change, suspend or remove any part of the Site, including subjects, lessons or features, at any time. We will try to give notice of changes that affect your stored progress.</li>
+                <li><strong>No support obligation.</strong> compile/ is provided free of charge. We are not obliged to provide support or maintenance, though we will try to help where we can.</li>
             </ul>
         </section>
 
         <section class="legal-section">
-            <h2>4. Content and intellectual property</h2>
+            <h2>4. Content and ownership</h2>
+            <ul>
+                <li><strong>Our content.</strong> The lessons, notes, questions, explanations, graphics, design and branding on the Site belong to us or our licensors and are protected by copyright and other laws. These Terms do not transfer any ownership to you. All rights not expressly granted are reserved.</li>
+                <li><strong>Feedback.</strong> If you send us ideas, corrections or suggestions, you allow us to use them freely, without payment or attribution. Please do not send anything you consider confidential.</li>
+                <li><strong>CXC.</strong> CSEC and CAPE are examinations administered by the Caribbean Examinations Council (CXC). compile/ is an independent study platform and is not affiliated with, endorsed by, or operated by CXC. References to CXC syllabuses are for descriptive and educational purposes only.</li>
+            </ul>
+        </section>
+
+        <section class="legal-section">
+            <h2>5. A study aid, not an official record</h2>
             <p>
-                All lessons, notes, quiz questions, explanations, graphics, and the
-                overall design and branding of compile/ are owned by us or our
-                licensors and are protected by copyright and other intellectual
-                property laws. Subject to your compliance with these Terms, we grant
-                you a limited, non-exclusive, non-transferable license to access and
-                use this content for your personal, non-commercial study purposes.
-            </p>
-            <p>
-                CSEC and CAPE are examinations administered by the Caribbean
-                Examinations Council (CXC). compile/ is an independent study
-                platform and is not affiliated with, endorsed by, or operated by
-                CXC. References to CSEC and CAPE syllabuses are for descriptive and
-                educational purposes only.
+                XP, streaks, mastery levels, quiz scores, mock exam results,
+                readiness estimates and leaderboards are there to support your
+                learning. They are not official academic records or predictions of
+                your examination grade. Questions and explanations may not match
+                the exact content, format or difficulty of a real CSEC or CAPE
+                paper. Use compile/ alongside, not instead of, your coursework and
+                your teacher's guidance.
             </p>
         </section>
 
         <section class="legal-section">
-            <h2>5. Progress data, quizzes, and leaderboards</h2>
+            <h2>6. Privacy and cookies</h2>
             <p>
-                Features such as XP, streaks, quiz results, and topic leaderboards
-                are provided to support your learning and are not official academic
-                records. We do not guarantee that quiz scores, explanations, or any
-                other content on the Service reflect the exact content, format, or
-                difficulty of an actual CSEC or CAPE examination. Use compile/ as a
-                study aid alongside, not a replacement for, your official
-                coursework and teacher guidance.
+                Your use of the Site is also governed by our
+                <a href="{% url 'privacy' %}">Privacy Policy</a>, which explains what
+                we collect, how we use it and when we share it. The Site uses
+                cookies and similar technologies, including advertising cookies
+                set by Google. Section 5 of the Privacy Policy explains these and
+                how to manage your preferences. If these Terms and the Privacy
+                Policy conflict on how your personal data is handled, the Privacy
+                Policy applies.
             </p>
         </section>
 
         <section class="legal-section">
-            <h2>6. Service availability and changes</h2>
+            <h2>7. Advertising, third-party services and other users</h2>
+            <ul>
+                <li><strong>Ads and third-party services.</strong> The Site shows ads served by Google and may link to other websites or services. We do not control or endorse them and are not responsible for them. Your use of them is at your own risk and under their own terms and privacy policies.</li>
+                <li><strong>Other users.</strong> Your dealings with other users are between you and them. We may, but do not have to, step in to resolve disputes between users.</li>
+            </ul>
+        </section>
+
+        <section class="legal-section">
+            <h2>8. Disclaimers</h2>
             <p>
-                We aim to keep compile/ available and up to date, but we do not
-                guarantee uninterrupted access. We may modify, suspend, or
-                discontinue any part of the Service, including specific subjects,
-                lessons, or features, at any time. We will make reasonable efforts
-                to notify you of material changes that affect your account or
-                stored progress.
+                The Site is provided "as is" and "as available". To the fullest
+                extent permitted by law, we disclaim all warranties, express or
+                implied, including accuracy, completeness, fitness for a particular
+                purpose and non-infringement. We do not promise that the Site will
+                be uninterrupted, error-free or secure, or that using it will lead
+                to any particular examination result.
             </p>
         </section>
 
         <section class="legal-section">
-            <h2>7. Disclaimer of warranties</h2>
+            <h2>9. Limitation of liability</h2>
             <p>
-                The Service is provided "as is" and "as available," without
-                warranties of any kind, express or implied, including but not
-                limited to accuracy, completeness, or fitness for a particular
-                purpose. We do not warrant that using compile/ will result in any
-                particular examination outcome.
+                To the fullest extent permitted by law, we will not be liable for
+                any indirect, incidental, special or consequential loss, or for lost
+                data or progress, arising from your use of, or inability to use, the
+                Site, including any loss related to examination performance.
+            </p>
+            <p>
+                For any ordinary claim, our total liability to you is limited to
+                the fees you paid us for the Site in the 12 months before the event
+                giving rise to the claim, or US$50 if that is greater. Making more
+                than one claim does not increase this limit. Nothing in these Terms
+                limits liability that cannot be limited by law, such as liability
+                for fraud or for death or personal injury caused by negligence.
             </p>
         </section>
 
         <section class="legal-section">
-            <h2>8. Limitation of liability</h2>
+            <h2>10. Indemnity</h2>
             <p>
-                To the fullest extent permitted by law, compile/ and its operators
-                will not be liable for any indirect, incidental, or consequential
-                damages arising from your use of, or inability to use, the Service,
-                including damages related to examination performance or lost
-                progress data.
+                If you break these Terms or the law while using the Site, and that
+                leads to a claim against us, you agree to cover our reasonable costs
+                arising from that claim, to the extent the law allows.
             </p>
         </section>
 
         <section class="legal-section">
-            <h2>9. Termination</h2>
+            <h2>11. Suspension and termination</h2>
             <p>
-                You may stop using the Service and request deletion of your account
-                at any time. We may suspend or terminate your access if you
-                violate these Terms. Sections that by their nature should survive
-                termination (such as intellectual property and limitation of
-                liability) will continue to apply.
+                These Terms apply for as long as you use the Site. We may suspend or
+                close your account if you break these Terms, if we reasonably
+                believe it is being used fraudulently or abusively, or if it has
+                been inactive for a long time. You may stop using the Site at any
+                time. Sections 3 (restrictions), 4, and 8 to 12 continue to apply
+                after termination.
             </p>
         </section>
 
         <section class="legal-section">
-            <h2>10. Changes to these Terms</h2>
-            <p>
-                We may update these Terms from time to time. If we make material
-                changes, we will update the "Last updated" date above and, where
-                appropriate, notify you through the Service. Continued use of
-                compile/ after changes take effect means you accept the revised
-                Terms.
-            </p>
-        </section>
-
-        <section class="legal-section">
-            <h2>11. Contact</h2>
-            <p>
-                Questions about these Terms can be sent to
-                <a href="mailto:{{ legal_contact_email|default:"tutorcole15@gmail.com" }}">{{ legal_contact_email|default:"tutorcole15@gmail.com" }}</a>,
-                or raised via our
-                <a href="https://github.com/philquake/cxc_platform/issues" target="_blank" rel="noopener">issue tracker</a>.
-            </p>
+            <h2>12. General</h2>
+            <ul>
+                <li><strong>Changes to these Terms.</strong> We may update these Terms. If we make material changes, we will update the date above and, where appropriate, post a notice on the Site. Continuing to use the Site after that means you accept the updated Terms.</li>
+                <li><strong>Governing law.</strong> These Terms are governed by the laws of Jamaica, and the courts of Jamaica have jurisdiction over any dispute, without affecting any mandatory consumer rights you have where you live.</li>
+                <li><strong>Electronic communications.</strong> You agree that we may contact you electronically, by email or by notices on the Site, and that these meet any requirement for written notice.</li>
+                <li><strong>Accessibility.</strong> We aim to meet the Web Content Accessibility Guidelines (WCAG) 2.1, Level AA. If anything on the Site is hard to access or use, please tell us using the contact details below.</li>
+                <li><strong>Entire agreement.</strong> These Terms, with the Privacy Policy, are the whole agreement between you and us about the Site. If any part is found unenforceable, it will be limited to the minimum extent needed and the rest stays in effect. Not enforcing a provision is not a waiver of it. You may not transfer these Terms; we may transfer them to anyone who takes over the Site.</li>
+                <li><strong>Contact.</strong> Questions about these Terms, account deletion requests and accessibility feedback can be sent to
+                    <a href="mailto:{{ legal_contact_email|default:"tutorcole15@gmail.com" }}">{{ legal_contact_email|default:"tutorcole15@gmail.com" }}</a>,
+                    or raised via our
+                    <a href="https://github.com/philquake/cxc_platform/issues" target="_blank" rel="noopener">issue tracker</a>.</li>
+            </ul>
         </section>
     </div>
 
     <p class="legal-footnote">
         See also our <a href="{% url 'privacy' %}">Privacy Policy</a>.
+        Adapted from the
+        <a href="https://github.com/General-Legal/legal-templates" target="_blank" rel="noopener">General Legal</a>
+        Website Terms of Use template.
     </p>
 </div>
 {% endblock %}

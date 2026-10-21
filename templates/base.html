@@ -9,9 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Imbue:wght@400&family=IBM+Plex+Mono:wght@500;600&display=swap"> <!-- taste-skill-ignore: Plex Mono is for literal code only -->
     {% bootstrap_css %}
-    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=3.1">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=3.2">
     <link rel="stylesheet" href="{% static 'css/layout.css' %}?v=3.0">
-    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=2.1">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=2.2">
 
     {% block extra_css %}{% endblock %}
     <script>document.documentElement.classList.add("js");</script>
@@ -72,7 +72,7 @@
       </nav>
       <nav aria-labelledby="footer-help">
         <h2 id="footer-help" class="footer-heading">Help and legal</h2>
-        <a href="https://github.com/philquake/cxc_platform/issues" target="_blank" rel="noopener">Report a problem<span class="sr-only"> (opens in a new tab)</span></a>
+        <a href="mailto:tutorcole15@gmail.com?subject=Problem%20on%20compile%2F">Report a problem</a>
         <a href="{% url 'terms' %}">Terms of use</a>
         <a href="{% url 'privacy' %}">Privacy policy</a>
         <a href="#main">Back to top &uarr;</a>

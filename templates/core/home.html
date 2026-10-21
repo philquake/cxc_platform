@@ -69,22 +69,22 @@
         <div class="learn-wrap block">
             <h2 id="loop-title">How you study here</h2>
             <ol class="loop-list">
-                <li>
+                <li data-reveal>
                     <span class="loop-art" aria-hidden="true"><span class="tick"></span><span class="tick"></span><span class="tick"></span></span>
                     <h3>Read a lesson</h3>
                     <p>Every course is split into syllabus units and lessons, so you always know what comes next.</p>
                 </li>
-                <li>
+                <li data-reveal="2">
                     <span class="loop-art" aria-hidden="true"><span class="meter meter-proficient"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></span>
                     <h3>Take its quiz</h3>
                     <p>Multiple choice, true or false, short answer, matching and worded questions. Each one explains its answer.</p>
                 </li>
-                <li>
+                <li data-reveal="3">
                     <span class="loop-art" aria-hidden="true"><span class="chip">Due today</span></span>
                     <h3>Review what you missed</h3>
                     <p>Wrong answers become flashcards on a spaced schedule and collect in your mistake bank.</p>
                 </li>
-                <li>
+                <li data-reveal="4">
                     <span class="loop-art" aria-hidden="true"><span class="bar"><span style="width: 64%"></span></span></span>
                     <h3>Count back from exam day</h3>
                     <p>Set your exam date and get a day-by-day plan that starts with your weakest, highest-weighted topics.</p>
@@ -98,7 +98,7 @@
             <h2 id="demo-title">See what you know, lesson by lesson</h2>
             <p>Your best quiz score on each lesson sets its mastery level, from Attempted to Mastered. Open a course and the weak spots are the ones still empty.</p>
         </div>
-        <div class="demo-unit" aria-hidden="true">
+        <div class="demo-unit" aria-hidden="true" data-reveal>
             <p class="demo-title">Networks and communication</p>
             <ul class="demo-rows">
                 <li><span class="tick"></span>Network devices<span class="meter meter-mastered"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></li>
@@ -111,7 +111,7 @@
 
     <section class="close" aria-labelledby="close-title">
         <div class="learn-wrap">
-            <h2 id="close-title">Start with one lesson.</h2>
+            <h2 id="close-title" data-reveal>Start with one lesson.</h2>
             <p>Your progress, streak and readiness score update as you study. It is free to start.</p>
             {% if user.is_authenticated %}
                 <a href="{% url 'progress:dashboard' %}" class="btn-primary-lg">Go to your progress</a>

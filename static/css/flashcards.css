@@ -159,11 +159,13 @@
     display: none;
 }
 
+/* Both faces share one grid cell, so the card grows to fit the taller face (the back with its rating buttons). */
 .flashcard-inner {
+    display: grid;
     position: relative;
     min-height: 320px;
     transform-style: preserve-3d;
-    transition: transform 0.5s ease;
+    transition: transform 450ms var(--ease-in-out);
 }
 
 .flashcard.is-flipped .flashcard-inner {
@@ -171,8 +173,7 @@
 }
 
 .flashcard-face {
-    position: absolute;
-    inset: 0;
+    grid-area: 1 / 1;
     display: flex;
     flex-direction: column;
     justify-content: center;

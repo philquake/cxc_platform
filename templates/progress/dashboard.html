@@ -6,7 +6,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/progress.css' %}?v=9.0">
 <link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
-<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.0">
+<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.2">
 {% endblock %}
 
 {% block content %}
@@ -23,8 +23,13 @@
     <section class="progress-stats" aria-label="Your progression stats">
         <div class="progress-stat progress-stat-level">
             <span class="progress-stat-label">Level</span>
-            <strong>{{ user_progress.level }}</strong>
-            <div class="progress-track"><span style="width: {{ user_progress.level_progress }}%"></span></div>
+            <div class="stat-ring" role="progressbar" aria-valuenow="{{ user_progress.level_progress }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progress to next level" style="--p: {{ user_progress.level_progress }}">
+                <svg viewBox="0 0 88 88" aria-hidden="true">
+                    <circle class="arc-track" cx="44" cy="44" r="38" pathLength="100"></circle>
+                    <circle class="arc-fill" cx="44" cy="44" r="38" pathLength="100"></circle>
+                </svg>
+                <strong>{{ user_progress.level }}</strong>
+            </div>
             <small>{{ user_progress.level_xp }} / {{ user_progress.level_xp_required }} XP to next level</small>
         </div>
         <div class="progress-stat">
@@ -34,8 +39,11 @@
         </div>
         <div class="progress-stat">
             <span class="progress-stat-label">Current streak</span>
-            <strong>{{ user_progress.current_streak }} days</strong>
-            <small>longest: {{ user_progress.longest_streak }} days</small>
+            <strong class="streak-count">
+                <svg class="streak-flame{% if studied_today %} is-lit{% endif %}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 3.5 4.5 5.5 4.5 10a4.5 4.5 0 0 1-9 0c0-2 1-3.5 2-4.5 0 1.5.8 2.5 1.8 2.5C10.5 7.5 11 4.5 12 2z"/></svg>
+                {{ user_progress.current_streak }} days
+            </strong>
+            <small>longest: {{ user_progress.longest_streak }} days{% if not studied_today %}. Study today to keep it going.{% endif %}</small>
         </div>
     </section>
 
@@ -90,11 +98,17 @@
                                 <p>{{ subject.readiness.band }}</p>
                             {% endif %}
                         </div>
-                        {% if subject.readiness.available %}
-                            <strong>{{ subject.readiness.score_percent }}%</strong>
-                        {% else %}
-                            <strong>Unknown</strong>
-                        {% endif %}
+                        <div class="readiness-gauge" style="--p: {% if subject.readiness.available %}{{ subject.readiness.score_percent }}{% else %}0{% endif %}">
+                            <svg viewBox="0 0 120 64" aria-hidden="true">
+                                <path class="arc-track" d="M10 60 A50 50 0 0 1 110 60" pathLength="100"></path>
+                                <path class="arc-fill" d="M10 60 A50 50 0 0 1 110 60" pathLength="100"></path>
+                            </svg>
+                            {% if subject.readiness.available %}
+                                <strong>{{ subject.readiness.score_percent }}%</strong>
+                            {% else %}
+                                <strong>Unknown</strong>
+                            {% endif %}
+                        </div>
                     </div>
                     <p class="progress-readiness-detail">
                         {% if subject.readiness.available %}

@@ -129,7 +129,7 @@
 .rate-again { border-color: var(--color-incorrect); }
 .rate-hard { border-color: var(--color-amber); }
 .rate-good { border-color: var(--color-reef); }
-.rate-easy { border-color: var(--color-reef); }
+.rate-easy { border-color: var(--color-reef); color: #fff; background: var(--color-reef); }
 
 .flashcard-empty-state,
 .flashcard-done { border-radius: 12px; border-top: 6px solid var(--color-navy); }
@@ -143,4 +143,42 @@
 
 @media (max-width: 560px) {
   .progress-page .progress-header { padding: 28px 0 32px; }
+}
+
+/* ---------- dashboard graphics: level ring, streak flame, readiness gauge ---------- */
+/* Arcs use pathLength="100", so --p (0-100) maps straight to the dash offset. */
+.arc-track,
+.arc-fill { fill: none; stroke-width: 8; stroke-linecap: round; }
+.arc-track { stroke: var(--color-bg-inset); }
+.arc-fill {
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - var(--p));
+  animation: arc-fill 900ms var(--ease-out) 120ms both;
+}
+@keyframes arc-fill { from { stroke-dashoffset: 100; } }
+
+.stat-ring { position: relative; display: grid; place-items: center; width: 88px; height: 88px; }
+.stat-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.stat-ring .arc-fill { stroke: var(--color-accent); }
+
+.streak-count { display: inline-flex; align-items: center; gap: 6px; }
+.streak-flame { width: 1em; height: 1em; fill: none; stroke: var(--color-text-faint); stroke-width: 1.8; stroke-linejoin: round; }
+.streak-flame.is-lit { fill: var(--color-amber); stroke: var(--color-amber); animation: flame-in 400ms var(--ease-out) both; }
+@keyframes flame-in { from { opacity: 0; transform: scale(0.9); } }
+
+.readiness-gauge { display: grid; justify-items: center; width: 120px; }
+.readiness-gauge svg { width: 100%; height: auto; overflow: visible; }
+.readiness-gauge .arc-fill { stroke: var(--color-navy); }
+.readiness-gauge strong {
+  margin-top: -28px;
+  color: var(--color-reef);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+@media (max-width: 560px) {
+  .stat-ring { width: 72px; height: 72px; }
+  .readiness-gauge { width: 100px; }
+  .readiness-gauge strong { margin-top: -22px; font-size: 1.25rem; }
 }

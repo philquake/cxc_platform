@@ -57,6 +57,9 @@ body {
 .nav-links a,
 .nav-quiet,
 .nav-user {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: 15px;
@@ -116,10 +119,6 @@ body {
   background: var(--color-accent-hover);
 }
 
-.btn-accent:active {
-  transform: translateY(1px);
-}
-
 .messages {
   width: auto;
   margin: 0;
@@ -175,7 +174,7 @@ body {
 
 .footer-heading {
   margin: 0 0 8px;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 600;
@@ -187,7 +186,7 @@ body {
 }
 
 .footer-top nav a {
-  padding: 5px 0;
+  padding: 10px 0;
 }
 
 .footer a:hover {
@@ -198,7 +197,7 @@ body {
 .footer .credits {
   max-width: 90ch;
   margin: 0 0 16px;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -229,7 +228,6 @@ body {
   .navbar { flex-wrap: wrap; gap: 4px 16px; padding-top: 10px; padding-bottom: 10px; }
   .nav-links { order: 3; flex: 0 0 100%; gap: 20px; margin: 0; }
   .nav-actions { margin-left: auto; }
-  .nav-links a { display: inline-flex; min-height: 36px; align-items: center; }
 }
 
 @media (max-width: 560px) {
@@ -249,4 +247,47 @@ body {
 .js [data-reveal].is-in { opacity: 1; transform: none; }
 .js [data-reveal="2"] { transition-delay: 90ms; }
 .js [data-reveal="3"] { transition-delay: 180ms; }
+.js [data-reveal="4"] { transition-delay: 270ms; }
 @media (prefers-reduced-motion: reduce) { .js [data-reveal] { opacity: 1; transform: none; transition: none; } }
+
+/* ---------- motion: press feedback, bar fills, meter pips, quiz steps ---------- */
+/* The global reduced-motion rule in base.css switches all of this off. */
+button { transition: transform 160ms var(--ease-out); }
+/* body prefix: page stylesheets load later and would drop transform from these lists. */
+body :is(.btn, .btn-accent, .btn-ghost, .btn-primary-lg, .btn-outline-lg, .btn-outline, .btn-done,
+.stepper-back, .stepper-next, .stepper-dot, .nav-quiet) {
+  transition: transform 160ms var(--ease-out), background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+:is(.btn, .btn-accent, .btn-ghost, .btn-primary-lg, .btn-outline-lg, .btn-outline, .btn-done, button):not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* Bars grow from the left once on load; transform keeps it off layout. */
+.bar > span, .progress-track span, .profile-track span {
+  transform-origin: left center;
+  animation: bar-fill 900ms var(--ease-out) 120ms both;
+}
+@keyframes bar-fill { from { transform: scaleX(0); } }
+
+.meter i.on { animation: pip-in 320ms var(--ease-out) both; }
+.meter i.on:nth-child(2) { animation-delay: 60ms; }
+.meter i.on:nth-child(3) { animation-delay: 120ms; }
+.meter i.on:nth-child(4) { animation-delay: 180ms; }
+@keyframes pip-in { from { opacity: 0; transform: scale(0.6); } }
+
+/* Below-the-fold graphics wait until their section scrolls in. */
+.js [data-reveal]:not(.is-in) :is(.bar > span, .meter i.on) { animation-play-state: paused; }
+
+.stepper-bar span { transition: width 300ms var(--ease-out); }
+.is-stepping fieldset.quiz-question { transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out); }
+@starting-style {
+  .is-stepping fieldset.quiz-question { opacity: 0; transform: translateY(8px); }
+}
+
+.message { animation: message-in 320ms var(--ease-out) both; }
+@keyframes message-in { from { opacity: 0; transform: translateY(-6px); } }
+
+@media (hover: hover) and (pointer: fine) {
+  .course-card, a.content-card, .lesson-link { transition: transform 200ms var(--ease-out), background var(--transition-fast), border-color var(--transition-fast); }
+  .course-card:hover, a.content-card:hover, .lesson-link:hover { transform: translateY(-2px); }
+}

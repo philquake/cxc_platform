@@ -48,6 +48,8 @@
   --radius-md: 12px;
   --radius-pill: 999px;
   --transition-fast: 150ms ease;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 * {
@@ -106,7 +108,7 @@ main:focus {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-white);
   outline-offset: 2px;
 }
 
@@ -171,7 +173,6 @@ p {
   color: var(--color-on-accent);
   background: var(--color-accent-hover);
   border-color: var(--color-accent-hover);
-  transform: translateY(-1px);
 }
 
 .btn-ghost:focus-visible,

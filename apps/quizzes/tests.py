@@ -329,6 +329,13 @@ class QuizModelTests(TestCase):
 		self.assertEqual(response.context["next_lesson"], self.other_lesson)
 		self.assertEqual(response.context["other_quiz"], medium_quiz)
 
+		# A quiz on a hidden lesson can't be opened, so it is never suggested.
+		medium_quiz.lesson = self.other_lesson
+		medium_quiz.save()
+		self.other_lesson.is_active = False
+		self.other_lesson.save()
+		self.assertIsNone(self.client.get(reverse("quizzes:detail", args=[quiz.pk])).context["other_quiz"])
+
 	def test_lesson_quiz_page_returns_404_when_no_quiz_exists(self):
 		response = self.client.get(reverse("quizzes:lesson-list", args=[self.other_lesson.pk]))
 

@@ -149,6 +149,12 @@ class CoreViewTests(TestCase):
 			is_active=False,
 		)
 		Answer.objects.create(question=inactive_question, text="Use a calculator", is_correct=True)
+		# Active question on a hidden lesson: its result link would 404.
+		Question.objects.create(
+			subject=subject, topic=topic, lesson=inactive_lesson, text="Name the quadratic discriminant."
+		)
+		hidden = Subject.objects.create(name="Hidden", code="HID", is_active=False)
+		Lesson.objects.create(subject=hidden, title="Hidden quadratic equations", content="<p>quadratic equation</p>")
 
 		response = self.client.get(reverse("search"), {"q": "quadratic equation"})
 
@@ -157,3 +163,5 @@ class CoreViewTests(TestCase):
 		self.assertContains(response, active_question.text)
 		self.assertNotContains(response, inactive_lesson.title)
 		self.assertNotContains(response, inactive_question.text)
+		self.assertNotContains(response, "quadratic discriminant")
+		self.assertNotContains(response, "Hidden quadratic equations")

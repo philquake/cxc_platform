@@ -24,6 +24,7 @@ from apps.progress.models import (
 	UserProgress,
 	XPTransaction,
 )
+from apps.progress.study_plan import generate_plan
 from apps.progress.analytics import difficulty_breakdown, estimated_readiness, record_attempt, topic_mastery
 
 class ProgressFlowTests(TestCase):
@@ -1275,3 +1276,46 @@ class LeaderboardDisplayNameTests(TestCase):
 		self.client.force_login(tied_second)
 		self.assertEqual(self.client.get(self.url).context["current_user_row"]["rank"], 22)
 		self.assertLess(tied_first.id, tied_second.id)
+
+
+class StudyPlanGenerationTests(TestCase):
+	def setUp(self):
+		self.user = get_user_model().objects.create_user(username="planner", password="A-strong-password-123")
+		self.subject = Subject.objects.create(name="Computer Science", code="CS")
+		heavy = Topic.objects.create(subject=self.subject, name="Algorithms", slug="algorithms", exam_weight=30)
+		light = Topic.objects.create(subject=self.subject, name="Hardware", slug="hardware", exam_weight=10)
+		self.lessons = []
+		# Light-topic lessons come first in the syllabus, so the plan must reorder by weight.
+		for number, topic in enumerate([light, light, heavy, heavy, heavy], start=1):
+			lesson = Lesson.objects.create(
+				subject=self.subject, title=f"Lesson {number}", lesson_number=number, content="<p>x</p>"
+			)
+			Question.objects.create(subject=self.subject, topic=topic, lesson=lesson, text=f"Q{number}?")
+			Quiz.objects.create(subject=self.subject, topic=topic, lesson=lesson, title=f"Quiz {number}")
+			self.lessons.append(lesson)
+
+	def test_plan_orders_by_weight_caps_days_and_adds_quizzes(self):
+		plan = generate_plan(self.user, self.subject, timezone.localdate() + timezone.timedelta(days=1))
+
+		items = list(plan.items.order_by("scheduled_date", "order"))
+		lesson_items = [item for item in items if item.item_type == StudyPlanItem.LESSON]
+		self.assertEqual([item.lesson.lesson_number for item in lesson_items], [3, 4, 5, 1, 2])
+		per_day = {}
+		for item in lesson_items:
+			per_day[item.scheduled_date] = per_day.get(item.scheduled_date, 0) + 1
+		self.assertEqual(max(per_day.values()), 3)
+		# A quiz follows the 4th lesson in the plan.
+		fourth = items.index(lesson_items[3])
+		self.assertEqual(
+			[item.item_type for item in items[fourth:fourth + 3]],
+			[StudyPlanItem.LESSON, StudyPlanItem.FLASHCARD_REVIEW, StudyPlanItem.QUIZ],
+		)
+
+	def test_regenerating_replaces_the_old_plan_and_past_dates_fail(self):
+		first = generate_plan(self.user, self.subject, timezone.localdate() + timezone.timedelta(days=5))
+		second = generate_plan(self.user, self.subject, timezone.localdate() + timezone.timedelta(days=9))
+
+		self.assertEqual(list(StudyPlan.objects.filter(user=self.user)), [second])
+		self.assertFalse(StudyPlanItem.objects.filter(plan_id=first.pk).exists())
+		with self.assertRaises(ValueError):
+			generate_plan(self.user, self.subject, timezone.localdate())

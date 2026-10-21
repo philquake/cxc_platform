@@ -83,7 +83,7 @@ def _topic_for_lesson(lesson):
 	topic, _ = Topic.objects.get_or_create(
 		subject=lesson.subject,
 		slug="general",
-		defaults={"name": "General"},
+		defaults={"name": "General", "is_active": False},
 	)
 	return topic
 
@@ -159,7 +159,7 @@ def dashboard(request):
 			topic_id__in=topic_results,
 			is_active=True,
 			lesson__is_active=True,
-		).order_by("lesson__lesson_number", "lesson_id").values_list(
+		).order_by("lesson__section_number", "lesson__lesson_number", "lesson_id").values_list(
 			"topic_id", "lesson_id"
 		):
 			topic = topic_by_id.get(topic_id)

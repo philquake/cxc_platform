@@ -69,7 +69,7 @@ def generate_plan(user, subject, target_date: date):
 
 	lessons = list(
 		Lesson.objects.filter(subject=subject, is_active=True).order_by(
-			"lesson_number", "section_number", "id"
+			"section_number", "lesson_number", "id"
 		)
 	)
 	completed_lesson_ids = set(
@@ -102,6 +102,7 @@ def generate_plan(user, subject, target_date: date):
 	remaining_lessons.sort(
 		key=lambda lesson: (
 			-lesson_priority(lesson),
+			lesson.section_number,
 			lesson.lesson_number,
 			lesson.id,
 		)
@@ -169,11 +170,8 @@ def generate_plan(user, subject, target_date: date):
 		day_offset += 1
 
 	with transaction.atomic():
-		StudyPlan.objects.filter(
-			user=user,
-			subject=subject,
-			is_active=True,
-		).update(is_active=False)
+		# Replaced plans are never shown again, so delete them (items cascade).
+		StudyPlan.objects.filter(user=user, subject=subject).delete()
 		plan = StudyPlan.objects.create(
 			user=user,
 			subject=subject,

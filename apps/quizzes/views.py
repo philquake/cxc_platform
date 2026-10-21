@@ -114,16 +114,19 @@ def quiz_detail(request, quiz_id):
             "quizzes": [quiz],
             "show_questions": True,
             "result_attempt": _result_attempt(request),
+            # Same order as the lesson reader: unit (section) first, then lesson number.
             "next_lesson": Lesson.objects.filter(
+                Q(section_number__gt=quiz.lesson.section_number)
+                | Q(section_number=quiz.lesson.section_number, lesson_number__gt=quiz.lesson.lesson_number),
                 subject=quiz.subject,
                 is_active=True,
-                lesson_number__gt=quiz.lesson.lesson_number,
-            ).order_by("lesson_number", "section_number").first() if quiz.lesson_id else None,
+            ).order_by("section_number", "lesson_number", "title").first() if quiz.lesson_id else None,
             "other_quiz": Quiz.objects.filter(
                 subject=quiz.subject,
                 topic=quiz.topic,
                 is_active=True,
                 is_mock=False,
+                lesson__is_active=True,
             ).exclude(pk=quiz.pk).first() if quiz.topic_id else None,
         },
     )

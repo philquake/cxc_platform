@@ -25,7 +25,7 @@ class Lesson(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["lesson_number", "section_number", "title"]
+        ordering = ["section_number", "lesson_number", "title"]
         constraints = [
             models.UniqueConstraint(
                 fields=["subject", "slug"],

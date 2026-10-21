@@ -33,29 +33,28 @@ def search(request):
     question_results = []
 
     if query_text:
+        # Only content whose lesson page is public, so every result link works.
+        lessons = Lesson.objects.filter(is_active=True, subject__is_active=True)
+        questions = Question.objects.filter(is_active=True, subject__is_active=True, lesson__is_active=True)
         if connection.vendor == "postgresql" and SearchVector is not None:
             search_query = SearchQuery(query_text)
-            lessons = Lesson.objects.filter(is_active=True).annotate(
+            lessons = lessons.annotate(
                 rank=SearchRank(
                     SearchVector("title", weight="A") + SearchVector("content", weight="B"),
                     search_query,
                 )
             ).filter(rank__gt=0).select_related("subject").order_by("-rank")[:20]
-            questions = Question.objects.filter(is_active=True).annotate(
+            questions = questions.annotate(
                 rank=SearchRank(
                     SearchVector("text", weight="A") + SearchVector("explanation", weight="B"),
                     search_query,
                 )
             ).filter(rank__gt=0).select_related("subject", "topic", "lesson").order_by("-rank")[:20]
         else:
-            lessons = Lesson.objects.filter(
-                is_active=True,
-            ).filter(
+            lessons = lessons.filter(
                 Q(title__icontains=query_text) | Q(content__icontains=query_text),
             ).select_related("subject").order_by("title")[:20]
-            questions = Question.objects.filter(
-                is_active=True,
-            ).filter(
+            questions = questions.filter(
                 Q(text__icontains=query_text) | Q(explanation__icontains=query_text),
             ).select_related("subject", "topic", "lesson").order_by("text")[:20]
 

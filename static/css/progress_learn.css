@@ -30,8 +30,8 @@
 .crumb-back {
   display: inline-block;
   margin-bottom: 14px;
-  color: var(--color-sky);
-  font-size: 15px;
+  color: var(--color-sky-bg);
+  font-size: 16px;
   text-decoration: none;
 }
 
@@ -169,6 +169,9 @@
 .readiness-gauge { display: grid; justify-items: center; width: 120px; }
 .readiness-gauge svg { width: 100%; height: auto; overflow: visible; }
 .readiness-gauge .arc-fill { stroke: var(--color-navy); }
+/* No evidence yet: an empty track with the note underneath, not on the arc. */
+.readiness-gauge.is-unknown .arc-fill { display: none; }
+.readiness-gauge.is-unknown strong { margin-top: 8px; color: var(--color-text-muted); font-family: var(--font-body); font-size: 1rem; font-weight: 700; }
 .readiness-gauge strong {
   margin-top: -28px;
   color: var(--color-reef);
@@ -181,4 +184,5 @@
   .stat-ring { width: 72px; height: 72px; }
   .readiness-gauge { width: 100px; }
   .readiness-gauge strong { margin-top: -22px; font-size: 1.25rem; }
+  .readiness-gauge.is-unknown strong { margin-top: 8px; font-size: 1rem; }
 }

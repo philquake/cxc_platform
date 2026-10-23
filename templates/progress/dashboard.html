@@ -5,8 +5,8 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/progress.css' %}?v=9.0">
-<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
-<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.2">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.2">
+<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.4">
 {% endblock %}
 
 {% block content %}
@@ -98,7 +98,7 @@
                                 <p>{{ subject.readiness.band }}</p>
                             {% endif %}
                         </div>
-                        <div class="readiness-gauge" style="--p: {% if subject.readiness.available %}{{ subject.readiness.score_percent }}{% else %}0{% endif %}">
+                        <div class="readiness-gauge{% if not subject.readiness.available %} is-unknown{% endif %}" style="--p: {% if subject.readiness.available %}{{ subject.readiness.score_percent }}{% else %}0{% endif %}">
                             <svg viewBox="0 0 120 64" aria-hidden="true">
                                 <path class="arc-track" d="M10 60 A50 50 0 0 1 110 60" pathLength="100"></path>
                                 <path class="arc-fill" d="M10 60 A50 50 0 0 1 110 60" pathLength="100"></path>
@@ -106,7 +106,7 @@
                             {% if subject.readiness.available %}
                                 <strong>{{ subject.readiness.score_percent }}%</strong>
                             {% else %}
-                                <strong>Unknown</strong>
+                                <strong>No data yet</strong>
                             {% endif %}
                         </div>
                     </div>
@@ -131,7 +131,7 @@
                                     {% if topic.mastery_available %}
                                         <span>{{ topic.mastery_percentage }}%, {{ topic.mastery_count }} answers</span>
                                     {% else %}
-                                        <span>Unknown, {{ topic.mastery_count }}/5 answers</span>
+                                        <span>{{ topic.mastery_count }} of 5 answers so far</span>
                                     {% endif %}
                                 </div>
                                 {% if topic.mastery_available %}

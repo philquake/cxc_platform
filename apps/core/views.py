@@ -81,6 +81,10 @@ def binary_converter(request):
     return render(request, "core/binary_converter.html")
 
 
+def about(request):
+    return render(request, "core/about.html")
+
+
 def terms(request):
     return render(request, "legal/terms.html")
 

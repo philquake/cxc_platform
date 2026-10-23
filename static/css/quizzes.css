@@ -503,3 +503,5 @@
 .mock-exam-timer.is-urgent .mock-exam-countdown {
     color: var(--color-incorrect);
 }
+
+.quiz-result-item-report { margin: 8px 0 0; font-size: 13px; }

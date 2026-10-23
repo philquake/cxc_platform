@@ -47,6 +47,10 @@
         </div>
     </section>
 
+    {% if not user_progress.total_xp %}
+        <p class="progress-empty">New here? Pick a subject, read your first lesson (+50 XP), then take its quiz. Your progress, streak and flashcards start filling in from there. <a href="{% url 'subjects:list' %}">Choose a subject</a></p>
+    {% endif %}
+
     <div class="progress-subjects">
         {% for subject in subjects %}
             <details class="progress-subject" {% if forloop.first %}open{% endif %}>

@@ -50,6 +50,7 @@ class CoreViewTests(TestCase):
 
 		self.assertContains(response, "Binary converter")
 		self.assertContains(response, '<link rel="canonical" href="http://testserver/tools/binary-converter/">')
+		self.assertContains(response, 'id="panel-practice"')
 		self.assertContains(response, "pagead2.googlesyndication.com")
 		self.assertContains(self.client.get(reverse("tools")), reverse("binary-converter"))
 		self.assertIn("<loc>http://testserver/tools/binary-converter/</loc>", self.client.get("/sitemap.xml").content.decode())
@@ -81,6 +82,12 @@ class CoreViewTests(TestCase):
 		for page_name in ("terms", "privacy"):
 			with self.subTest(page=page_name):
 				self.assertEqual(self.client.get(reverse(page_name)).status_code, 200)
+
+	def test_about_page_and_site_icons(self):
+		self.assertContains(self.client.get(reverse("about")), "mailto:")
+		home = self.client.get(reverse("home"))
+		for needle in ("favicon.svg", "apple-touch-icon", "site.webmanifest", "theme-color"):
+			self.assertContains(home, needle)
 
 	def test_privacy_page_discloses_ad_cookies(self):
 		self.assertContains(self.client.get(reverse("privacy")), "adssettings.google.com")

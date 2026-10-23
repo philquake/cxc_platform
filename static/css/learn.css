@@ -569,3 +569,5 @@ body:has(.lesson-bar) { padding-bottom: 72px; }
   .quiz-page .quiz-card { padding: 20px 16px; }
   .quiz-page fieldset.quiz-question legend { font-size: 1.1875rem; }
 }
+
+.lesson-meta { margin: 32px 0 0; color: var(--color-text-muted); font-size: 14px; }

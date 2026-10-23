@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}About and contact | compile/{% endblock %}
+{% block description %}compile/ is a free CSEC IT and CAPE Computer Science study site built by a Jamaican IT and computer science teacher.{% endblock %}
+{% block adsense %}{% include "_adsense.html" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/legal.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-column legal-page">
+    <header class="content-header">
+        <h1>About compile/</h1>
+        <p>Exam prep for Caribbean students, written by a Jamaican IT and computer science teacher.</p>
+    </header>
+
+    <div class="legal-body">
+        <section class="legal-section">
+            <h2>Who runs it</h2>
+            <p>
+                compile/ is built and maintained by Phil, an Information Technology and
+                Computer Science teacher in Jamaica. Lessons follow the CSEC Information
+                Technology and CAPE Computer Science syllabuses, and every quiz question
+                comes with an explanation of why the right answer is right.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>What you get</h2>
+            <ul>
+                <li>Lessons organised by syllabus unit</li>
+                <li>Practice quizzes at three levels, plus timed mock exams</li>
+                <li>Flashcards that bring missed questions back at the right time</li>
+                <li>Study plans built from your exam date, and progress tracking with XP and streaks</li>
+                <li>A <a href="{% url 'binary-converter' %}">binary converter</a> that shows its working</li>
+            </ul>
+            <p>It is free to use. The site is supported by ads. compile/ is not affiliated with CXC.</p>
+        </section>
+
+        <section class="legal-section" id="contact">
+            <h2>Contact</h2>
+            <p>
+                Found a mistake in a lesson or question, have a suggestion, or want to
+                ask about using compile/ with your class? Email
+                <a href="mailto:tutorcole15@gmail.com?subject=compile%2F">tutorcole15@gmail.com</a>.
+                Please say which lesson or quiz you mean.
+            </p>
+            <p>See also the <a href="{% url 'terms' %}">Terms of use</a> and <a href="{% url 'privacy' %}">Privacy policy</a>.</p>
+        </section>
+    </div>
+</div>
+{% endblock %}

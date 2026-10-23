@@ -1,0 +1,180 @@
+/* Binary converter (tools/binary-converter). Shares tokens with base.css and learn.css. */
+.bin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.bin-tabs button {
+  flex: none;
+  padding: 10px 16px;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 700;
+  background: var(--color-bg-inset);
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.bin-tabs button[aria-selected="true"] {
+  color: #fff;
+  background: var(--color-navy);
+  border-color: var(--color-navy);
+}
+
+.bin-panel {
+  padding: clamp(18px, 3vw, 32px);
+  background: var(--color-panel);
+  border-radius: var(--radius-md);
+}
+
+.bin-panel[hidden] { display: none; }
+.bin-panel h2 { margin: 0 0 6px; color: var(--color-white); font-size: 1.375rem; font-weight: 800; letter-spacing: -0.01em; }
+.bin-help { max-width: 65ch; margin: 0 0 18px; color: var(--color-text-muted); line-height: 1.55; }
+
+.bin-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.bin-row label,
+.bin-wide {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.bin-row label[hidden] { display: none; }
+.bin-row label:first-child { flex: 1 1 220px; }
+.bin-wide { margin-bottom: 16px; }
+
+.bin-tool input,
+.bin-tool select,
+.bin-tool textarea {
+  padding: 10px 12px;
+  color: var(--color-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  background: #fff;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-sm);
+}
+
+.bin-tool input[type="number"] { width: 6.5rem; }
+
+.bin-out {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.bin-out > .bin-table-wrap,
+.bin-out > .bin-line,
+.bin-out > .bin-pre,
+.bin-out > .bin-error,
+.bin-out > .bin-ok { flex: 1 1 100%; margin: 0; }
+
+.bin-card {
+  display: flex;
+  flex: 1 1 200px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 16px;
+  background: var(--color-sky-bg);
+  border-radius: var(--radius-sm);
+}
+
+.bin-card-title { color: var(--color-text-muted); font-size: 14px; font-weight: 600; }
+.bin-card-value { font-family: inherit; color: var(--color-white); font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem); font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.bin-card-note { color: var(--color-text-faint); font-size: 14px; }
+
+.bin-steps h3 { margin: 8px 0 12px; color: var(--color-white); font-size: 1.0625rem; }
+.bin-steps h4 { margin: 18px 0 8px; color: var(--color-text); font-size: 1rem; }
+.bin-line { margin: 0 0 8px; color: var(--color-text); line-height: 1.55; overflow-wrap: anywhere; }
+.bin-error { margin: 0; color: var(--color-incorrect); font-weight: 600; }
+.bin-ok { margin: 0; color: var(--color-correct); font-weight: 600; }
+
+.bin-pre {
+  padding: 14px 16px;
+  overflow-x: auto;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.6;
+  background: var(--color-bg-inset);
+  border-radius: var(--radius-sm);
+}
+
+.bin-table-wrap { max-width: 100%; overflow-x: auto; }
+.bin-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.bin-table th,
+.bin-table td { padding: 10px 14px; text-align: left; }
+.bin-table tbody tr:nth-child(even) { background: var(--color-bg-body); }
+.bin-table th { color: var(--color-text); background: var(--color-bg-inset); }
+.bin-table td { color: var(--color-text); font-variant-numeric: tabular-nums; }
+
+.bin-help code { padding: 1px 6px; color: var(--color-text); font-family: inherit; font-weight: 700; background: var(--color-bg-inset); border-radius: 4px; }
+.bin-note { color: var(--color-text-muted); }
+
+.bin-guide { max-width: 68ch; font-size: 1.0625rem; margin-top: 56px; line-height: 1.7; }
+.bin-guide h2 { margin: 40px 0 12px; color: var(--color-white); }
+.bin-guide h3 { margin: 28px 0 8px; color: var(--color-white); }
+.bin-guide p { color: var(--color-text-muted); }
+.bin-guide details { margin-bottom: 8px; padding: 14px 18px; background: var(--color-panel); border-radius: var(--radius-sm); }
+.bin-guide summary { color: var(--color-text); font-weight: 700; cursor: pointer; }
+.bin-guide details p { margin: 8px 0 0; }
+.bin-cta { margin-top: 32px; font-weight: 600; }
+.bin-cta a { color: var(--color-accent-ink); }
+
+@media (max-width: 560px) {
+  .bin-panel { padding: 16px; }
+  .bin-row label:first-child { flex-basis: 100%; }
+  .bin-card { flex-basis: 100%; }
+}
+
+/* Tool first: a short title band so the converter is on the first screen. */
+.learn-band-compact { padding: 24px 0 26px; }
+.learn-band-compact h1 { margin-bottom: 6px; font-size: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem); }
+.learn-band-compact p { font-size: 1rem; }
+.bin-tool { padding-top: 24px; }
+
+/* ---------- tools hub ---------- */
+.tool-feature {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px 32px;
+  align-items: center;
+  padding: clamp(24px, 5vw, 56px);
+  color: #fff;
+  background: var(--color-navy);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+
+.tool-feature .tool-feature-sample { grid-column: 2; grid-row: 1 / span 2; }
+.tool-feature .btn-accent { justify-self: start; }
+.tool-feature h2 { margin: 0 0 12px; color: #fff; font-size: clamp(2rem, 1.4rem + 2.4vw, 3.25rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; }
+.tool-feature p { margin: 0; color: #e4eef5; font-size: 1.125rem; line-height: 1.55; }
+.tool-feature .tool-feature-sample { margin: 0; color: var(--color-accent); font-size: clamp(2rem, 1rem + 4vw, 4.25rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tool-feature:hover .btn-accent { background: var(--color-accent-hover); }
+
+.tool-list-title { margin: 72px 0 24px; color: var(--color-white); font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem); font-weight: 800; letter-spacing: -0.02em; }
+.tool-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.tool-list a { display: block; height: 100%; padding: 20px 24px; color: var(--color-text); line-height: 1.55; background: var(--color-panel); border-radius: var(--radius-sm); text-decoration: none; }
+.tool-list a:hover { background: var(--color-sky-bg); }
+.tool-list strong { display: block; margin-bottom: 4px; color: var(--color-white); font-size: 1.125rem; }
+
+@media (max-width: 760px) {
+  .tool-feature { grid-template-columns: 1fr; }
+  .tool-feature .tool-feature-sample { grid-column: 1; grid-row: auto; }
+}

@@ -45,6 +45,15 @@ class CoreViewTests(TestCase):
 		for path in ("draft", "secret", "hidden", "/quizzes/", "/progress/", "/accounts/"):
 			self.assertNotIn(path, body)
 
+	def test_binary_converter_is_public_and_in_the_sitemap(self):
+		response = self.client.get(reverse("binary-converter"))
+
+		self.assertContains(response, "Binary converter")
+		self.assertContains(response, '<link rel="canonical" href="http://testserver/tools/binary-converter/">')
+		self.assertContains(response, "pagead2.googlesyndication.com")
+		self.assertContains(self.client.get(reverse("tools")), reverse("binary-converter"))
+		self.assertIn("<loc>http://testserver/tools/binary-converter/</loc>", self.client.get("/sitemap.xml").content.decode())
+
 	def test_robots_txt_points_to_the_sitemap_and_hides_private_areas(self):
 		body = self.client.get("/robots.txt").content.decode()
 

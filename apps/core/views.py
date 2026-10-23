@@ -73,6 +73,14 @@ def search(request):
     )
 
 
+def tools_index(request):
+    return render(request, "core/tools.html")
+
+
+def binary_converter(request):
+    return render(request, "core/binary_converter.html")
+
+
 def terms(request):
     return render(request, "legal/terms.html")
 

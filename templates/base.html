@@ -31,6 +31,7 @@
     {% endwith %}
     {# Ads load only on content pages that fill this block (AdSense inventory policy). #}
     {% block adsense %}{% endblock %}
+    {% block seo %}{% endblock %}
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -38,6 +39,7 @@
     <a href="{% url 'home' %}" class="logo" aria-label="compile/ home">compile/</a>
     <ul class="nav-links">
       <li><a href="{% url 'subjects:list' %}"{% if request.resolver_match.namespace == 'subjects' %} class="active" aria-current="page"{% endif %}>Subjects</a></li>
+      <li><a href="{% url 'tools' %}"{% if request.path|slice:":7" == "/tools/" %} class="active" aria-current="page"{% endif %}>Tools</a></li>
       <li><a href="{% url 'progress:dashboard' %}"{% if request.resolver_match.namespace == 'progress' %} class="active" aria-current="page"{% endif %}>Progress</a></li>
       <li><a href="{% url 'search' %}"{% if request.resolver_match.url_name == 'search' %} class="active" aria-current="page"{% endif %}>Search</a></li>
     </ul>
@@ -81,6 +83,7 @@
         <a href="{% url 'subjects:list' %}">Subjects and lessons</a>
         <a href="{% url 'quizzes:list' %}">Practice quizzes</a>
         <a href="{% url 'progress:flashcard-hub' %}">Flashcard review</a>
+        <a href="{% url 'binary-converter' %}">Binary converter</a>
         <a href="{% url 'progress:dashboard' %}">Your progress</a>
       </nav>
       <nav aria-labelledby="footer-help">

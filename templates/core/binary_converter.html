@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Binary Converter for CAPE Computer Science | compile/{% endblock %}
+{% block description %}Free binary converter with working shown: binary, octal, decimal, hex, two's complement, binary addition, ASCII, BCD and floating point for CAPE Computer Science.{% endblock %}
+{% block og_title %}Binary Converter for CAPE Computer Science | compile/{% endblock %}
+{% block og_description %}Convert between number bases, two's complement, ASCII, BCD and floating point, with every step shown.{% endblock %}
+{% block adsense %}{% include "_adsense.html" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.2">
+<link rel="stylesheet" href="{% static 'css/binary_tools.css' %}?v=1.4">
+{% endblock %}
+
+{% block seo %}
+<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"WebApplication","name":"Binary converter for CAPE Computer Science","applicationCategory":"EducationalApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Converts between binary, octal, decimal and hexadecimal, signed number representations, binary arithmetic, ASCII, BCD and floating point, showing the working."},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"How do you convert decimal to binary?","acceptedAnswer":{"@type":"Answer","text":"Divide the number by 2 repeatedly, noting each remainder. Read the remainders from the last to the first. For the fractional part, multiply by 2 repeatedly and read the whole-number parts from first to last."}},
+{"@type":"Question","name":"How do you find the two's complement of a negative number?","acceptedAnswer":{"@type":"Answer","text":"Write the positive value in binary using the required number of bits, invert every bit (one's complement), then add 1."}},
+{"@type":"Question","name":"How do you know when binary addition overflows?","acceptedAnswer":{"@type":"Answer","text":"In two's complement, overflow happens when two numbers of the same sign give a result of the opposite sign. Equivalently, the carry into the sign bit differs from the carry out of it."}},
+{"@type":"Question","name":"What is a normalised floating-point number?","acceptedAnswer":{"@type":"Answer","text":"In the usual CAPE format the mantissa is a two's complement fraction that starts 0.1 for positive numbers or 1.0 for negative numbers, so its first two bits differ. The exponent is a two's complement integer that scales the mantissa by a power of 2."}},
+{"@type":"Question","name":"How is BCD different from binary?","acceptedAnswer":{"@type":"Answer","text":"Binary-coded decimal encodes each decimal digit separately in 4 bits, so 259 is 0010 0101 1001, whereas pure binary encodes the whole number as 100000011."}}
+]}]}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="learn-band learn-band-compact">
+    <div class="learn-wrap">
+        <h1>Binary converter</h1>
+        <p>Bases, two's complement, arithmetic, ASCII, BCD and floating point, with the working shown.</p>
+    </div>
+</div>
+
+<div class="learn-wrap learn-body bin-tool">
+    <div class="bin-tabs" role="tablist" aria-label="Converter">
+        <button type="button" role="tab" id="tab-base" aria-controls="panel-base" aria-selected="true">Number bases</button>
+        <button type="button" role="tab" id="tab-signed" aria-controls="panel-signed" aria-selected="false" tabindex="-1">Signed numbers</button>
+        <button type="button" role="tab" id="tab-arith" aria-controls="panel-arith" aria-selected="false" tabindex="-1">Binary arithmetic</button>
+        <button type="button" role="tab" id="tab-text" aria-controls="panel-text" aria-selected="false" tabindex="-1">Text and ASCII</button>
+        <button type="button" role="tab" id="tab-bcd" aria-controls="panel-bcd" aria-selected="false" tabindex="-1">BCD</button>
+        <button type="button" role="tab" id="tab-float" aria-controls="panel-float" aria-selected="false" tabindex="-1">Floating point</button>
+    </div>
+
+    <noscript><p class="bin-note">The calculator needs JavaScript. The worked methods below work without it.</p></noscript>
+
+    <section class="bin-panel" id="panel-base" role="tabpanel" aria-labelledby="tab-base">
+        <h2>Number base converter</h2>
+        <p class="bin-help">Binary, octal, decimal and hexadecimal, including fractions such as <code>101.011</code> or <code>0.1</code>. Pick any base from 2 to 36 for the working.</p>
+        <div class="bin-row">
+            <label>Number<input id="base-in" type="text" value="1011.101" autocomplete="off" spellcheck="false"></label>
+            <label>From base
+                <select id="base-from">
+                    <option value="2">2 (binary)</option><option value="8">8 (octal)</option><option value="10">10 (decimal)</option><option value="16">16 (hex)</option><option value="custom">Other…</option>
+                </select>
+            </label>
+            <label id="base-from-custom-wrap" hidden>Base<input id="base-from-custom" type="number" min="2" max="36" value="3"></label>
+        </div>
+        <div id="base-out" class="bin-out" aria-live="polite"></div>
+        <div class="bin-row">
+            <label>Show working for
+                <select id="base-work">
+                    <option value="2">Binary</option><option value="8">Octal</option><option value="10">Decimal</option><option value="16">Hex</option><option value="custom">Other…</option>
+                </select>
+            </label>
+            <label id="base-to-custom-wrap" hidden>Base<input id="base-to-custom" type="number" min="2" max="36" value="5"></label>
+        </div>
+        <div id="base-steps" class="bin-steps"></div>
+    </section>
+
+    <section class="bin-panel" id="panel-signed" role="tabpanel" aria-labelledby="tab-signed" hidden>
+        <h2>Sign and magnitude, one's complement and two's complement</h2>
+        <p class="bin-help">Type a decimal number, or a bit pattern, and see how each representation stores it.</p>
+        <div class="bin-row">
+            <label>Value<input id="signed-in" type="text" value="-45" autocomplete="off" spellcheck="false"></label>
+            <label>Input is
+                <select id="signed-mode"><option value="dec">Decimal</option><option value="bin">Binary pattern</option></select>
+            </label>
+            <label id="signed-bits-wrap">Bits<input id="signed-bits" type="number" min="2" max="64" value="8"></label>
+        </div>
+        <div id="signed-out" class="bin-out" aria-live="polite"></div>
+    </section>
+
+    <section class="bin-panel" id="panel-arith" role="tabpanel" aria-labelledby="tab-arith" hidden>
+        <h2>Binary addition and subtraction</h2>
+        <p class="bin-help">Operands are two's complement patterns; shorter ones are padded with leading zeros. Subtraction is done as A + (two's complement of B).</p>
+        <div class="bin-row">
+            <label>A (binary)<input id="arith-a" type="text" value="00101101" autocomplete="off" spellcheck="false"></label>
+            <label>Operation<select id="arith-op"><option value="+">A + B</option><option value="-">A − B</option></select></label>
+            <label>B (binary)<input id="arith-b" type="text" value="01001110" autocomplete="off" spellcheck="false"></label>
+            <label>Bits<input id="arith-bits" type="number" min="2" max="64" value="8"></label>
+        </div>
+        <div id="arith-out" class="bin-out" aria-live="polite"></div>
+    </section>
+
+    <section class="bin-panel" id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden>
+        <h2>Text and ASCII</h2>
+        <p class="bin-help">Convert characters to their character codes, or codes back to text. Codes above 127 are Unicode code points.</p>
+        <div class="bin-row">
+            <label>Direction
+                <select id="text-mode"><option value="enc">Text to codes</option><option value="dec">Codes to text</option></select>
+            </label>
+            <label>Codes in
+                <select id="text-fmt"><option value="2">Binary</option><option value="16">Hex</option><option value="10">Decimal</option></select>
+            </label>
+        </div>
+        <label class="bin-wide">Input<textarea id="text-in" rows="2" spellcheck="false">CAPE</textarea></label>
+        <div id="text-out" class="bin-out" aria-live="polite"></div>
+    </section>
+
+    <section class="bin-panel" id="panel-bcd" role="tabpanel" aria-labelledby="tab-bcd" hidden>
+        <h2>Binary-coded decimal (BCD)</h2>
+        <p class="bin-help">Each decimal digit becomes its own 4-bit group (8421 code).</p>
+        <div class="bin-row">
+            <label>Direction
+                <select id="bcd-mode"><option value="enc">Decimal to BCD</option><option value="dec">BCD to decimal</option></select>
+            </label>
+            <label>Value<input id="bcd-in" type="text" value="259" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <div id="bcd-out" class="bin-out" aria-live="polite"></div>
+    </section>
+
+    <section class="bin-panel" id="panel-float" role="tabpanel" aria-labelledby="tab-float" hidden>
+        <h2>Floating point</h2>
+        <p class="bin-help">The CAPE format is a two's complement fraction mantissa and a two's complement exponent: value = mantissa × 2<sup>exponent</sup>. IEEE 754 is the standard computer format.</p>
+        <div class="bin-row">
+            <label>Format
+                <select id="float-fmt"><option value="cape">Mantissa and exponent (CAPE)</option><option value="ieee32">IEEE 754 single (32-bit)</option><option value="ieee64">IEEE 754 double (64-bit)</option></select>
+            </label>
+            <label>Direction
+                <select id="float-mode"><option value="enc">Decimal to bits</option><option value="dec">Bits to decimal</option></select>
+            </label>
+        </div>
+        <div class="bin-row">
+            <label id="float-dec-wrap">Decimal<input id="float-in" type="text" value="-6.75" autocomplete="off" spellcheck="false"></label>
+            <label id="float-m-wrap" hidden>Mantissa bits<input id="float-m" type="text" value="10010100" autocomplete="off" spellcheck="false"></label>
+            <label id="float-e-wrap" hidden>Exponent bits<input id="float-e" type="text" value="0011" autocomplete="off" spellcheck="false"></label>
+            <label id="float-hex-wrap" hidden>Hex or bits<input id="float-hex" type="text" value="C0D80000" autocomplete="off" spellcheck="false"></label>
+            <label id="float-mb-wrap">Mantissa bits<input id="float-mb" type="number" min="3" max="52" value="8"></label>
+            <label id="float-eb-wrap">Exponent bits<input id="float-eb" type="number" min="2" max="11" value="4"></label>
+        </div>
+        <div id="float-out" class="bin-out" aria-live="polite"></div>
+    </section>
+
+    <article class="bin-guide">
+        <h2>How the conversions work</h2>
+
+        <h3 id="decimal-to-binary">Decimal to binary</h3>
+        <p>Divide the whole part by 2 again and again, writing down each remainder, until the quotient is 0. Read the remainders from the last one up to the first. For 45: 45 ÷ 2 = 22 r 1, 22 ÷ 2 = 11 r 0, 11 ÷ 2 = 5 r 1, 5 ÷ 2 = 2 r 1, 2 ÷ 2 = 1 r 0, 1 ÷ 2 = 0 r 1, which gives 101101. For a fraction, multiply by 2 repeatedly and collect the whole-number parts from first to last: 0.625 gives 0.101.</p>
+
+        <h3 id="binary-to-decimal">Binary to decimal, octal and hex</h3>
+        <p>Add the place values: each bit is worth a power of 2, so 1011 is 8 + 0 + 2 + 1 = 11. Bits after the point are worth ½, ¼, ⅛ and so on. To reach octal or hex, group the bits in threes (octal) or fours (hex) outward from the point and convert each group.</p>
+
+        <h3 id="twos-complement">Two's complement</h3>
+        <p>To store a negative number, write its positive value in the chosen number of bits, invert every bit, then add 1. With 8 bits, −45 is 00101101 → 11010010 → 11010011. The leftmost bit has a negative place value (−128 for 8 bits), so the range is −128 to +127. Sign and magnitude simply sets the sign bit, and one's complement only inverts the bits; both have two representations of zero, which two's complement avoids.</p>
+
+        <h3 id="binary-arithmetic">Binary addition, subtraction and overflow</h3>
+        <p>Add column by column from the right: 0+0=0, 0+1=1, 1+1=10 (write 0, carry 1) and 1+1+1=11. To subtract B, add the two's complement of B. Overflow occurs when two numbers with the same sign give an answer with the opposite sign, because the true answer no longer fits in the available bits.</p>
+
+        <h3 id="ascii">Character codes</h3>
+        <p>Computers store text as numbers. ASCII gives each character a 7-bit code: "A" is 65 (1000001), "a" is 97, and "0" is 48. Unicode extends this to cover every writing system, and UTF-8 stores the first 128 code points exactly as ASCII does.</p>
+
+        <h3 id="bcd">BCD</h3>
+        <p>Binary-coded decimal stores each decimal digit in its own 4 bits, so 259 becomes 0010 0101 1001. It uses more bits than pure binary but converts to and from decimal digits instantly, which is why calculators and digital clocks use it.</p>
+
+        <h3 id="floating-point">Floating point</h3>
+        <p>A floating-point number is stored as a mantissa and an exponent. In the CAPE format the mantissa is a two's complement fraction and a number is <em>normalised</em> when the first two mantissa bits differ (0.1… for positives, 1.0… for negatives), which gives the most precision for the bits available. Normalising 6.75: 6.75 = 0.84375 × 2³, so the mantissa is 0.1101100 and the exponent is 3. More mantissa bits give more precision; more exponent bits give a larger range.</p>
+
+        <h2>Frequently asked questions</h2>
+        <details><summary>How do you convert decimal to binary?</summary><p>Divide by 2 repeatedly and read the remainders from last to first. Fractions are multiplied by 2 and the whole-number parts read from first to last.</p></details>
+        <details><summary>How do you find the two's complement of a negative number?</summary><p>Write the positive value in binary, invert every bit, and add 1.</p></details>
+        <details><summary>How do you know when binary addition has overflowed?</summary><p>When two numbers of the same sign give a result of the opposite sign. The carry into the sign bit then differs from the carry out of it.</p></details>
+        <details><summary>What is a normalised floating-point number?</summary><p>One whose mantissa starts 0.1 (positive) or 1.0 (negative), so the first two bits differ and no precision is wasted on leading zeros or ones.</p></details>
+        <details><summary>How is BCD different from binary?</summary><p>BCD encodes each decimal digit separately in 4 bits, so 259 is 0010 0101 1001, whereas pure binary encodes the whole number as 100000011.</p></details>
+
+        <p class="bin-cta">Want to practise this? <a href="{% url 'subjects:list' %}">Work through the CAPE Computer Science lessons and quizzes</a>.</p>
+    </article>
+</div>
+<script src="{% static 'js/binary_tools.js' %}?v=1.1" defer></script>
+{% endblock %}

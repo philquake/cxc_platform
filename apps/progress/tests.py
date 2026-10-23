@@ -859,7 +859,7 @@ class ProgressFlowTests(TestCase):
 		)
 
 		self.assertEqual(response.status_code, 200)
-		self.assertContains(response, f"Student #{other_user.id}")
+		self.assertContains(response, "other")
 		self.assertContains(response, "100 XP")
 
 	def test_quiz_submission_ignores_answer_from_another_question(self):
@@ -1251,7 +1251,7 @@ class JamaicaStudyDayTests(TestCase):
 		self.assertEqual(state.due_at, date(2026, 3, 2))
 
 
-class LeaderboardDisplayNameTests(TestCase):
+class LeaderboardUsernameTests(TestCase):
 	def setUp(self):
 		self.viewer = get_user_model().objects.create_user(username="viewer", password="x")
 		subject = Subject.objects.create(name="Mathematics", code="MATH")
@@ -1265,18 +1265,16 @@ class LeaderboardDisplayNameTests(TestCase):
 		XPTransaction.objects.create(user=user, topic=self.topic, amount=xp, reason="t")
 		return user
 
-	def test_display_name_blank_fallback_and_no_profile(self):
+	def test_usernames_are_shown_never_display_names_or_emails(self):
 		self.add_user("named", 90, "Ada L.", email="secret@example.com")
 		self.add_user("blank", 80, "")
 		self.add_user("noprofile", 70)
 		self.client.force_login(self.viewer)
 		with self.assertNumQueries(5):
 			response = self.client.get(self.url)
-		self.assertContains(response, "Ada L.")
-		# No display name: show a neutral label, never the username.
-		self.assertContains(response, "Student #")
-		self.assertNotContains(response, "noprofile")
-		self.assertNotContains(response, "named")
+		for username in ("named", "blank", "noprofile"):
+			self.assertContains(response, username)
+		self.assertNotContains(response, "Ada L.")
 		self.assertNotContains(response, "secret@example.com")
 
 	def test_top_twenty_limit_ties_and_rank_beyond_list(self):

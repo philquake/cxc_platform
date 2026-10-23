@@ -41,4 +41,4 @@ class DisplayNameForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ("display_name",)
-        help_texts = {"display_name": "Shown on your profile and leaderboards. Leave blank to use your username."}
+        help_texts = {"display_name": "Shown at the top of your profile page. Leaderboards show your username. Leave blank to use your full name or username."}

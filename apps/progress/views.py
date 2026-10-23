@@ -566,7 +566,7 @@ def submit_quiz(request, quiz_id):
 def _render_leaderboard(request, subject, topic, xp_filter):
 	totals = (
 		XPTransaction.objects.filter(user__is_staff=False, user__is_superuser=False, **xp_filter)
-		.values("user_id", "user__username", "user__profile__display_name")
+		.values("user_id", "user__username")
 		.annotate(xp=Sum("amount"))
 	)
 	top = list(totals.order_by("-xp", "user_id")[:20])

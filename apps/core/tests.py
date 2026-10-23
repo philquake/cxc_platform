@@ -21,6 +21,16 @@ class CoreViewTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(list(response.context["subjects"]), [active])
 
+	def test_home_offers_the_exam_countdown_only_when_there_are_lessons(self):
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		self.assertNotContains(self.client.get(reverse("home")), 'id="exam-date"')
+
+		Lesson.objects.create(subject=subject, title="Linear equations", content="Solve")
+		response = self.client.get(reverse("home"))
+
+		self.assertContains(response, 'id="exam-date"')
+		self.assertEqual(response.context["lesson_max"], 1)
+
 	def test_home_counts_only_active_lessons_and_questions(self):
 		subject = Subject.objects.create(name="Mathematics", code="MATH")
 		topic = Topic.objects.create(subject=subject, name="Algebra", slug="algebra")

@@ -23,6 +23,7 @@ def home(request):
         "core/home.html",
         {
             "subjects": subjects,
+            "lesson_max": max((s.lesson_count for s in subjects), default=0),
         },
     )
 

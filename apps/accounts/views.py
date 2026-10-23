@@ -86,6 +86,10 @@ def signup(request):
 		_pending_users().filter(taken).delete()
 	form = SignupForm(request.POST or None)
 	if request.method == "POST" and form.is_valid():
+		email = form.cleaned_data["email"]
+		if _cooling_down(email):
+			form.add_error("email", "We just sent a link to that address. Wait a few minutes before trying again.")
+			return render(request, "accounts/signup.html", {"form": form, "next": request.GET.get("next", "")})
 		try:
 			# Rolled back if the email fails, so the student can simply sign up again.
 			with transaction.atomic():
@@ -96,6 +100,7 @@ def signup(request):
 				_send_verification(request, user)
 		except OSError:
 			logger.exception("Verification email failed at signup")
+			cache.delete(f"email-link:{email.lower()}")
 			form.add_error(None, "We couldn't send the verification email. Check the address and try again.")
 		else:
 			return redirect("verify-email-sent")

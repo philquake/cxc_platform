@@ -1076,6 +1076,14 @@ class QuizXPPolicyTests(TestCase):
 		self.assertEqual((attempt.awaiting_review, attempt.score), (False, 4))
 		self.assertEqual(self.xp(), 25 + 80 // 5)
 
+	def test_huge_text_answer_is_truncated(self):
+		worded = self._worded()
+		self.client.post(
+			reverse("progress:submit-quiz", args=[self.quiz.id]),
+			{f"question-{self.question.id}": self.right.id, f"question-{worded.id}": "x" * 20000},
+		)
+		self.assertEqual(len(QuizAnswer.objects.get(question=worded).selected_text), 5000)
+
 	def test_blank_worded_answer_needs_no_marking(self):
 		self._worded()
 		self.submit(self.right)

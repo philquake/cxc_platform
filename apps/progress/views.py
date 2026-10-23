@@ -316,6 +316,9 @@ def study_plan_view(request, subject_slug):
 	)
 
 
+MAX_TEXT_ANSWER = 5000  # stops a huge POST filling the answers table
+
+
 def _matches_expected(answer, expected):
 	"""Expected answers may list alternatives separated by "|"."""
 	answer = _normalize_answer_text(answer)
@@ -454,7 +457,7 @@ def submit_quiz(request, quiz_id):
 		if value is None:
 			continue
 		if question.is_open_ended:
-			selected_text_answers[question.id] = value.strip()
+			selected_text_answers[question.id] = value.strip()[:MAX_TEXT_ANSWER]
 		elif value.isdigit():
 			selected_answers[question.id] = int(value)
 
@@ -505,7 +508,7 @@ def submit_quiz(request, quiz_id):
 			selected_text = selected_text_answers.get(question.id, "")
 			is_correct = _matches_expected(selected_text, question.expected_answer)
 		elif question.format == Question.FORMAT_TRUE_FALSE and not any(question.answers.all()):
-			selected_text = request.POST.get(f"question-{question.id}", "").strip()
+			selected_text = request.POST.get(f"question-{question.id}", "").strip()[:MAX_TEXT_ANSWER]
 			is_correct = (
 				_normalize_answer_text(selected_text)
 				== _normalize_answer_text(question.expected_answer)

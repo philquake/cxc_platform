@@ -284,6 +284,13 @@ class SignupAbuseTests(TestCase):
 		self.assertContains(response, "already exists")
 		self.assertFalse(get_user_model().objects.filter(username="bot").exists())
 
+	def test_signup_cannot_mail_the_same_address_twice_in_a_row(self):
+		cache.clear()
+		self.client.post(reverse("signup"), self.data)
+		response = self.client.post(reverse("signup"), {**self.data, "username": "bot2"})
+		self.assertContains(response, "Wait a few minutes")
+		self.assertEqual(len(mail.outbox), 1)
+
 	def test_profile_cannot_take_another_accounts_email(self):
 		get_user_model().objects.create_user(username="first", email="Dup@Example.com", password="x")
 		me = get_user_model().objects.create_user(username="me", email="me@example.com", password="x")

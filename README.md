@@ -210,3 +210,7 @@ pip install -r requirements-dev.txt
 python -m coverage run manage.py test apps.core apps.subjects apps.lessons apps.quizzes --keepdb
 python -m coverage report
 ```
+
+## License
+
+All rights reserved. See [LICENSE](LICENSE).

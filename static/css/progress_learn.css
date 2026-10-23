@@ -59,9 +59,13 @@
 }
 
 .progress-stat strong { font-family: var(--font-body); font-weight: 800; letter-spacing: -0.02em; }
+/* The three dashboard tiles share one anatomy: label, a fixed-height figure row, a caption. */
 .progress-stat-level { border: 1px solid var(--color-panel-border); border-top: 6px solid var(--color-accent); }
 .progress-stats .progress-stat:nth-child(2) { border-top: 6px solid var(--color-navy); }
 .progress-stats .progress-stat:nth-child(3) { border-top: 6px solid var(--color-reef); }
+.stat-figure { display: flex; align-items: center; min-height: 88px; }
+.progress-stats .stat-figure strong { font-size: 3rem; line-height: 1; }
+.progress-stats .progress-stat small { margin-top: auto; }
 .progress-stat-label { color: var(--color-text-muted); }
 
 .progress-track { height: 10px; border: 0; }
@@ -160,6 +164,7 @@
 .stat-ring { position: relative; display: grid; place-items: center; width: 88px; height: 88px; }
 .stat-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
 .stat-ring .arc-fill { stroke: var(--color-accent); }
+.progress-stats .stat-ring strong { font-size: 1.75rem; }
 
 .streak-count { display: inline-flex; align-items: center; gap: 6px; }
 .streak-flame { width: 1em; height: 1em; fill: none; stroke: var(--color-text-faint); stroke-width: 1.8; stroke-linejoin: round; }
@@ -182,6 +187,9 @@
 
 @media (max-width: 560px) {
   .stat-ring { width: 72px; height: 72px; }
+  .stat-figure { min-height: 72px; }
+  .progress-stats .stat-figure strong { font-size: 2.5rem; }
+  .progress-stats .stat-ring strong { font-size: 1.5rem; }
   .readiness-gauge { width: 100px; }
   .readiness-gauge strong { margin-top: -22px; font-size: 1.25rem; }
   .readiness-gauge.is-unknown strong { margin-top: 8px; font-size: 1rem; }

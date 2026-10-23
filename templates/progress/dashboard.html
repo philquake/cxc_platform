@@ -6,7 +6,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/progress.css' %}?v=9.0">
 <link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.2">
-<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.4">
+<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.6">
 {% endblock %}
 
 {% block content %}
@@ -23,26 +23,26 @@
     <section class="progress-stats" aria-label="Your progression stats">
         <div class="progress-stat progress-stat-level">
             <span class="progress-stat-label">Level</span>
-            <div class="stat-ring" role="progressbar" aria-valuenow="{{ user_progress.level_progress }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progress to next level" style="--p: {{ user_progress.level_progress }}">
+            <div class="stat-figure"><div class="stat-ring" role="progressbar" aria-valuenow="{{ user_progress.level_progress }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progress to next level" style="--p: {{ user_progress.level_progress }}">
                 <svg viewBox="0 0 88 88" aria-hidden="true">
                     <circle class="arc-track" cx="44" cy="44" r="38" pathLength="100"></circle>
                     <circle class="arc-fill" cx="44" cy="44" r="38" pathLength="100"></circle>
                 </svg>
                 <strong>{{ user_progress.level }}</strong>
-            </div>
+            </div></div>
             <small>{{ user_progress.level_xp }} / {{ user_progress.level_xp_required }} XP to next level</small>
         </div>
         <div class="progress-stat">
             <span class="progress-stat-label">Total XP</span>
-            <strong>{{ user_progress.total_xp }}</strong>
+            <div class="stat-figure"><strong>{{ user_progress.total_xp }}</strong></div>
             <small>earned across lessons and quizzes</small>
         </div>
         <div class="progress-stat">
             <span class="progress-stat-label">Current streak</span>
-            <strong class="streak-count">
+            <div class="stat-figure"><strong class="streak-count">
                 <svg class="streak-flame{% if studied_today %} is-lit{% endif %}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 3.5 4.5 5.5 4.5 10a4.5 4.5 0 0 1-9 0c0-2 1-3.5 2-4.5 0 1.5.8 2.5 1.8 2.5C10.5 7.5 11 4.5 12 2z"/></svg>
-                {{ user_progress.current_streak }} days
-            </strong>
+                {{ user_progress.current_streak }} day{{ user_progress.current_streak|pluralize }}
+            </strong></div>
             <small>longest: {{ user_progress.longest_streak }} days{% if not studied_today %}. Study today to keep it going.{% endif %}</small>
         </div>
     </section>

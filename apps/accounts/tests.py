@@ -389,6 +389,22 @@ class EmailVerificationTests(TestCase):
 		get_user_model().objects.filter(username="newstudent").update(is_active=True, last_login=timezone.now())
 		self.assertContains(self.client.post(reverse("signup"), {**self.data, "email": "other@example.com"}), "already exists")
 
+	def test_study_log_marks_month_boundaries_as_a_staircase(self):
+		from datetime import date
+		from apps.accounts.views import _study_log
+
+		user = get_user_model().objects.create_user(username="logger", password="x")
+		with mock.patch("apps.accounts.views.timezone.localdate", return_value=date(2026, 11, 4)):
+			cells, _ = _study_log(user)
+		by_day = {cell["day"]: cell for cell in cells}
+
+		first = by_day[date(2026, 9, 1)]  # Tuesday: starts mid-column
+		self.assertTrue(first["month_start"] and first["edge_top"] and first["edge_left"])
+		self.assertTrue(by_day[date(2026, 9, 7)]["edge_left"])  # top of the next column, beside Aug 31
+		self.assertFalse(by_day[date(2026, 9, 8)]["edge_left"])
+		self.assertFalse(by_day[date(2026, 9, 2)]["edge_top"])
+		self.assertFalse(by_day[date(2026, 8, 31)]["edge_left"] or by_day[date(2026, 8, 31)]["edge_top"])
+
 	def test_resend_is_limited_to_one_email_per_address_every_few_minutes(self):
 		self.signup()
 		mail.outbox.clear()

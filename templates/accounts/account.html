@@ -5,7 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.2">
-<link rel="stylesheet" href="{% static 'css/profile.css' %}?v=1.0">
+<link rel="stylesheet" href="{% static 'css/profile.css' %}?v=1.2">
 {% endblock %}
 
 {% block content %}
@@ -34,7 +34,7 @@
             <p class="profile-sub">You studied on {{ days_studied }} of the last {{ study_log_weeks }} weeks' days. Each square is a day, darker for more lessons and quizzes.</p>
             <ol class="study-log" style="--weeks: {{ study_log_weeks }}">
                 {% for cell in study_log %}
-                    <li class="study-log-day level-{{ cell.level }}"{% if forloop.first %} style="grid-row-start: 1"{% endif %} title="{{ cell.day|date:'D j M' }}: {{ cell.count }} activit{{ cell.count|pluralize:'y,ies' }}"><span class="sr-only">{{ cell.day|date:"D j M" }}: {{ cell.count }}</span></li>
+                    <li class="study-log-day level-{{ cell.level }}{% if cell.edge_left %} edge-left{% endif %}{% if cell.edge_top %} edge-top{% endif %}{% if cell.month_start %} month-start{% endif %}"{% if forloop.first %} style="grid-row-start: 1"{% endif %} title="{{ cell.day|date:'D j M' }}: {{ cell.count }} activit{{ cell.count|pluralize:'y,ies' }}"><span class="sr-only">{{ cell.day|date:"D j M" }}: {{ cell.count }}</span>{% if cell.month_start %}<span class="study-log-month" aria-hidden="true">{{ cell.day|date:"M" }}</span>{% endif %}<span class="study-log-date" aria-hidden="true">{{ cell.day|date:"j" }}</span></li>
                 {% endfor %}
             </ol>
         </section>

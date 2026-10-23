@@ -127,6 +127,13 @@ def _study_log(user):
 		day = start + timedelta(days=offset)
 		count = counts.get(day, 0)
 		cells.append({"day": day, "count": count, "level": min(count, 3)})
+	# Months run down the columns, so a month change is a staircase: an edge above the first day of the
+	# month, and an edge beside the old month's days in the column before it.
+	for index, cell in enumerate(cells):
+		month = cell["day"].month
+		cell["month_start"] = cell["day"].day == 1
+		cell["edge_left"] = index >= 7 and cells[index - 7]["day"].month != month
+		cell["edge_top"] = index % 7 > 0 and cells[index - 1]["day"].month != month
 	return cells, sum(1 for cell in cells if cell["count"])
 
 

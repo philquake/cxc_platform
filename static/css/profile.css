@@ -79,10 +79,26 @@
   list-style: none;
 }
 
-.study-log-day { aspect-ratio: 1; background: var(--color-bg-inset); border-radius: 4px; }
+.study-log-day { display: grid; place-items: center; aspect-ratio: 1; background: var(--color-bg-inset); border-radius: 4px; }
 .study-log-day.level-1 { background: var(--color-sky); }
 .study-log-day.level-2 { background: var(--color-navy); }
 .study-log-day.level-3 { background: var(--color-navy-deep); }
+
+/* Month dividers: an accent outline in the gap between the old month's days and the new month's. */
+.study-log-day.edge-left { box-shadow: -3px 0 0 var(--color-accent); }
+.study-log-day.edge-top { box-shadow: 0 -3px 0 var(--color-accent); }
+.study-log-day.edge-left.edge-top { box-shadow: -3px 0 0 var(--color-accent), 0 -3px 0 var(--color-accent); }
+.study-log-month { color: inherit; font-size: 0.625rem; font-weight: 800; text-transform: none; line-height: 1; }
+.study-log-day.month-start { align-content: center; gap: 2px; }
+.study-log-day.month-start .study-log-month { color: var(--color-accent-ink); }
+.study-log-day.level-2.month-start .study-log-month,
+.study-log-day.level-3.month-start .study-log-month { color: var(--color-accent); }
+
+/* Day of the month inside each square; ink flips to white on the two dark shades. */
+.study-log-date { color: var(--color-text-muted); font-size: 0.75rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+.study-log-day.level-1 .study-log-date { color: var(--color-navy-deep); }
+.study-log-day.level-2 .study-log-date,
+.study-log-day.level-3 .study-log-date { color: var(--color-white); }
 
 /* ---------- subjects ---------- */
 .profile-subject { margin-bottom: 16px; }
@@ -125,6 +141,12 @@
 }
 
 @media (max-width: 560px) {
+  .study-log { gap: 2px; }
+  .study-log-date { font-size: 0.625rem; }
+  .study-log-month { display: none; }
+  .study-log-day.edge-left { box-shadow: -2px 0 0 var(--color-accent); }
+  .study-log-day.edge-top { box-shadow: 0 -2px 0 var(--color-accent); }
+  .study-log-day.edge-left.edge-top { box-shadow: -2px 0 0 var(--color-accent), 0 -2px 0 var(--color-accent); }
   .profile-id { flex-wrap: wrap; }
   .profile-id .profile-level { margin-left: 0; }
   .profile-avatar { width: 56px; height: 56px; font-size: 1.2rem; }

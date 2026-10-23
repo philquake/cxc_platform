@@ -3,7 +3,9 @@ from django.db.models import Count, Prefetch, Q
 
 from apps.lessons.models import Lesson
 from apps.quizzes.models import Quiz
-from apps.progress.models import LessonProgress, QuizAttempt, percent
+from apps.progress.models import LessonProgress, QuizAnswer, QuizAttempt, percent
+from apps.questions.models import Question
+from apps.quizzes.services import attach_draw_counts
 from apps.quizzes.views import latest_attempts_by_quiz
 from .lookup import get_subject_or_404
 from .models import Subject
@@ -16,9 +18,26 @@ MASTERY_LEVELS = (
 )
 
 
+def _lesson_coverage(user, lessons):
+    """{lesson_id: (questions answered and marked, active questions)} so mastery can reflect how much of the bank was seen."""
+    pool = dict(
+        Question.objects.filter(lesson__in=lessons, is_active=True).values_list("lesson_id").annotate(n=Count("id"))
+    )
+    seen = dict(
+        QuizAnswer.objects.filter(
+            attempt__user=user, question__lesson__in=lessons, question__is_active=True, marks_awarded__isnull=False
+        ).values_list("question__lesson_id").annotate(n=Count("question", distinct=True))
+    )
+    return {lesson.id: (seen.get(lesson.id, 0), pool.get(lesson.id, 0)) for lesson in lessons}
+
+
 def _lesson_mastery(user, lessons):
-    """Attach mastery_level/mastery_label/mastery_step (0-4) from the best quiz score per lesson."""
-    best = {}
+    """Attach mastery_level/label/step (0-4) from the best quiz score per lesson, capped by how much of the bank was answered.
+
+    Under 40% of the lesson's questions answered caps at Familiar, under 70% at Proficient, and Mastered also
+    needs a perfect score on a quiz that was not Easy, so a short easy quiz cannot stand in for the whole lesson.
+    """
+    best, best_hard, coverage = {}, {}, {}
     if user.is_authenticated:
         rows = QuizAttempt.objects.filter(
             user=user,
@@ -26,17 +45,28 @@ def _lesson_mastery(user, lessons):
             completed_at__isnull=False,
             awaiting_review=False,
             total_marks__gt=0,
-        ).values_list("quiz__lesson_id", "score", "total_marks")
-        for lesson_id, score, total in rows:
+        ).values_list("quiz__lesson_id", "score", "total_marks", "quiz__difficulty")
+        for lesson_id, score, total, difficulty in rows:
             best[lesson_id] = max(best.get(lesson_id, 0), percent(score, total))
+            if difficulty != "easy":
+                best_hard[lesson_id] = max(best_hard.get(lesson_id, 0), percent(score, total))
+        coverage = _lesson_coverage(user, lessons)
     for lesson in lessons:
         lesson.mastery_level, lesson.mastery_label, lesson.mastery_step = "none", "Not started", 0
+        lesson.coverage_seen, lesson.coverage_total = coverage.get(lesson.id, (0, 0))
         if lesson.id in best:
             for index, (floor, level, label) in enumerate(MASTERY_LEVELS):
                 if best[lesson.id] >= floor:
                     lesson.mastery_level, lesson.mastery_label = level, label
                     lesson.mastery_step = 4 - index
                     break
+            share = lesson.coverage_seen / lesson.coverage_total if lesson.coverage_total else 1
+            cap = 2 if share < 0.4 else 3 if share < 0.7 else 4
+            if best_hard.get(lesson.id, 0) < 100:
+                cap = min(cap, 3)
+            if lesson.mastery_step > cap:
+                lesson.mastery_step = cap
+                _, lesson.mastery_level, lesson.mastery_label = MASTERY_LEVELS[4 - cap]
 
 
 def _units(lessons, completed_ids):
@@ -126,6 +156,7 @@ def lesson_detail(request, subject_slug, lesson_slug):
     ).annotate(
         question_count=Count("quiz_questions", filter=Q(quiz_questions__question__is_active=True))
     ))
+    attach_draw_counts(quizzes)
     lesson_progress = None
     if request.user.is_authenticated:
         lesson_progress = LessonProgress.objects.filter(

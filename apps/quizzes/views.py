@@ -13,6 +13,7 @@ from apps.subjects.models import Topic
 from apps.progress.models import QuizAttempt
 
 from .models import Quiz, QuizQuestion
+from .services import attach_draw_counts, draw_lesson_questions
 
 from apps.lessons.models import Lesson
 
@@ -84,6 +85,7 @@ def lesson_quizzes(request, lesson_id):
         raise Http404("Quiz not found")
     quizzes = list(quizzes)
     _shuffle_questions(quizzes)
+    _draw_auto(request, quizzes)
     _add_latest_attempts(request, quizzes)
     return render(
         request,
@@ -104,6 +106,7 @@ def quiz_detail(request, quiz_id):
     if quiz is None:
         raise Http404("Quiz not found")
     _shuffle_questions([quiz])
+    _draw_auto(request, [quiz])
     _add_latest_attempts(request, [quiz])
     return render(
         request,
@@ -183,6 +186,14 @@ def _shuffle_questions(quizzes):
             random.shuffle(quiz.question_list)
 
 
+def _draw_auto(request, quizzes):
+    """Auto-draw quizzes get a fresh set per page load; the chosen ids are signed so scoring uses exactly them."""
+    for quiz in quizzes:
+        if quiz.auto_draw:
+            quiz.question_list = draw_lesson_questions(request.user, quiz)
+            quiz.draw_token = signing.dumps([quiz.id, request.user.id or 0, [qq.question.id for qq in quiz.question_list]])
+
+
 def latest_attempts_by_quiz(user, quizzes):
     """{quiz_id: the user's most recently completed attempt} for the given quizzes."""
     latest = {}
@@ -197,6 +208,7 @@ def latest_attempts_by_quiz(user, quizzes):
 
 def _add_latest_attempts(request, quizzes):
     _add_time_limits(request, quizzes)
+    attach_draw_counts([quiz for quiz in quizzes if not hasattr(quiz, "question_list")])
     if not request.user.is_authenticated:
         return
     latest_attempts = latest_attempts_by_quiz(request.user, quizzes)

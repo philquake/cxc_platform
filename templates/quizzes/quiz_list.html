@@ -145,6 +145,7 @@
                 {% endif %}
 
                 {% if show_questions %}
+                {% if quiz.auto_draw %}<input type="hidden" name="drawn" value="{{ quiz.draw_token }}">{% endif %}
                 {% for quiz_question in quiz.question_list %}
                     <fieldset class="quiz-question">
                         <legend>{{ forloop.counter }}. {{ quiz_question.question.text }}{% if quiz_question.question.marks > 1 %} <span class="quiz-question-marks">({{ quiz_question.question.marks }} marks)</span>{% endif %}</legend>

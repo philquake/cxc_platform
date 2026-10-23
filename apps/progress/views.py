@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 import re
 import time
 from datetime import date, timedelta
@@ -441,8 +442,23 @@ def submit_quiz(request, quiz_id):
 		# Only the latest attempt matters, so retakes would just pile up in the marking queue.
 		messages.info(request, "Your last attempt is still being marked. You can retake the quiz once it is.")
 		return redirect("quizzes:detail", quiz_id=quiz.id)
-	# Same filter as the quiz page, so a deactivated question can't be marked wrong unseen.
-	quiz_questions = [qq for qq in quiz.quiz_questions.all() if qq.question.is_active]
+	if quiz.auto_draw:
+		# The page signs the ids it drew, so scoring uses exactly those questions and the browser can't pick its own.
+		try:
+			signed_quiz_id, signed_user_id, drawn_ids = signing.loads(request.POST.get("drawn", ""), max_age=6 * 60 * 60)
+			assert (signed_quiz_id, signed_user_id) == (quiz.id, request.user.id)
+		except (signing.BadSignature, AssertionError, TypeError, ValueError):
+			messages.error(request, "That quiz expired. Open it again to get a fresh set of questions.")
+			return redirect("quizzes:detail", quiz_id=quiz.id)
+		drawn = Question.objects.filter(
+			pk__in=drawn_ids, topic_id=quiz.topic_id, lesson_id=quiz.lesson_id, is_active=True
+		).prefetch_related("answers").in_bulk()
+		quiz_questions = [SimpleNamespace(question=drawn[pk]) for pk in drawn_ids if pk in drawn]
+		if not quiz_questions:
+			return redirect("quizzes:detail", quiz_id=quiz.id)
+	else:
+		# Same filter as the quiz page, so a deactivated question can't be marked wrong unseen.
+		quiz_questions = [qq for qq in quiz.quiz_questions.all() if qq.question.is_active]
 	selected_answers = {}
 	selected_text_answers = {}
 	matching_answers = {}

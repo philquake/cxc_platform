@@ -83,7 +83,7 @@ def generate_quizzes(modeladmin, request, queryset):
         except ValueError as error:
             modeladmin.message_user(request, f"{lesson}: {error}", level=messages.WARNING)
             continue
-        made = ", ".join(f"{quiz.get_difficulty_display()} ({quiz.quiz_questions.count()})" for quiz in quizzes)
+        made = ", ".join(f"{quiz.get_difficulty_display()} ({quiz.draw_size} per attempt)" for quiz in quizzes)
         note = f" Short: {'; '.join(shortages)}." if shortages else ""
         modeladmin.message_user(
             request,

@@ -52,7 +52,7 @@
                         <span class="meter meter-{{ lesson.mastery_level }}" role="img" aria-label="Mastery: {{ lesson.mastery_label }}">
                             <i class="{% if lesson.mastery_step >= 1 %}on{% endif %}"></i><i class="{% if lesson.mastery_step >= 2 %}on{% endif %}"></i><i class="{% if lesson.mastery_step >= 3 %}on{% endif %}"></i><i class="{% if lesson.mastery_step >= 4 %}on{% endif %}"></i>
                         </span>
-                        <span class="lesson-row-state">{% if lesson.mastery_step %}{{ lesson.mastery_label }}{% elif lesson.id in completed_ids %}Read{% else %}Not started{% endif %}</span>
+                        <span class="lesson-row-state">{% if lesson.mastery_step %}{{ lesson.mastery_label }}{% if lesson.coverage_total %}, {{ lesson.coverage_seen }} of {{ lesson.coverage_total }} questions seen{% endif %}{% elif lesson.id in completed_ids %}Read{% else %}Not started{% endif %}</span>
                     </a>
                 </li>
                 {% endfor %}

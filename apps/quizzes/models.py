@@ -38,6 +38,13 @@ class Quiz(models.Model):
     difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, blank=True)
     pathway = models.CharField(max_length=20, choices=PATHWAY_CHOICES, blank=True)
     shuffle_questions = models.BooleanField(default=True, help_text="Untick to show questions in their set order.")
+    auto_draw = models.BooleanField(
+        default=False,
+        help_text="Draw a fresh set from the lesson's question bank on every attempt instead of using the set questions.",
+    )
+    draw_size = models.PositiveSmallIntegerField(
+        null=True, blank=True, help_text="Questions per attempt for an auto-draw quiz. Blank uses the difficulty's default."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

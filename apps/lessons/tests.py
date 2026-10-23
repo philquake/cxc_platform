@@ -168,5 +168,5 @@ class LessonQuizActionTests(TestCase):
 
 		response = self.client.post(url, {**form, "allow_partial": "on"}, follow=True)
 		quiz = Quiz.objects.get()
-		self.assertEqual((quiz.topic, quiz.difficulty, quiz.is_active, quiz.questions.count()), (topic, "easy", False, 2))
+		self.assertEqual((quiz.topic, quiz.difficulty, quiz.is_active, quiz.draw_size), (topic, "easy", False, 2))
 		self.assertContains(response, "inactive quizzes")

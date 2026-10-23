@@ -1,5 +1,7 @@
 import random
 
+from types import SimpleNamespace
+
 from django.db import transaction
 
 from apps.questions.models import PATHWAY_CHOICES, Question
@@ -69,7 +71,57 @@ FORMATS_BY_DIFFICULTY = {
     "medium": {Question.FORMAT_TRUE_FALSE, Question.FORMAT_MULTIPLE_CHOICE, Question.FORMAT_SHORT_ANSWER},
     "hard": {Question.FORMAT_WORDED},
 }
-DEFAULT_COUNTS = {"easy": 10, "medium": 10, "hard": 5}
+DEFAULT_COUNTS = {"easy": 8, "medium": 8, "hard": 4}
+MIN_DRAW = 3  # a score on fewer questions proves nothing, so smaller pools are not offered
+
+
+def eligible_questions(topic, lesson, difficulty, pathway=""):
+    """Active questions of this lesson that fit the difficulty's formats (and pathway, if given)."""
+    questions = Question.objects.filter(
+        topic=topic, lesson=lesson, is_active=True, difficulty=difficulty,
+        format__in=FORMATS_BY_DIFFICULTY[difficulty],
+    )
+    return questions.filter(**{f"for_{pathway}": True}) if pathway else questions
+
+
+def draw_size(quiz):
+    return quiz.draw_size or DEFAULT_COUNTS.get(quiz.difficulty, DEFAULT_COUNTS["medium"])
+
+
+def draw_lesson_questions(user, quiz):
+    """Questions for one attempt of an auto-draw quiz, as objects with a .question like QuizQuestion rows.
+
+    Unseen questions come first, then ones the student last got wrong, then the rest, so repeat attempts
+    cover the whole bank. Returns nothing when the bank is too small to be worth scoring.
+    """
+    from apps.progress.models import QuizAnswer  # progress imports quizzes
+
+    pool = list(eligible_questions(quiz.topic, quiz.lesson, quiz.difficulty or "medium", quiz.pathway).prefetch_related("answers"))
+    if len(pool) < MIN_DRAW:
+        return []
+    seen, wrong = set(), set()
+    if user.is_authenticated:
+        history = QuizAnswer.objects.filter(
+            attempt__user=user, question__in=pool, marks_awarded__isnull=False
+        ).order_by("-attempt__completed_at", "-id").values_list("question_id", "is_correct")
+        for question_id, is_correct in history:
+            if question_id not in seen and not is_correct:
+                wrong.add(question_id)
+            seen.add(question_id)
+    random.shuffle(pool)
+    pool.sort(key=lambda q: 0 if q.id not in seen else 1 if q.id in wrong else 2)  # stable: shuffle kept within a group
+    chosen = pool[: draw_size(quiz)]
+    if quiz.shuffle_questions:
+        random.shuffle(chosen)
+    return [SimpleNamespace(question=question) for question in chosen]
+
+
+def attach_draw_counts(quizzes):
+    """Set question_count on auto-draw quizzes (they have no fixed question rows) for listings."""
+    for quiz in quizzes:
+        if quiz.auto_draw:
+            pool = eligible_questions(quiz.topic, quiz.lesson, quiz.difficulty or "medium", quiz.pathway).count()
+            quiz.question_count = min(pool, draw_size(quiz)) if pool >= MIN_DRAW else 0
 
 
 def generate_lesson_quizzes(topic, lesson, counts, pathway="", allow_partial=False):
@@ -92,15 +144,7 @@ def generate_lesson_quizzes(topic, lesson, counts, pathway="", allow_partial=Fal
     for difficulty in FORMATS_BY_DIFFICULTY:
         if difficulty not in counts:
             continue
-        questions = Question.objects.filter(
-            topic=topic,
-            lesson=lesson,
-            is_active=True,
-            difficulty=difficulty,
-            format__in=FORMATS_BY_DIFFICULTY[difficulty],
-        )
-        if pathway:
-            questions = questions.filter(**{f"for_{pathway}": True})
+        questions = eligible_questions(topic, lesson, difficulty, pathway)
         picked[difficulty] = list(questions.order_by("?")[: counts[difficulty]])
         if len(picked[difficulty]) < counts[difficulty]:
             shortages.append(f"{difficulty.title()}: {len(picked[difficulty])} of {counts[difficulty]} eligible")
@@ -113,7 +157,7 @@ def generate_lesson_quizzes(topic, lesson, counts, pathway="", allow_partial=Fal
     quizzes = []
     with transaction.atomic():
         for difficulty, questions in picked.items():
-            quiz = Quiz.objects.create(
+            quizzes.append(Quiz.objects.create(
                 subject=lesson.subject,
                 topic=topic,
                 lesson=lesson,
@@ -121,10 +165,7 @@ def generate_lesson_quizzes(topic, lesson, counts, pathway="", allow_partial=Fal
                 difficulty=difficulty,
                 pathway=pathway,
                 is_active=False,
-            )
-            QuizQuestion.objects.bulk_create([
-                QuizQuestion(quiz=quiz, question=question, order=order)
-                for order, question in enumerate(questions)
-            ])
-            quizzes.append(quiz)
+                auto_draw=True,
+                draw_size=len(questions),
+            ))
     return quizzes, shortages

@@ -9,12 +9,12 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.lessons.models import Lesson
-from apps.progress.models import QuizAttempt
+from apps.progress.models import QuizAnswer, QuizAttempt
 from apps.questions.models import Answer, Question
 from apps.subjects.models import Subject, Topic
 
 from apps.quizzes.models import Quiz, QuizQuestion
-from apps.quizzes.services import generate_lesson_quizzes, generate_mock_exam
+from apps.quizzes.services import draw_lesson_questions, eligible_questions, generate_lesson_quizzes, generate_mock_exam
 
 
 class QuizModelTests(TestCase):
@@ -420,8 +420,11 @@ class LessonQuizGeneratorTests(TestCase):
 			for i in range(count)
 		]
 
+	def drawn(self, quiz, user=None):
+		return [qq.question for qq in draw_lesson_questions(user or User.objects.create_user(f"u{User.objects.count()}", password="x"), quiz)]
+
 	def formats(self, quiz):
-		return set(quiz.questions.values_list("format", flat=True))
+		return {question.format for question in self.drawn(quiz)}
 
 	def test_each_difficulty_gets_only_its_allowed_formats(self):
 		easy = self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 3)
@@ -429,12 +432,13 @@ class LessonQuizGeneratorTests(TestCase):
 		self.make("medium", Question.FORMAT_TRUE_FALSE, 2)
 		self.make("medium", Question.FORMAT_SHORT_ANSWER, 2)
 		self.make("medium", Question.FORMAT_MATCHING, 2)  # not allowed in medium
-		self.make("hard", Question.FORMAT_WORDED, 2)
+		self.make("hard", Question.FORMAT_WORDED, 3)
 		self.make("hard", Question.FORMAT_MULTIPLE_CHOICE, 2)  # not allowed in hard
-		quizzes, shortages = generate_lesson_quizzes(self.topic, self.lesson, {"easy": 3, "medium": 4, "hard": 2})
+		quizzes, shortages = generate_lesson_quizzes(self.topic, self.lesson, {"easy": 3, "medium": 4, "hard": 3})
 		by_difficulty = {quiz.difficulty: quiz for quiz in quizzes}
 		self.assertEqual(shortages, [])
-		self.assertEqual(set(by_difficulty["easy"].questions.all()), set(easy))
+		self.assertEqual(set(self.drawn(by_difficulty["easy"])), set(easy))
+		self.assertTrue(all(quiz.auto_draw for quiz in quizzes))
 		self.assertEqual(self.formats(by_difficulty["medium"]), {Question.FORMAT_TRUE_FALSE, Question.FORMAT_SHORT_ANSWER})
 		self.assertEqual(self.formats(by_difficulty["hard"]), {Question.FORMAT_WORDED})
 		for quiz in quizzes:
@@ -443,13 +447,13 @@ class LessonQuizGeneratorTests(TestCase):
 			quiz.full_clean()
 
 	def test_filters_by_lesson_pathway_and_active_and_never_duplicates(self):
-		wanted = self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 2, for_guided=True)
+		wanted = self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 3, for_guided=True)
 		self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 2, lesson=self.other_lesson)
 		self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 2, for_guided=False)
 		self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 2, is_active=False)
-		(quiz,), _ = generate_lesson_quizzes(self.topic, self.lesson, {"easy": 2}, pathway="guided")
+		(quiz,), _ = generate_lesson_quizzes(self.topic, self.lesson, {"easy": 3}, pathway="guided")
 		self.assertEqual(quiz.pathway, "guided")
-		self.assertEqual(sorted(quiz.questions.values_list("pk", flat=True)), sorted(q.pk for q in wanted))
+		self.assertEqual(sorted(q.pk for q in self.drawn(quiz)), sorted(q.pk for q in wanted))
 
 	def test_shortage_raises_with_counts_unless_partial_allowed(self):
 		self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 2)
@@ -460,7 +464,7 @@ class LessonQuizGeneratorTests(TestCase):
 		quizzes, shortages = generate_lesson_quizzes(
 			self.topic, self.lesson, {"easy": 5, "medium": 2, "hard": 3}, allow_partial=True
 		)
-		self.assertEqual([quiz.quiz_questions.count() for quiz in quizzes], [2, 1])  # medium has none, so skipped
+		self.assertEqual([quiz.draw_size for quiz in quizzes], [2, 1])  # medium has none, so skipped
 		self.assertEqual(len(shortages), 3)
 
 	def test_rejects_topic_from_another_subject(self):
@@ -471,7 +475,7 @@ class LessonQuizGeneratorTests(TestCase):
 	def test_failure_mid_creation_rolls_back_every_quiz(self):
 		self.make("easy", Question.FORMAT_MULTIPLE_CHOICE)
 		self.make("hard", Question.FORMAT_WORDED)
-		real = QuizQuestion.objects.bulk_create
+		real = Quiz.objects.create
 		calls = []
 
 		def fail_second(*args, **kwargs):
@@ -480,11 +484,10 @@ class LessonQuizGeneratorTests(TestCase):
 				raise RuntimeError("boom")
 			return real(*args, **kwargs)
 
-		with mock.patch.object(QuizQuestion.objects, "bulk_create", side_effect=fail_second):
+		with mock.patch.object(Quiz.objects, "create", side_effect=fail_second):
 			with self.assertRaises(RuntimeError):
 				generate_lesson_quizzes(self.topic, self.lesson, {"easy": 1, "hard": 1})
 		self.assertFalse(Quiz.objects.exists())
-		self.assertFalse(QuizQuestion.objects.exists())
 
 	def test_unshuffled_quiz_keeps_set_order(self):
 		questions = self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 6)
@@ -496,3 +499,64 @@ class LessonQuizGeneratorTests(TestCase):
 		page = self.client.get(reverse("quizzes:detail", args=[quiz.id])).content.decode()
 		positions = [page.index(f"easy multiple_choice {i}<") for i in reversed(range(6))]
 		self.assertEqual(positions, sorted(positions))
+
+
+class AutoDrawTests(TestCase):
+	"""Draws come from the whole lesson bank, favour unseen questions, and are scored from the signed set."""
+
+	def setUp(self):
+		self.subject = Subject.objects.create(name="Information Technology", code="IT")
+		self.topic = Topic.objects.create(subject=self.subject, name="Hardware", slug="hardware")
+		self.lesson = Lesson.objects.create(subject=self.subject, title="Memory", slug="memory", content="<p>RAM</p>")
+		self.user = User.objects.create_user("draw", password="x")
+		self.questions = self.make("easy", Question.FORMAT_MULTIPLE_CHOICE, 6)
+		for question in self.questions:
+			Answer.objects.create(question=question, text="right", is_correct=True)
+			Answer.objects.create(question=question, text="wrong")
+		self.quiz = Quiz.objects.create(
+			subject=self.subject, topic=self.topic, lesson=self.lesson, title="Auto", difficulty="easy",
+			auto_draw=True, draw_size=3,
+		)
+
+	def make(self, difficulty, fmt, count=1):
+		return [
+			Question.objects.create(
+				subject=self.subject, topic=self.topic, lesson=self.lesson, text=f"{difficulty} {fmt} {i}",
+				difficulty=difficulty, format=fmt, expected_answer="x",
+			)
+			for i in range(count)
+		]
+
+	def drawn(self, quiz, user):
+		return [qq.question for qq in draw_lesson_questions(user, quiz)]
+
+	def test_draw_has_the_requested_size_and_unseen_questions_come_first(self):
+		attempt = QuizAttempt.objects.create(user=self.user, quiz=self.quiz, total_questions=3, total_marks=3, score=3, completed_at=timezone.now())
+		for question in self.questions[:3]:
+			QuizAnswer.objects.create(attempt=attempt, question=question, is_correct=True, marks_awarded=1)
+		for _ in range(10):
+			self.assertEqual({q.pk for q in self.drawn(self.quiz, self.user)}, {q.pk for q in self.questions[3:]})
+
+	def test_bank_smaller_than_the_minimum_is_not_offered(self):
+		Question.objects.filter(pk__in=[q.pk for q in self.questions[2:]]).update(is_active=False)
+		self.assertEqual(self.drawn(self.quiz, self.user), [])
+
+	def test_quiz_page_signs_the_draw_and_submit_scores_only_that_set(self):
+		self.quiz.is_active = True
+		self.quiz.save()
+		self.client.force_login(self.user)
+		page = self.client.get(reverse("quizzes:detail", args=[self.quiz.id]))
+		self.assertContains(page, 'name="drawn"')
+		token = page.context["quizzes"][0].draw_token
+		shown = [qq.question for qq in page.context["quizzes"][0].question_list]
+		self.client.post(reverse("progress:submit-quiz", args=[self.quiz.id]), {"drawn": token})
+		attempt = QuizAttempt.objects.get(user=self.user)
+		self.assertEqual({a.question_id for a in attempt.answers.all()}, {q.pk for q in shown})
+
+	def test_submit_rejects_a_missing_or_tampered_draw(self):
+		self.quiz.is_active = True
+		self.quiz.save()
+		self.client.force_login(self.user)
+		self.client.post(reverse("progress:submit-quiz", args=[self.quiz.id]), {"drawn": "forged"})
+		self.client.post(reverse("progress:submit-quiz", args=[self.quiz.id]), {})
+		self.assertFalse(QuizAttempt.objects.exists())

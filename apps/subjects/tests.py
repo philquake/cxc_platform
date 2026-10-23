@@ -5,7 +5,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.lessons.models import Lesson
-from apps.progress.models import LessonProgress, QuizAttempt
+from apps.progress.models import LessonProgress, QuizAnswer, QuizAttempt
+from apps.questions.models import Question
 from apps.quizzes.models import Quiz
 from apps.subjects.lookup import get_subject_or_404
 from apps.subjects.models import Subject, Topic
@@ -234,6 +235,41 @@ class LessonMasteryTests(TestCase):
         self.assertEqual(unit["lessons"][0].mastery_level, "proficient")
         self.assertEqual(unit["lessons"][0].mastery_step, 3)
         self.assertEqual(response.context["mastered_total"], 1)
+
+
+class MasteryCoverageTests(TestCase):
+    """A perfect score only counts as far as the student has seen the lesson's question bank."""
+
+    def level(self, seen, difficulty="medium", bank=10):
+        user = User.objects.create_user(f"coverage{seen}{difficulty}", password="pw")
+        Subject.objects.all().delete()  # each call builds its own course
+        subject = Subject.objects.create(name="Mathematics", code="MATH")
+        topic = Topic.objects.create(subject=subject, name="Number", slug="number")
+        lesson = Lesson.objects.create(subject=subject, title="Number sense", slug="number-sense", content="x")
+        quiz = Quiz.objects.create(subject=subject, topic=topic, lesson=lesson, title="Q", difficulty=difficulty)
+        questions = [
+            Question.objects.create(subject=subject, topic=topic, lesson=lesson, text=f"Q{i}", explanation="e")
+            for i in range(bank)
+        ]
+        attempt = QuizAttempt.objects.create(
+            user=user, quiz=quiz, score=seen, total_questions=seen, total_marks=seen, completed_at=timezone.now()
+        )
+        for question in questions[:seen]:
+            QuizAnswer.objects.create(attempt=attempt, question=question, is_correct=True, marks_awarded=1)
+        self.client.force_login(user)
+        response = self.client.get(reverse("subjects:detail", kwargs={"slug": "mathematics"}))
+        lesson = response.context["units"][0]["lessons"][0]
+        return lesson.mastery_level, (lesson.coverage_seen, lesson.coverage_total)
+
+    def test_coverage_thresholds_cap_the_level(self):
+        self.assertEqual(self.level(3), ("familiar", (3, 10)))      # under 40%
+        self.assertEqual(self.level(4), ("proficient", (4, 10)))    # 40% to 69%
+        self.assertEqual(self.level(6), ("proficient", (6, 10)))
+        self.assertEqual(self.level(7), ("mastered", (7, 10)))      # 70% and up
+
+    def test_mastered_needs_a_score_on_a_quiz_that_is_not_easy(self):
+        self.assertEqual(self.level(10, difficulty="easy")[0], "proficient")
+        self.assertEqual(self.level(10, difficulty="hard")[0], "mastered")
 
 
 class SubjectSlugTests(TestCase):

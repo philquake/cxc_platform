@@ -6,7 +6,7 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/subjects.css' %}">
 <link rel="stylesheet" href="{% static 'css/quizzes.css' %}">
-<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.2">
 {% endblock %}
 
 {% block content %}
@@ -93,7 +93,6 @@
     {% if subject %}
         <a href="{% url 'quizzes:list' %}" class="content-back">&larr; All quizzes</a>
         <header class="content-header">
-            <span class="content-card-label">{{ subject.code }}{% if topic %} / {{ topic.name }}{% endif %} quizzes</span>
             <h1>{% if topic %}{{ topic.name }} quizzes{% else %}{{ subject.name }} quizzes{% endif %}</h1>
             {% if subject.description %}<p>{{ subject.description }}</p>{% endif %}
             {% if topic.description %}<p>{{ topic.description }}</p>{% endif %}
@@ -109,8 +108,7 @@
         </header>
     {% else %}
         <header class="content-header">
-            <span class="content-card-label">Practice</span>
-            <h1>Practice quizzes</h1>
+            <h1>Practice quizzes for CSEC and CAPE</h1>
             <p>Check what you remember after a lesson. You get an explanation for every answer you miss.</p>
         </header>
     {% endif %}
@@ -125,8 +123,8 @@
                 {% endif %}
                 <div class="quiz-card-heading">
                     <div>
-                        <span class="content-card-label">{{ quiz.subject.code }}{% if quiz.topic %} / {{ quiz.topic.name }}{% elif quiz.is_mock %} / mock exam{% endif %}</span>
                         <h2>{{ quiz.title }}</h2>
+                        <span class="content-card-label">{{ quiz.subject.code }}{% if quiz.topic %} / {{ quiz.topic.name }}{% elif quiz.is_mock %} / mock exam{% endif %}</span>
                     </div>
                     <span class="quiz-card-meta">
                         {% if quiz.is_mock %}

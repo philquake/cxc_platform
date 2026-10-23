@@ -1,23 +1,23 @@
 :root {
-  /* Palette: navy #365C81, apricot #E4A16A, sky #A8C9DE, warm white #F6F3ED */
+  /* Palette: navy #365C81, apricot #F0B429, sky #A8C9DE, warm white #F2F6F9 */
   --color-navy: #365c81;
   --color-navy-deep: #274566;
   --color-sky: #a8c9de;
   --color-sky-bg: #e4eef5;
 
   --color-bg-header: #365c81;   /* navbar + footer surface */
-  --color-bg-body: #f6f3ed;
-  --color-bg-inset: #ece8de;    /* wells, tracks, table heads */
-  --color-panel: #fdfbf7;
-  --color-panel-border: #dcd6c8;
-  --color-panel-hover: #efebe1;
+  --color-bg-body: #f2f6f9;
+  --color-bg-inset: #e6edf2;    /* wells, tracks, table heads */
+  --color-panel: #ffffff;
+  --color-panel-border: #d3dde5;
+  --color-panel-hover: #e9eff4;
   --color-control-border: #6f8397;
 
-  /* Apricot: fills (buttons, XP, focus). Use accent-ink for apricot-toned text. */
-  --color-accent: #e4a16a;
-  --color-accent-hover: #d98f50;
-  --color-accent-dim: #c4803f;
-  --color-accent-ink: #94521b;
+  /* Gold: fills (buttons, XP, focus). Use accent-ink for gold-toned text. */
+  --color-accent: #f0b429;
+  --color-accent-hover: #d9a01e;
+  --color-accent-dim: #b8860b;
+  --color-accent-ink: #7a5a00;
   --color-on-accent: #1e3550;
 
   /* Streaks and difficulty */
@@ -30,7 +30,7 @@
 
   --color-white: #1e3550;       /* strongest text (headings) */
   --color-text: #2a4059;
-  --color-text-muted: #4b6177;
+  --color-text-muted: #3f566d;
   --color-text-faint: #5c6e82;
 
   --color-correct: #2b7a60;
@@ -58,6 +58,7 @@
 
 body {
   margin: 0;
+  font-size: 1rem;
   min-width: 320px;
   background: var(--color-bg-body);
   font-family: var(--font-body);

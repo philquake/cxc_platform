@@ -291,3 +291,30 @@ body :is(.btn, .btn-accent, .btn-ghost, .btn-primary-lg, .btn-outline-lg, .btn-o
   .course-card, a.content-card, .lesson-link { transition: transform 200ms var(--ease-out), background var(--transition-fast), border-color var(--transition-fast); }
   .course-card:hover, a.content-card:hover, .lesson-link:hover { transform: translateY(-2px); }
 }
+
+/* ---------- page motion: content rises in on load, pages cross-fade ---------- */
+/* Animation only (fill "backwards"), so hover transforms still work afterwards and nothing stays hidden. */
+:is(.progress-header, .progress-block, .progress-stat, .progress-metric, .progress-subject, .content-header,
+.content-column, .legal-section, .profile-panel, .mastery-panel, .quiz-card, .course-card, a.content-card, .unit, .card) {
+  animation: rise-in 520ms var(--ease-out) backwards;
+}
+:is(.progress-stat, .progress-metric, .progress-subject, .legal-section, .quiz-card, .course-card, a.content-card, .unit, .card):nth-child(2) { animation-delay: 60ms; }
+:is(.progress-stat, .progress-metric, .progress-subject, .legal-section, .quiz-card, .course-card, a.content-card, .unit, .card):nth-child(3) { animation-delay: 120ms; }
+:is(.progress-stat, .progress-metric, .progress-subject, .legal-section, .quiz-card, .course-card, a.content-card, .unit, .card):nth-child(4) { animation-delay: 180ms; }
+:is(.progress-stat, .progress-metric, .progress-subject, .legal-section, .quiz-card, .course-card, a.content-card, .unit, .card):nth-child(n+5) { animation-delay: 240ms; }
+@keyframes rise-in { from { opacity: 0; transform: translateY(14px); } }
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+
+/* feedback: chips and answer options respond to hover, focus and press */
+@media (hover: hover) and (pointer: fine) {
+  .topic-links a, .quiz-card label, .q-option, .stepper-dot { transition: transform 160ms var(--ease-out), background var(--transition-fast), border-color var(--transition-fast); }
+  .topic-links a:hover, .quiz-card label:hover { transform: translateY(-1px); }
+}
+.topic-links a:active, .quiz-card label:active { transform: scale(0.98); }
+/* the page title and its lead sentence rise in one after the other */
+:is(.content-header, .learn-band .learn-wrap, .lesson-head) > :is(h1, p, nav) { animation: rise-in 520ms var(--ease-out) backwards; }
+:is(.content-header, .learn-band .learn-wrap, .lesson-head) > p { animation-delay: 80ms; }
+:is(.content-header, .learn-band .learn-wrap) > :is(.band-actions, .topic-links, .search-form) { animation: rise-in 520ms var(--ease-out) 160ms backwards; }

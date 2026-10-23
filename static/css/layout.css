@@ -68,14 +68,14 @@
 .progress-topic-label {
   display: inline-block;
   color: var(--color-accent-ink);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
 }
 
 .progress-stat-label {
   display: block;
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
 }
 

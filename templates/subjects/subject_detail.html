@@ -7,7 +7,7 @@
 {% block adsense %}{% include "_adsense.html" %}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.2">
 {% endblock %}
 
 {% block content %}
@@ -15,7 +15,7 @@
     <div class="learn-wrap">
         <nav class="crumbs" aria-label="Breadcrumb"><a href="{% url 'subjects:list' %}">Courses</a> <span aria-hidden="true">/</span> <span>{{ subject.code }}</span></nav>
         <h1>{{ subject.name }}</h1>
-        {% if subject.description %}<p>{{ subject.description }}</p>{% endif %}
+        <p>{% if subject.description %}{{ subject.description }}{% else %}{{ subject.code }} course: lessons, quizzes and flashcards.{% endif %}</p>
         {% if next_lesson %}
         <div class="band-actions">
             <a class="btn-primary-lg" href="{% url 'subjects:lesson-detail' subject.slug next_lesson.slug %}">{% if lesson_done %}Continue: {{ next_lesson.title }}{% else %}Start: {{ next_lesson.title }}{% endif %}</a>

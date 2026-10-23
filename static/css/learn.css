@@ -44,11 +44,11 @@
 
 .crumbs {
   margin-bottom: 14px;
-  color: var(--color-sky);
-  font-size: 15px;
+  color: var(--color-sky-bg);
+  font-size: 16px;
 }
 
-.crumbs a { color: var(--color-sky); }
+.crumbs a { color: var(--color-sky-bg); }
 .crumbs a:hover { color: #fff; }
 .crumbs span[aria-hidden] { margin: 0 4px; }
 
@@ -141,7 +141,7 @@
 .course-code { color: var(--color-text-muted); font-size: 14px; font-weight: 600; }
 .course-name { color: var(--color-white); font-size: 1.375rem; font-weight: 800; line-height: 1.2; letter-spacing: -0.01em; }
 .course-text { color: var(--color-text-muted); font-size: 1rem; line-height: 1.55; }
-.course-foot { margin-top: auto; padding-top: 8px; color: var(--color-accent-ink); font-size: 15px; font-weight: 700; }
+.course-foot { margin-top: auto; padding-top: 8px; color: var(--color-accent-ink); font-size: 16px; font-weight: 700; }
 .learn-empty { color: var(--color-text); font-size: 1.0625rem; }
 
 /* ---------- progress bars ---------- */
@@ -195,7 +195,7 @@
 
 .unit-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .unit-title { color: var(--color-white); font-size: 1.1875rem; font-weight: 800; line-height: 1.25; }
-.unit-count { color: var(--color-text-muted); font-size: 15px; }
+.unit-count { color: var(--color-text-muted); font-size: 16px; }
 
 .chev {
   grid-column: 3;
@@ -273,10 +273,10 @@
 
 .mastery-panel h2 { margin: 0 0 8px; color: var(--color-white); font-size: 1.125rem; font-weight: 800; }
 .mastery-big { margin: 0 0 8px; color: var(--color-reef); font-size: 3rem; font-weight: 800; line-height: 1; }
-.mastery-sub { margin: 12px 0 0; color: var(--color-text-muted); font-size: 15px; line-height: 1.5; }
+.mastery-sub { margin: 12px 0 0; color: var(--color-text-muted); font-size: 16px; line-height: 1.5; }
 
 .legend { display: grid; gap: 8px 12px; margin: 20px 0 0; padding-top: 16px; border-top: 1px solid var(--color-panel-border); }
-.legend dt { display: flex; align-items: center; gap: 10px; color: var(--color-white); font-size: 15px; font-weight: 700; }
+.legend dt { display: flex; align-items: center; gap: 10px; color: var(--color-white); font-size: 16px; font-weight: 700; }
 .legend dd { margin: -4px 0 4px; padding-left: 71px; color: var(--color-text-muted); font-size: 14px; }
 
 /* ---------- lesson reader ---------- */
@@ -317,7 +317,7 @@ body:has(.lesson-bar) { padding-bottom: 72px; }
   color: var(--color-text);
   border-left: 4px solid transparent;
   border-radius: 0 8px 8px 0;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.35;
   text-decoration: none;
 }
@@ -343,8 +343,8 @@ body:has(.lesson-bar) { padding-bottom: 72px; }
   letter-spacing: -0.02em;
 }
 
-.lesson-crumb { margin: 0 0 8px; color: var(--color-text-muted); font-size: 15px; font-weight: 600; }
-.lesson-count { margin: 0 0 28px; color: var(--color-text-muted); font-size: 15px; }
+.lesson-crumb { margin: 0 0 8px; color: var(--color-text-muted); font-size: 16px; font-weight: 600; }
+.lesson-count { margin: 0 0 28px; color: var(--color-text-muted); font-size: 16px; }
 
 .lesson-main .lesson-content { max-width: none; }
 
@@ -378,7 +378,7 @@ body:has(.lesson-bar) { padding-bottom: 72px; }
 .practice-icon { display: grid; place-items: center; width: 40px; height: 40px; color: var(--color-on-accent); background: var(--color-accent); border-radius: 10px; font-size: 20px; font-weight: 800; }
 .practice-text strong { display: block; color: var(--color-white); font-size: 1.0625rem; }
 .practice-text small { color: var(--color-text-muted); font-size: 14px; }
-.practice-go { color: var(--color-navy); font-size: 15px; font-weight: 700; }
+.practice-go { color: var(--color-navy); font-size: 16px; font-weight: 700; }
 
 /* bottom bar: previous, complete, next */
 .lesson-bar {
@@ -501,7 +501,7 @@ body:has(.lesson-bar) { padding-bottom: 72px; }
 .stepper-top { margin-top: 20px; }
 .stepper-bar { height: 10px; overflow: hidden; background: var(--color-bg-inset); border-radius: 999px; }
 .stepper-bar span { display: block; height: 100%; background: var(--color-navy); border-radius: 999px; transition: width 250ms ease; }
-.stepper-label { margin: 10px 0 8px; color: var(--color-text-muted); font-size: 15px; font-weight: 600; }
+.stepper-label { margin: 10px 0 8px; color: var(--color-text-muted); font-size: 16px; font-weight: 600; }
 .stepper-map { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .stepper-dot {

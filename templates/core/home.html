@@ -5,8 +5,8 @@
 {% block adsense %}{% include "_adsense.html" %}{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
-    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=13.0">
+    <link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.2">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=14.1">
 {% endblock %}
 
 {% block content %}
@@ -42,6 +42,7 @@
                     <p class="q-why">A modem modulates digital data into an analogue signal to send it, and demodulates it at the other end. The name is short for modulator-demodulator. A router forwards packets between networks; switches and hubs connect devices inside one network.</p>
                     <button type="button" class="q-next">Try again</button>
                 </div>
+                <span class="q-saved chip" aria-hidden="true">Saved to your flashcards</span>
                 <p class="q-meta">A real CSEC IT question. Pick an answer.</p>
             </form>
         </div>
@@ -113,6 +114,13 @@
         <div class="learn-wrap">
             <h2 id="close-title" data-reveal>Start with one lesson.</h2>
             <p>Your progress, streak and readiness score update as you study. It is free to start.</p>
+            {% if lesson_max %}
+            <form class="countdown" data-lessons="{{ lesson_max }}" hidden>
+                <label for="exam-date">When is your exam?</label>
+                <input id="exam-date" type="date">
+                <p class="countdown-out" role="status" aria-live="polite"></p>
+            </form>
+            {% endif %}
             {% if user.is_authenticated %}
                 <a href="{% url 'progress:dashboard' %}" class="btn-primary-lg">Go to your progress</a>
             {% else %}
@@ -122,5 +130,5 @@
     </section>
 
 </div>
-<script src="{% static 'js/home.js' %}?v=3.0" defer></script>
+<script src="{% static 'js/home.js' %}?v=4.0" defer></script>
 {% endblock %}

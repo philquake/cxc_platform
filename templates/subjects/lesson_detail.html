@@ -6,9 +6,9 @@
 {% block adsense %}{% include "_adsense.html" %}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/subjects.css' %}?v=9.0">
+<link rel="stylesheet" href="{% static 'css/subjects.css' %}?v=9.2">
 <link rel="stylesheet" href="{% static 'css/quizzes.css' %}">
-<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.1">
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.2">
 {% endblock %}
 
 {% block content %}
@@ -35,9 +35,8 @@
 
     <div class="lesson-main lesson-page">
         <header class="lesson-head">
-            <p class="lesson-crumb">{{ subject.code }}{% if lesson.section_title %}, {{ lesson.section_title }}{% endif %}</p>
             <h1>{{ lesson.title }}</h1>
-            {% if lesson_position %}<p class="lesson-count">Lesson {{ lesson_position }} of {{ lesson_total }}</p>{% endif %}
+            <p class="lesson-count">{{ subject.code }}{% if lesson.section_title %}, {{ lesson.section_title }}{% endif %}{% if lesson_position %} · Lesson {{ lesson_position }} of {{ lesson_total }}{% endif %}</p>
         </header>
 
         <article class="lesson-content">

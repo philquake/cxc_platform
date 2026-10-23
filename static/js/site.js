@@ -1,5 +1,9 @@
 (function () {
 	"use strict";
+	/* Content below the first screen rises in as it scrolls into view, on every page. */
+	Array.prototype.forEach.call(document.querySelectorAll(".quiz-card, .progress-block, .progress-subject, .legal-section, a.content-card, .lesson-content h2, .lesson-content h3, .lesson-content img, .lesson-content table, .lesson-content blockquote, .unit"), function (el) {
+		if (!el.hasAttribute("data-reveal") && el.getBoundingClientRect().top > window.innerHeight) { el.setAttribute("data-reveal", ""); }
+	});
 	var targets = document.querySelectorAll("[data-reveal]");
 	var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 	if (!("IntersectionObserver" in window) || reduce) {

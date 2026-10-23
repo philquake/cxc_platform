@@ -99,6 +99,23 @@
 
 .q-next:hover { background: var(--color-sky-bg); border-color: var(--color-navy); }
 
+/* a wrong answer shakes once and is filed as a flashcard; the headline rises in word by word */
+.q { position: relative; }
+.q-saved { display: none; position: absolute; top: -14px; right: 20px; }
+.q.is-wrong .q-saved { display: inline-block; animation: chip-in 420ms var(--ease-out) both; }
+.q.is-wrong { animation: q-shake 360ms var(--ease-out); }
+@keyframes q-shake { 20% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 80% { transform: translateX(-2px); } }
+@keyframes chip-in { from { opacity: 0; transform: translateY(10px) scale(0.85); } }
+.js .hero h1 .w { display: inline-block; animation: word-up 640ms var(--ease-out) both; animation-delay: calc(var(--i) * 60ms); }
+@keyframes word-up { from { opacity: 0; transform: translateY(0.4em); } }
+
+/* exam countdown */
+.countdown { max-width: 34rem; margin: 0 0 24px; }
+.countdown label { display: block; margin: 0 0 8px; color: #fff; font-weight: 700; }
+.countdown input { min-height: 48px; padding: 0 14px; color: var(--color-text); background: var(--color-panel); border: 2px solid var(--color-panel-border); border-radius: 10px; font: inherit; font-size: 1.0625rem; }
+.close .countdown-out { margin: 12px 0 0; color: var(--color-sky); font-weight: 700; }
+.close .countdown-out:empty { display: none; }
+
 /* sections */
 .block { padding: 72px 0; }
 .block > h2,
@@ -126,7 +143,7 @@
 .loop-art .bar { max-width: 140px; }
 .loop-art .meter i { width: 18px; height: 18px; }
 
-.chip { padding: 4px 12px; color: var(--color-accent-ink); background: #fbe9d8; border: 1px solid var(--color-accent); border-radius: 999px; font-size: 14px; font-weight: 700; }
+.chip { padding: 4px 12px; color: var(--color-accent-ink); background: #fdf1cf; border: 1px solid var(--color-accent); border-radius: 999px; font-size: 14px; font-weight: 700; }
 
 .mastery-demo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 30rem); gap: 48px; align-items: center; }
 .mastery-demo h2 { margin-bottom: 12px; }
@@ -159,4 +176,6 @@
   .q { padding: 18px; }
   .demo-rows li { padding: 8px 16px; }
   .hero .band-actions a { width: 100%; }
+  .countdown input { width: 100%; }
+  .q-saved { right: 12px; }
 }

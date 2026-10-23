@@ -7,17 +7,17 @@
 
 /* ---------- Tokens ---------- */
 html:root {
-  --background: #f6f3ed;
+  --background: #f2f6f9;
   --foreground: #1e3550;
-  --card: #fdfbf7;
+  --card: #ffffff;
   --card-foreground: #1e3550;
-  --popover: #fdfbf7;
-  --muted: #ece8de;
+  --popover: #ffffff;
+  --muted: #e6edf2;
   --muted-foreground: #4b6177;
   --accent-bg: #e4eef5;
   --accent-foreground: #1e3550;
   --primary-token: #365c81;
-  --primary-foreground: #f6f3ed;
+  --primary-foreground: #f2f6f9;
   --secondary-token: #e4eef5;
   --secondary-foreground: #1e3550;
   --destructive: #dc2626;
@@ -29,11 +29,11 @@ html:root {
   --success-soft: #f0fdf4;
   --info: #365c81;
   --info-soft: #e4eef5;
-  --border: #dcd6c8;
-  --input: #dcd6c8;
+  --border: #d3dde5;
+  --input: #d3dde5;
   --ring: #a8c9de;
-  --sidebar: #efebe1;
-  --brand: #e4a16a;
+  --sidebar: #e9eff4;
+  --brand: #f0b429;
   --radius: 0.625rem;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

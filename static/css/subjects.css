@@ -333,7 +333,7 @@
     }
 
     .lesson-body {
-        font-size: 15px;
+        font-size: 16px;
         overflow-wrap: anywhere;
     }
 
@@ -344,16 +344,25 @@
         max-width: 100%;
     }
 
+    /* Tables shrink to the screen: columns share the width and long words wrap, so nothing scrolls sideways. */
     .lesson-body figure.table {
-        display: block;
-        overflow-x: auto;
         margin-left: 0;
         margin-right: 0;
+        width: 100% !important;
     }
 
-    .lesson-body figure.table table {
-        min-width: 560px;
-        width: max-content;
+    .lesson-body table {
+        width: 100% !important;
+        table-layout: fixed;
+        font-size: 14px;
+    }
+
+    .lesson-body th,
+    .lesson-body td {
+        width: auto !important;
+        padding: 6px 8px;
+        overflow-wrap: anywhere;
+        hyphens: auto;
     }
 
     .lesson-body p,
@@ -482,7 +491,7 @@
 
 .lesson-pager-direction {
     color: var(--color-text-muted);
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .lesson-pager-title {

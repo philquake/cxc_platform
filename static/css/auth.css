@@ -1,15 +1,15 @@
 /* Auth pages: standalone. A form on the warm ground, what you get on a navy field. */
 :root {
-    --auth-bg: #f6f3ed;
-    --auth-panel: #fdfbf7;
-    --auth-inset: #ece8de;
+    --auth-bg: #f2f6f9;
+    --auth-panel: #ffffff;
+    --auth-inset: #e6edf2;
     --auth-field: #274566;
     --auth-text: #2a4059;
     --auth-strong: #1e3550;
     --auth-muted: #3a5068;
-    --auth-accent: #e4a16a;
-    --auth-accent-hover: #d98f50;
-    --auth-accent-ink: #94521b;
+    --auth-accent: #f0b429;
+    --auth-accent-hover: #d9a01e;
+    --auth-accent-ink: #7a5a00;
     --auth-on-accent: #1e3550;
     --auth-danger: #b3402f;
     --auth-control: #6f8397;
@@ -123,11 +123,11 @@ h1 { font-size: clamp(2.75rem, 7vw, 4.5rem); }
     justify-content: flex-end;
     gap: 48px;
     padding: 64px var(--gutter) 48px;
-    color: #f6f3ed;
+    color: #f2f6f9;
     background: var(--auth-field);
 }
 
-.auth-aside h2 { color: #f6f3ed; font-size: clamp(3rem, 6vw, 6rem); }
+.auth-aside h2 { color: #f2f6f9; font-size: clamp(3rem, 6vw, 6rem); }
 .auth-aside ul { display: grid; gap: 24px; max-width: 34rem; margin: 0; padding: 0; list-style: none; }
 .auth-aside li { display: grid; gap: 4px; }
 .auth-aside strong { font-size: 19px; }
@@ -184,3 +184,7 @@ h1 { font-size: clamp(2.75rem, 7vw, 4.5rem); }
     .auth-panel { justify-content: flex-start; }
     .logo { margin-bottom: 40px; }
 }
+
+.auth-panel { animation: auth-rise 520ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) backwards; }
+@keyframes auth-rise { from { opacity: 0; transform: translateY(14px); } }
+@media (prefers-reduced-motion: reduce) { .auth-panel { animation: none; } }

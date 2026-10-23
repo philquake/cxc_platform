@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -9,6 +10,8 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.test import TestCase, override_settings
 from django.urls import reverse
+
+from .models import Profile
 
 
 class AccountFlowTests(TestCase):
@@ -284,13 +287,6 @@ class SignupAbuseTests(TestCase):
 		self.assertContains(response, "already exists")
 		self.assertFalse(get_user_model().objects.filter(username="bot").exists())
 
-	def test_signup_cannot_mail_the_same_address_twice_in_a_row(self):
-		cache.clear()
-		self.client.post(reverse("signup"), self.data)
-		response = self.client.post(reverse("signup"), {**self.data, "username": "bot2"})
-		self.assertContains(response, "Wait a few minutes")
-		self.assertEqual(len(mail.outbox), 1)
-
 	def test_profile_cannot_take_another_accounts_email(self):
 		get_user_model().objects.create_user(username="first", email="Dup@Example.com", password="x")
 		me = get_user_model().objects.create_user(username="me", email="me@example.com", password="x")
@@ -312,6 +308,7 @@ class EmailVerificationTests(TestCase):
 
 	def signup(self):
 		self.client.post(reverse("signup"), self.data)
+		cache.clear()  # signup starts the per-address cooldown; these tests exercise what comes after it
 		return re.search(r"https?://\S+", mail.outbox[-1].body).group(0)
 
 	def test_link_activates_and_signs_in_once(self):
@@ -361,8 +358,25 @@ class EmailVerificationTests(TestCase):
 
 		self.assertEqual([message.to for message in mail.outbox], [["new@example.com"]])
 
+	def test_a_brand_new_unverified_signup_cannot_be_replaced_by_a_stranger(self):
+		self.client.post(reverse("signup"), {**self.data, "email": "typo@exmaple.com"})
+
+		response = self.client.post(reverse("signup"), {**self.data, "email": "other@example.com"})
+
+		self.assertContains(response, "already exists")
+		self.assertEqual(get_user_model().objects.get(username="newstudent").email, "typo@exmaple.com")
+
+	def test_two_accounts_cannot_share_an_email_in_the_database(self):
+		from django.db import IntegrityError, transaction
+
+		get_user_model().objects.create_user(username="a", email="Same@Example.com", password="x")
+
+		with self.assertRaises(IntegrityError), transaction.atomic():
+			get_user_model().objects.create_user(username="b", email="same@example.com", password="x")
+
 	def test_retrying_signup_replaces_an_unverified_account(self):
 		self.client.post(reverse("signup"), {**self.data, "email": "typo@exmaple.com"})
+		Profile.objects.update(created_at=timezone.now() - timedelta(minutes=10))
 
 		response = self.client.post(reverse("signup"), self.data)
 

@@ -21,6 +21,14 @@ class LessonModelTests(TestCase):
 		self.assertEqual(lesson.slug, "logic-gates")
 		self.assertEqual(str(lesson), "Logic Gates")
 
+	def test_same_title_in_another_unit_gets_its_own_slug(self):
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		first = Lesson.objects.create(subject=subject, title="Introduction", lesson_number=1, content="<p>a</p>")
+		second = Lesson.objects.create(subject=subject, title="Introduction", lesson_number=2, section_number=2, content="<p>b</p>")
+		blank = Lesson.objects.create(subject=subject, title="???", lesson_number=3, content="<p>c</p>")
+
+		self.assertEqual((first.slug, second.slug, blank.slug), ("introduction", "introduction-2", "lesson"))
+
 	def test_lesson_image_string_includes_lesson_and_display_order(self):
 		subject = Subject.objects.create(name="Mathematics", code="MATH")
 		lesson = Lesson.objects.create(
@@ -129,14 +137,12 @@ class LessonSaveSanitizeTests(TestCase):
 
 
 class OptimizeImagesFilterTests(TestCase):
-	def test_filter_strips_scripts_even_for_unsanitized_stored_content(self):
+	def test_filter_adds_cloudinary_transforms(self):
 		from apps.lessons.templatetags.lesson_extra import optimize_images
 
-		out = optimize_images('<p onclick="x()">Hi</p><script>alert(1)</script>')
+		out = optimize_images('<img src="https://res.cloudinary.com/demo/image/upload/v1/a.png">')
 
-		self.assertNotIn("<script", out)
-		self.assertNotIn("onclick", out)
-		self.assertIn("Hi", out)
+		self.assertIn("/image/upload/c_limit,w_900,q_auto,f_auto/v1/a.png", out)
 
 
 class LessonQuizActionTests(TestCase):

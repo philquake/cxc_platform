@@ -183,18 +183,23 @@ def _shuffle_questions(quizzes):
             random.shuffle(quiz.question_list)
 
 
+def latest_attempts_by_quiz(user, quizzes):
+    """{quiz_id: the user's most recently completed attempt} for the given quizzes."""
+    latest = {}
+    for attempt in QuizAttempt.objects.filter(
+        user=user,
+        quiz_id__in=[quiz.id for quiz in quizzes],
+        completed_at__isnull=False,
+    ).order_by("-completed_at"):
+        latest.setdefault(attempt.quiz_id, attempt)
+    return latest
+
+
 def _add_latest_attempts(request, quizzes):
     _add_time_limits(request, quizzes)
     if not request.user.is_authenticated:
         return
-    latest_attempts = {}
-    attempts = QuizAttempt.objects.filter(
-        user=request.user,
-        quiz_id__in=[quiz.id for quiz in quizzes],
-        completed_at__isnull=False,
-    ).order_by("-completed_at")
-    for attempt in attempts:
-        latest_attempts.setdefault(attempt.quiz_id, attempt)
+    latest_attempts = latest_attempts_by_quiz(request.user, quizzes)
     for quiz in quizzes:
         quiz.latest_attempt = latest_attempts.get(quiz.id)
 

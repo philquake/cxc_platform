@@ -37,6 +37,7 @@ from .models import (
 	StudyPlanItem,
 	UserProgress,
 	XPTransaction,
+	percent,
 )
 from .study_plan import due_flashcard_count, generate_plan
 
@@ -378,7 +379,7 @@ def finalize_attempt(attempt, update_streak=True):
 	UserProgress.objects.select_for_update().get_or_create(user=attempt.user)
 	previous_best = max(
 		(
-			round(score * 100 / total) if total else 0
+			percent(score, total)
 			for score, total in QuizAttempt.objects.filter(
 				user=attempt.user, quiz=attempt.quiz, completed_at__isnull=False, awaiting_review=False
 			).exclude(pk=attempt.pk).values_list("score", "total_marks")
@@ -431,6 +432,8 @@ def submit_quiz(request, quiz_id):
 		is_active=True,
 		subject__is_active=True,
 	)
+	# Row lock: a double click or second tab waits here, so it sees the first attempt in the check below.
+	UserProgress.objects.select_for_update().get_or_create(user=request.user)
 	# Checks for unmarked answers, not just the flag: deleting a question can leave a flagged attempt with nothing to mark.
 	if QuizAttempt.objects.filter(
 		user=request.user, quiz=quiz, awaiting_review=True, answers__marks_awarded__isnull=True

@@ -3,7 +3,8 @@ from django.db.models import Count, Prefetch, Q
 
 from apps.lessons.models import Lesson
 from apps.quizzes.models import Quiz
-from apps.progress.models import LessonProgress, QuizAttempt
+from apps.progress.models import LessonProgress, QuizAttempt, percent
+from apps.quizzes.views import latest_attempts_by_quiz
 from .lookup import get_subject_or_404
 from .models import Subject
 
@@ -27,7 +28,7 @@ def _lesson_mastery(user, lessons):
             total_marks__gt=0,
         ).values_list("quiz__lesson_id", "score", "total_marks")
         for lesson_id, score, total in rows:
-            best[lesson_id] = max(best.get(lesson_id, 0), round(score * 100 / total))
+            best[lesson_id] = max(best.get(lesson_id, 0), percent(score, total))
     for lesson in lessons:
         lesson.mastery_level, lesson.mastery_label, lesson.mastery_step = "none", "Not started", 0
         if lesson.id in best:
@@ -132,13 +133,7 @@ def lesson_detail(request, subject_slug, lesson_slug):
             lesson=lesson,
             completed=True,
         ).first()
-        latest_attempts = {}
-        for attempt in QuizAttempt.objects.filter(
-            user=request.user,
-            quiz__in=quizzes,
-            completed_at__isnull=False,
-        ).order_by("-completed_at"):
-            latest_attempts.setdefault(attempt.quiz_id, attempt)
+        latest_attempts = latest_attempts_by_quiz(request.user, quizzes)
         for quiz in quizzes:
             quiz.latest_attempt = latest_attempts.get(quiz.id)
 

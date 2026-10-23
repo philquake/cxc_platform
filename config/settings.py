@@ -196,6 +196,8 @@ STORAGES = {
 }
 
 if "test" in sys.argv[:2]:
+    # The default hasher is deliberately slow; tests create many users.
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
     STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
 
 #admin panel customizations

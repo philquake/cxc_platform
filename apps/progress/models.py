@@ -11,6 +11,11 @@ from apps.quizzes.models import Quiz
 from apps.subjects.models import Subject, Topic
 
 
+def percent(score, total):
+    """Whole-number percentage; 0 when nothing was out of marks."""
+    return round(score * 100 / total) if total else 0
+
+
 class UserProgress(models.Model):
     user = models.OneToOneField(
         User,
@@ -106,12 +111,7 @@ class QuizAttempt(models.Model):
 
     @property
     def percentage(self):
-        if self.total_marks == 0:
-            return 0
-
-        return round(
-            (self.score / self.total_marks) * 100
-        )
+        return percent(self.score, self.total_marks)
 
     def __str__(self):
         return f"{self.user.username} - {self.quiz.title}"

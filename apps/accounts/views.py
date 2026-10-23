@@ -11,7 +11,7 @@ from django.core import signing
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -29,6 +29,7 @@ from .models import Profile
 logger = logging.getLogger(__name__)
 EMAIL_LINK_MAX_AGE = 3 * 24 * 60 * 60
 RESEND_COOLDOWN = 5 * 60
+SIGNUP_REPLACE_AFTER = timedelta(minutes=3)
 
 
 def _cooling_down(email):
@@ -79,17 +80,14 @@ def signup(request):
 		return redirect("home")
 	if request.method == "POST":
 		# Unverified signups hold no data, so a retry (say after a mistyped email) replaces them instead of being blocked.
+		# A brand-new one is left alone for a few minutes, so a stranger can't cancel it by posting the same username.
 		taken = Q(pk__in=[])
 		for field in ("username", "email"):
 			if request.POST.get(field, "").strip():
 				taken |= Q(**{f"{field}__iexact": request.POST[field].strip()})
-		_pending_users().filter(taken).delete()
+		_pending_users().filter(taken, profile__created_at__lt=timezone.now() - SIGNUP_REPLACE_AFTER).delete()
 	form = SignupForm(request.POST or None)
 	if request.method == "POST" and form.is_valid():
-		email = form.cleaned_data["email"]
-		if _cooling_down(email):
-			form.add_error("email", "We just sent a link to that address. Wait a few minutes before trying again.")
-			return render(request, "accounts/signup.html", {"form": form, "next": request.GET.get("next", "")})
 		try:
 			# Rolled back if the email fails, so the student can simply sign up again.
 			with transaction.atomic():
@@ -98,9 +96,11 @@ def signup(request):
 				user.save()
 				Profile.objects.create(user=user, awaiting_verification=True)
 				_send_verification(request, user)
+		except IntegrityError:
+			# Lost a race for the same username or email.
+			form.add_error(None, "That username or email was just taken. Try again.")
 		except OSError:
 			logger.exception("Verification email failed at signup")
-			cache.delete(f"email-link:{email.lower()}")
 			form.add_error(None, "We couldn't send the verification email. Check the address and try again.")
 		else:
 			return redirect("verify-email-sent")
@@ -182,9 +182,12 @@ def confirm_email_change(request, token):
 		user_id, old_email, new_email = signing.loads(token, salt="email-change", max_age=EMAIL_LINK_MAX_AGE)
 	except (signing.BadSignature, ValueError):
 		user_id = None
-	updated = user_id is not None and not User.objects.filter(email__iexact=new_email).exists() and User.objects.filter(
-		pk=user_id, email=old_email, is_active=True
-	).update(email=new_email)
+	updated = False
+	if user_id is not None and not User.objects.filter(email__iexact=new_email).exists():
+		try:
+			updated = User.objects.filter(pk=user_id, email=old_email, is_active=True).update(email=new_email)
+		except IntegrityError:
+			pass  # another account took the address between the check and the write
 	if updated:
 		messages.success(request, f"Your email is now {new_email}.")
 	else:

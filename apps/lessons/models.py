@@ -1,5 +1,6 @@
 import nh3
 from django.db import models
+from django.utils.text import slugify
 from django_ckeditor_5.fields import CKEditor5Field
 from apps.subjects.models import Subject
 
@@ -39,8 +40,11 @@ class Lesson(models.Model):
     def save(self, *args, **kwargs):
         self.content = nh3.clean(self.content, attributes=ALLOWED_ATTRIBUTES)
         if not self.slug:
-            from django.utils.text import slugify
-            self.slug = slugify(self.title)
+            base = slugify(self.title) or "lesson"
+            self.slug, n = base, 2
+            # Same title in two units (or a title with no letters) must not hit the unique slug rule.
+            while Lesson.objects.filter(subject_id=self.subject_id, slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug, n = f"{base}-{n}", n + 1
 
         super().save(*args, **kwargs)
 

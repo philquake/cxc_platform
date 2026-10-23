@@ -31,6 +31,26 @@ class CoreViewTests(TestCase):
 		self.assertContains(response, 'id="exam-date"')
 		self.assertEqual(response.context["lesson_max"], 1)
 
+	def test_sitemap_lists_only_public_active_pages(self):
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		hidden = Subject.objects.create(name="Hidden", code="HID", is_active=False)
+		Lesson.objects.create(subject=subject, title="Linear equations", content="Solve")
+		Lesson.objects.create(subject=subject, title="Draft", lesson_number=2, content="x", is_active=False)
+		Lesson.objects.create(subject=hidden, title="Secret", content="x")
+
+		body = self.client.get("/sitemap.xml").content.decode()
+
+		for path in ("/", "/subjects/", "/terms/", "/privacy/", "/subjects/mathematics/", "/subjects/mathematics/lessons/linear-equations/"):
+			self.assertIn(f"<loc>http://testserver{path}</loc>", body)
+		for path in ("draft", "secret", "hidden", "/quizzes/", "/progress/", "/accounts/"):
+			self.assertNotIn(path, body)
+
+	def test_robots_txt_points_to_the_sitemap_and_hides_private_areas(self):
+		body = self.client.get("/robots.txt").content.decode()
+
+		self.assertIn("Sitemap: http://testserver/sitemap.xml", body)
+		self.assertIn("Disallow: /admin/", body)
+
 	def test_home_counts_only_active_lessons_and_questions(self):
 		subject = Subject.objects.create(name="Mathematics", code="MATH")
 		topic = Topic.objects.create(subject=subject, name="Algebra", slug="algebra")

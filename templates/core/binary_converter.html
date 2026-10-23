@@ -43,6 +43,7 @@
         <button type="button" role="tab" id="tab-text" aria-controls="panel-text" aria-selected="false" tabindex="-1">Text and ASCII</button>
         <button type="button" role="tab" id="tab-bcd" aria-controls="panel-bcd" aria-selected="false" tabindex="-1">BCD</button>
         <button type="button" role="tab" id="tab-float" aria-controls="panel-float" aria-selected="false" tabindex="-1">Floating point</button>
+        <button type="button" role="tab" id="tab-practice" aria-controls="panel-practice" aria-selected="false" tabindex="-1">Practice</button>
     </div>
 
     <noscript><p class="bin-note">The calculator needs JavaScript. The worked methods below work without it.</p></noscript>
@@ -145,6 +146,35 @@
         <div id="float-out" class="bin-out" aria-live="polite"></div>
     </section>
 
+    <section class="bin-panel" id="panel-practice" role="tabpanel" aria-labelledby="tab-practice" hidden>
+        <h2>Practice</h2>
+        <p class="bin-help">Random conversion problems in the CAPE style. Type your answer, press Enter, and get it marked with the working.</p>
+        <div id="prac-options" class="bin-row">
+            <label>Level
+                <select id="prac-level"><option value="easy">Easy: small numbers, 4-bit</option><option value="exam">Exam: larger numbers, 8-bit, fractions</option></select>
+            </label>
+            <fieldset class="bin-checks">
+                <legend>Question types</legend>
+                <label><input type="checkbox" id="prac-base" checked> Number bases</label>
+                <label><input type="checkbox" id="prac-twos" checked> Two's complement</label>
+                <label><input type="checkbox" id="prac-arith" checked> Binary arithmetic</label>
+                <label><input type="checkbox" id="prac-ascii" checked> ASCII</label>
+                <label><input type="checkbox" id="prac-bcd" checked> BCD</label>
+                <label><input type="checkbox" id="prac-float" checked> Floating point</label>
+            </fieldset>
+        </div>
+        <p id="prac-prompt" class="bin-prompt" aria-live="polite"></p>
+        <div class="bin-row">
+            <label>Your answer<input id="prac-in" type="text" autocomplete="off" spellcheck="false"></label>
+            <button type="button" id="prac-check" class="btn-accent">Check</button>
+            <button type="button" id="prac-work" class="bin-quiet">Show working</button>
+            <button type="button" id="prac-next" class="bin-quiet">New problem</button>
+        </div>
+        <div id="prac-result" class="bin-out" aria-live="polite"></div>
+        <p id="prac-score" class="bin-score"></p>
+        <div id="prac-working" class="bin-steps"></div>
+    </section>
+
     <article class="bin-guide">
         <h2>How the conversions work</h2>
 
@@ -175,6 +205,9 @@
         <details><summary>How do you know when binary addition has overflowed?</summary><p>When two numbers of the same sign give a result of the opposite sign. The carry into the sign bit then differs from the carry out of it.</p></details>
         <details><summary>What is a normalised floating-point number?</summary><p>One whose mantissa starts 0.1 (positive) or 1.0 (negative), so the first two bits differ and no precision is wasted on leading zeros or ones.</p></details>
         <details><summary>How is BCD different from binary?</summary><p>BCD encodes each decimal digit separately in 4 bits, so 259 is 0010 0101 1001, whereas pure binary encodes the whole number as 100000011.</p></details>
+
+        <h3 id="practice">Practising conversions</h3>
+        <p>Reading a method is not the same as doing it. The Practice tab sets random problems on number bases, two's complement, binary addition, ASCII, BCD and floating point, marks each answer, and shows the working whenever you miss one. Do ten of each type and the exam questions will feel familiar.</p>
 
         <p class="bin-cta">Want to practise this? <a href="{% url 'subjects:list' %}">Work through the CAPE Computer Science lessons and quizzes</a>.</p>
     </article>

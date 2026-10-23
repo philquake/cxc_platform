@@ -149,6 +149,10 @@
             out.appendChild(card(label(base), written(p, convert(p, base)), "base " + base));
         });
 
+        buildBaseSteps(steps, p, from, work);
+    }
+
+    function buildBaseSteps(steps, p, from, work) {
         var target = convert(p, work);
         steps.appendChild(el("h3", "", "Working: base " + from + " to base " + work));
         if (from === work) {
@@ -278,18 +282,9 @@
 
     function toSigned(pat, bits) { return pat >= (1n << BigInt(bits - 1)) ? pat - (1n << BigInt(bits)) : pat; }
 
-    function renderArith() {
-        var out = $("arith-out");
-        var bits = intValue("arith-bits", 2, 64, 8);
+    function arithCompute(a, b, bits, minus) {
         var m = mask(bits);
-        var minus = $("arith-op").value === "-";
-        var sa = $("arith-a").value.replace(/\s/g, ""), sb = $("arith-b").value.replace(/\s/g, "");
-        if (!/^[01]+$/.test(sa) || !/^[01]+$/.test(sb)) { return fail(out, "Type A and B as binary numbers (0s and 1s)."); }
-        if (sa.length > bits || sb.length > bits) { return fail(out, "A and B must fit in " + bits + " bits."); }
-
-        var a = BigInt("0b" + sa), b = BigInt("0b" + sb);
         var addend = minus ? ((m ^ b) + 1n) & m : b;
-        var pad = function (v) { return v.toString(2).padStart(bits, "0"); };
         var carries = [], carry = 0n, sum = 0n;
         for (var i = 0; i < bits; i++) {
             var t = ((a >> BigInt(i)) & 1n) + ((addend >> BigInt(i)) & 1n) + carry;
@@ -297,30 +292,49 @@
             sum |= (t & 1n) << BigInt(i);
             carry = t >> 1n;
         }
-        var cin = carries.reverse().join("");
         var trueValue = minus ? toSigned(a, bits) - toSigned(b, bits) : toSigned(a, bits) + toSigned(b, bits);
         var lo = -(1n << BigInt(bits - 1)), hi = (1n << BigInt(bits - 1)) - 1n;
-        var overflow = trueValue < lo || trueValue > hi;
+        return {
+            m: m, addend: addend, sum: sum, carry: carry, intoSign: carries[bits - 1],
+            cin: carries.slice().reverse().join(""), trueValue: trueValue, lo: lo, hi: hi,
+            overflow: trueValue < lo || trueValue > hi
+        };
+    }
+
+    function arithRows(a, b, bits, minus, c) {
+        var pad = function (v) { return v.toString(2).padStart(bits, "0"); };
         var w = bits + 3;
         var row = function (name, s) { return (name + ":").padEnd(w, " ") + s.split("").join(" "); };
+        var rows = [row("carries", c.cin), row("A", pad(a)), row("B", pad(b))];
+        if (minus) { rows.push(row("invert B", pad(c.m ^ b)), row("+1 = -B", pad(c.addend))); }
+        rows.push("".padEnd(w + bits * 2 - 1, "─"), row("result", pad(c.sum)));
+        return rows.join("\n");
+    }
 
-        clear(out);
-        var rows = [row("carries", cin), row("A", pad(a))];
-        if (minus) {
-            rows.push(row("B", pad(b)), row("invert B", pad(m ^ b)), row("+1 = -B", pad(addend)));
-        } else {
-            rows.push(row("B", pad(b)));
-        }
-        rows.push("".padEnd(w + bits * 2 - 1, "─"), row("result", pad(sum)));
-        out.appendChild(el("pre", "bin-pre", rows.join("\n")));
+    function arithNotes(out, a, b, bits, c) {
         lines(out, [
             "A = " + toSigned(a, bits) + ", B = " + toSigned(b, bits) + " (as two's complement).",
-            "Result " + group4(pad(sum)) + " = " + toSigned(sum, bits) + (overflow ? "" : " (correct: " + trueValue + ")."),
-            "Carry out of the top bit: " + carry + ". Carry into the sign bit: " + carries[0] + "."
+            "Result " + group4(c.sum.toString(2).padStart(bits, "0")) + " = " + toSigned(c.sum, bits) + (c.overflow ? "" : " (correct: " + c.trueValue + ")."),
+            "Carry out of the top bit: " + c.carry + ". Carry into the sign bit: " + c.intoSign + "."
         ]);
-        out.appendChild(el("p", overflow ? "bin-error" : "bin-ok", overflow
-            ? "Overflow: the true answer " + trueValue + " does not fit in " + bits + " bits (range " + lo + " to " + hi + ")."
+        out.appendChild(el("p", c.overflow ? "bin-error" : "bin-ok", c.overflow
+            ? "Overflow: the true answer " + c.trueValue + " does not fit in " + bits + " bits (range " + c.lo + " to " + c.hi + ")."
             : "No overflow."));
+    }
+
+    function renderArith() {
+        var out = $("arith-out");
+        var bits = intValue("arith-bits", 2, 64, 8);
+        var minus = $("arith-op").value === "-";
+        var sa = $("arith-a").value.replace(/\s/g, ""), sb = $("arith-b").value.replace(/\s/g, "");
+        if (!/^[01]+$/.test(sa) || !/^[01]+$/.test(sb)) { return fail(out, "Type A and B as binary numbers (0s and 1s)."); }
+        if (sa.length > bits || sb.length > bits) { return fail(out, "A and B must fit in " + bits + " bits."); }
+
+        var a = BigInt("0b" + sa), b = BigInt("0b" + sb);
+        var c = arithCompute(a, b, bits, minus);
+        clear(out);
+        out.appendChild(el("pre", "bin-pre", arithRows(a, b, bits, minus, c)));
+        arithNotes(out, a, b, bits, c);
     }
 
     /* ---------- tab: text and ASCII ---------- */
@@ -512,9 +526,250 @@
         ieeeShow(b, width, out, val);
     }
 
+    /* ---------- tab: practice ---------- */
+
+    var practice = { current: null, checked: false, wired: false, right: 0, tried: 0, streak: 0 };
+
+    function rnd(n) { return Math.floor(Math.random() * n); }
+    function pick(list) { return list[rnd(list.length)]; }
+
+    function norm(text, base) {
+        var s = text.trim().toLowerCase().replace(/[\s_]/g, "");
+        var prefix = { 2: "0b", 16: "0x", 8: "0o" }[base];
+        return prefix && s.indexOf(prefix) === 0 ? s.slice(2) : s;
+    }
+
+    // Exact comparison, so leading zeros, case and 0b/0x prefixes do not matter.
+    function sameNumber(input, expected, base) {
+        try {
+            var a = parseNumber(norm(input, base), base);
+            return a.neg === expected.neg && a.whole === expected.whole && a.fnum * expected.fden === expected.fnum * a.fden;
+        } catch (e) { return false; }
+    }
+
+    function makeBase(level) {
+        var bases = [2, 8, 10, 16];
+        var from = pick(bases), to = pick(bases.filter(function (b) { return b !== from; }));
+        var frac = "";
+        if (level && ((from === 2 && to === 10) || (from === 10 && to === 2)) && rnd(2)) {
+            frac = "." + Array.from({ length: 1 + rnd(3) }, function () { return rnd(2); }).join("");
+        }
+        var pb = parseNumber((rnd(level ? 1000 : 64) + 1).toString(2) + frac, 2);
+        var text = written(pb, convert(pb, from));
+        var src = parseNumber(text, from);
+        var answer = written(src, convert(src, to));
+        var expected = parseNumber(answer, to);
+        return {
+            prompt: "Convert " + text + " from " + label(from).toLowerCase() + " to " + label(to).toLowerCase() + ".",
+            answer: answer,
+            check: function (i) { return sameNumber(i, expected, to); },
+            working: function (c) { buildBaseSteps(c, src, from, to); }
+        };
+    }
+
+    function makeTwos(level) {
+        var bits = level ? 8 : 4, half = 1 << (bits - 1);
+        if (rnd(2)) {
+            var n = rnd(2) ? -(rnd(half) + 1) : rnd(half - 1) + 1;
+            var raw = BigInt.asUintN(bits, BigInt(n)).toString(2).padStart(bits, "0");
+            return {
+                prompt: "Write " + String(n).replace("-", "−") + " as a " + bits + "-bit two's complement number.",
+                answer: group4(raw),
+                check: function (i) { return norm(i, 2) === raw; },
+                working: function (c) {
+                    if (n >= 0) { return lines(c, ["Positive numbers are written as ordinary binary, padded to " + bits + " bits: " + group4(raw) + "."]); }
+                    var abs = (-n).toString(2).padStart(bits, "0");
+                    var inv = abs.replace(/[01]/g, function (ch) { return ch === "0" ? "1" : "0"; });
+                    lines(c, ["Write " + (-n) + " in " + bits + " bits: " + group4(abs) + ".", "Invert every bit: " + group4(inv) + ".", "Add 1: " + group4(raw) + "."]);
+                }
+            };
+        }
+        var pat = rnd((1 << bits) - 1) + 1, text = pat.toString(2).padStart(bits, "0");
+        var value = decodeSigned(BigInt(pat), bits)[2];
+        return {
+            prompt: "What decimal number is the " + bits + "-bit two's complement pattern " + group4(text) + "?",
+            answer: value,
+            check: function (i) { return i.trim().replace(/[−–]/g, "-").replace(/^\+/, "") === value.replace("−", "-"); },
+            working: function (c) {
+                var terms = [];
+                text.split("").forEach(function (bit, idx) {
+                    if (bit === "1") { terms.push(idx === 0 ? "−" + half : String(1 << (bits - 1 - idx))); }
+                });
+                lines(c, ["The leftmost bit is worth −" + half + "; the others are worth 1, 2, 4… as usual.",
+                    "Add the place values of the 1 bits: " + terms.join(" + ") + " = " + value + "."]);
+            }
+        };
+    }
+
+    function makeArith(level) {
+        var bits = level ? 8 : 4, minus = rnd(2) === 1;
+        var a = BigInt(rnd(1 << bits)), b = BigInt(rnd(1 << bits));
+        var c = arithCompute(a, b, bits, minus);
+        var pa = a.toString(2).padStart(bits, "0"), pb = b.toString(2).padStart(bits, "0");
+        var expr = pa + (minus ? " − " : " + ") + pb;
+        var sum = c.sum.toString(2).padStart(bits, "0");
+        var working = function (out) {
+            out.appendChild(el("pre", "bin-pre", arithRows(a, b, bits, minus, c)));
+            arithNotes(out, a, b, bits, c);
+        };
+        if (level && rnd(2)) {
+            return {
+                prompt: "Using " + bits + "-bit two's complement, does " + expr + " overflow? (yes or no)",
+                answer: c.overflow ? "yes" : "no",
+                check: function (i) { var t = i.trim().toLowerCase(); return (t === "yes" || t === "y" || t === "no" || t === "n") && (t[0] === "y") === c.overflow; },
+                working: working
+            };
+        }
+        return {
+            prompt: "Work out " + expr + " in " + bits + "-bit two's complement. Give the " + bits + "-bit result.",
+            answer: sum,
+            check: function (i) { return norm(i, 2) === sum; },
+            working: working
+        };
+    }
+
+    function makeAscii(level) {
+        var cp = level ? 33 + rnd(94) : 65 + rnd(26), ch = String.fromCharCode(cp);
+        var base = pick([2, 10, 16]);
+        var code = base === 2 ? cp.toString(2).padStart(8, "0") : cp.toString(base).toUpperCase();
+        var working = function (c) {
+            lines(c, ["“" + ch + "” has ASCII code " + cp + " in decimal, " + cp.toString(2).padStart(8, "0") + " in binary and " + cp.toString(16).toUpperCase() + " in hex.",
+                "Anchors to remember: A = 65, a = 97, 0 = 48. Letters run in order from there."]);
+        };
+        if (rnd(3) === 0) {
+            return {
+                prompt: "Which character has the ASCII code " + code + " (" + label(base).toLowerCase() + ")?",
+                answer: ch,
+                check: function (i) { return i.trim() === ch; },
+                working: working
+            };
+        }
+        var expected = parseNumber(cp.toString(base), base);
+        return {
+            prompt: "What is the ASCII code of “" + ch + "” in " + label(base).toLowerCase() + "?",
+            answer: code,
+            check: function (i) { return sameNumber(i, expected, base); },
+            working: working
+        };
+    }
+
+    function makeBcd(level) {
+        var digits = String(level ? 100 + rnd(9900) : 10 + rnd(90));
+        var groups = digits.split("").map(function (d) { return parseInt(d, 10).toString(2).padStart(4, "0"); });
+        var working = function (c) {
+            c.appendChild(table(["Digit", "8421 code"], digits.split("").map(function (d, i) { return [d, groups[i]]; })));
+        };
+        if (rnd(2)) {
+            return {
+                prompt: "Write " + digits + " in BCD.",
+                answer: groups.join(" "),
+                check: function (i) { return i.replace(/\s/g, "") === groups.join(""); },
+                working: working
+            };
+        }
+        return {
+            prompt: "Convert the BCD number " + groups.join(" ") + " to decimal.",
+            answer: digits,
+            check: function (i) { return i.replace(/\s/g, "") === digits; },
+            working: working
+        };
+    }
+
+    function makeFloat(level) {
+        var x = (1 + rnd(level ? 120 : 20)) / pick(level ? [1, 2, 4, 8] : [1, 2, 4]);
+        if (rnd(2)) { x = -x; }
+        var enc = el("div", "bin-out");
+        capeEncode(x, 8, 4, enc);
+        var vals = enc.querySelectorAll(".bin-card-value");
+        var mant = vals[0].textContent, exp = vals[1].textContent;
+        if (rnd(2)) {
+            return {
+                prompt: "Write " + x + " as a normalised floating-point number with an 8-bit mantissa and a 4-bit exponent, both in two's complement. Give the mantissa, a space, then the exponent.",
+                answer: mant + " " + exp,
+                check: function (i) {
+                    var t = i.trim().replace(/\./g, "").split(/[\s,]+/);
+                    return t.length === 2 && t[0] === mant.replace(".", "") && t[1] === exp;
+                },
+                working: function (c) { c.appendChild(enc.cloneNode(true)); }
+            };
+        }
+        var dec = el("div", "bin-out");
+        capeDecode(mant, exp, dec);
+        return {
+            prompt: "A number is stored with mantissa " + mant + " and exponent " + exp + " (both two's complement). What is its decimal value?",
+            answer: String(x),
+            check: function (i) { return i.trim() !== "" && Number(i.trim().replace(/−/g, "-")) === x; },
+            working: function (c) { c.appendChild(dec.cloneNode(true)); }
+        };
+    }
+
+    var GENERATORS = { base: makeBase, twos: makeTwos, arith: makeArith, ascii: makeAscii, bcd: makeBcd, float: makeFloat };
+
+    function practiceScore() {
+        $("prac-score").textContent = practice.tried
+            ? practice.right + " of " + practice.tried + " correct" + (practice.streak > 1 ? ", " + practice.streak + " in a row" : "")
+            : "No answers yet.";
+    }
+
+    function practiceNext(focus) {
+        var level = $("prac-level").value === "exam" ? 1 : 0;
+        var kinds = Object.keys(GENERATORS).filter(function (k) { return $("prac-" + k).checked; });
+        clear($("prac-result")); clear($("prac-working"));
+        $("prac-in").value = "";
+        practice.checked = false;
+        if (!kinds.length) {
+            practice.current = null;
+            $("prac-prompt").textContent = "Tick at least one question type.";
+            return;
+        }
+        practice.current = GENERATORS[pick(kinds)](level);
+        $("prac-prompt").textContent = practice.current.prompt;
+        if (focus) { $("prac-in").focus(); }
+    }
+
+    function practiceWorking() {
+        var box = $("prac-working");
+        clear(box);
+        if (!practice.current) { return; }
+        box.appendChild(el("h3", "", "Working"));
+        practice.current.working(box);
+    }
+
+    function practiceCheck() {
+        var cur = practice.current, result = $("prac-result");
+        if (!cur || practice.checked) { return; }
+        clear(result);
+        if (!$("prac-in").value.trim()) { return result.appendChild(el("p", "bin-error", "Type an answer first.")); }
+        var ok = cur.check($("prac-in").value);
+        practice.checked = true;
+        practice.tried++;
+        practice.right += ok ? 1 : 0;
+        practice.streak = ok ? practice.streak + 1 : 0;
+        result.appendChild(el("p", ok ? "bin-ok" : "bin-error", ok ? "Correct." : "Not quite. The answer is " + cur.answer + "."));
+        if (!ok) { practiceWorking(); }
+        practiceScore();
+    }
+
+    // Called on every input in the panel (see wiring below); only the first call does anything.
+    function renderPractice() {
+        if (practice.wired) { return; }
+        practice.wired = true;
+        $("prac-check").addEventListener("click", practiceCheck);
+        $("prac-work").addEventListener("click", practiceWorking);
+        $("prac-next").addEventListener("click", function () { practiceNext(true); });
+        $("prac-in").addEventListener("keydown", function (event) {
+            if (event.key !== "Enter") { return; }
+            event.preventDefault();
+            if (practice.checked) { practiceNext(true); } else { practiceCheck(); }
+        });
+        $("prac-options").addEventListener("change", function () { practiceNext(true); });
+        practiceScore();
+        practiceNext(false);
+    }
+
     /* ---------- tabs and wiring ---------- */
 
-    var PANELS = { base: renderBase, signed: renderSigned, arith: renderArith, text: renderText, bcd: renderBcd, float: renderFloat };
+    var PANELS = { base: renderBase, signed: renderSigned, arith: renderArith, text: renderText, bcd: renderBcd, float: renderFloat, practice: renderPractice };
 
     function selectTab(name, focus) {
         Object.keys(PANELS).forEach(function (key) {

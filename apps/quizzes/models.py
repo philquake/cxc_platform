@@ -72,6 +72,8 @@ class Quiz(models.Model):
             errors["topic"] = "Practice quizzes must belong to a topic."
         if not self.is_mock and not self.lesson_id:
             errors["lesson"] = "Practice quizzes must belong to a lesson."
+        if self.auto_draw and self.is_mock:
+            errors["auto_draw"] = "Only practice quizzes can draw from a lesson's question bank."
         if self.lesson_id and self.subject_id and self.lesson.subject_id != self.subject_id:
             errors["subject"] = "The subject must match the lesson subject."
         if self.topic_id and self.subject_id and self.topic.subject_id != self.subject_id:

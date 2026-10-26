@@ -39,6 +39,8 @@ class QuizAdminForm(forms.ModelForm):
             "difficulty",
             "pathway",
             "shuffle_questions",
+            "auto_draw",
+            "draw_size",
             "is_active",
         )
 
@@ -117,6 +119,8 @@ class QuizAdmin(admin.ModelAdmin):
         "difficulty",
         "pathway",
         "shuffle_questions",
+        "auto_draw",
+        "draw_size",
         "is_active",
     )
     inlines = [QuizQuestionInline]

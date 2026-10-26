@@ -18,6 +18,11 @@ from apps.quizzes.services import draw_lesson_questions, eligible_questions, gen
 
 
 class QuizModelTests(TestCase):
+	def test_auto_draw_rejected_on_mock(self):
+		quiz = Quiz(subject=Subject.objects.create(name="Maths", code="M"), title="Mock", is_mock=True, auto_draw=True)
+		with self.assertRaises(ValidationError):
+			quiz.clean()
+
 	def setUp(self):
 		self.subject = Subject.objects.create(name="Mathematics", code="MATH")
 		self.topic = Topic.objects.create(

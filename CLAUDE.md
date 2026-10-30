@@ -18,7 +18,7 @@ Owner: Phil (IT/CS teacher, Jamaica). Repo: `github.com/philquake/cxc_platform`.
 - Cloudinary for media via `apps.core.storage.SeekSafeCloudinaryStorage`
 - WhiteNoise (`CompressedManifestStaticFilesStorage`) for static files
 - Deployed on Render (HTTPS proxy: `SECURE_PROXY_SSL_HEADER`, `CSRF_TRUSTED_ORIGINS`)
-- Google AdSense script in `templates/_adsense.html`, included via `{% block adsense %}` only on content pages (home, courses, course, lesson, terms, privacy, search with results). Keep it off quiz, progress, account and error pages (AdSense inventory policy). `ads.txt` served from repo root via `apps/core/urls.py`
+- Google AdSense script in `templates/_adsense.html`, included via `{% block adsense %}` only on content pages (home, courses, course, lesson, search with results; not the legal pages). Keep it off quiz, progress, account and error pages (AdSense inventory policy). `ads.txt` served from repo root via `apps/core/urls.py`
 
 ## Environment variables
 
@@ -107,7 +107,7 @@ static/css|js|admin/css|admin/js
 - Auth templates (`templates/accounts/*.html`) are standalone pages using `auth.css`, not `base.html`.
 - 404 page (`templates/404.html`, `static/css/not_found.css`) has search plus subject/home links and no ads; it only renders with `DEBUG=False`. `500.html` is standalone with inline styles.
 - Legal pages (`templates/legal/`): the privacy policy discloses Google AdSense cookies and opt-outs (section 5) and says the site is not directed at under-13s. Terms of Use are adapted from the General Legal (CC0) template: Jamaican law, liability capped at fees paid in the prior 12 months or US$50, no arbitration or US state clauses. Bump the "Last updated" date when either changes, and keep them consistent with what the site actually does (ads, cookies, data).
-- Admin customisation matters: dashboard on the admin index (`templates/admin/index.html`, gated per view permission, with an "Awaiting marking" count), question analytics and filters (subject-scoped topic/lesson, pathway, usage, content gaps, response quality), CSV import/export, the marking queue (QuizAnswer admin; no add page), the Lesson "Generate Easy/Medium/Hard quizzes" action, topic/lesson filtering by subject on the quiz and question forms (`static/admin/js/quiz_admin.js`, options tagged by `quizzes.admin.tag_subjects`), lesson image picker (`static/admin/js/lesson_media.js`).
+- Admin customisation matters: dashboard on the admin index (`templates/admin/index.html`, gated per view permission, with an "Awaiting marking" count), question analytics and filters (subject-scoped topic/lesson, pathway, usage, content gaps, response quality), CSV import/export, the marking queue (QuizAnswer admin; no add page), the Lesson "Generate Easy/Medium/Hard quizzes" action, Lesson "Activate/Deactivate selected lessons" actions (need change permission), topic/lesson filtering by subject on the quiz and question forms (`static/admin/js/quiz_admin.js`, options tagged by `quizzes.admin.tag_subjects`), lesson image picker (`static/admin/js/lesson_media.js`).
 
 ## Deployment gotchas
 

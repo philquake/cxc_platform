@@ -170,3 +170,27 @@ class LessonQuizActionTests(TestCase):
 		quiz = Quiz.objects.get()
 		self.assertEqual((quiz.topic, quiz.difficulty, quiz.is_active, quiz.draw_size), (topic, "easy", False, 2))
 		self.assertContains(response, "inactive quizzes")
+
+
+class LessonActivateActionTests(TestCase):
+	def test_actions_activate_and_deactivate_selected_lessons_only(self):
+		from django.contrib.auth import get_user_model
+
+		self.client.force_login(get_user_model().objects.create_superuser("boss", "b@example.com", "pw"))
+		subject = Subject.objects.create(name="Information Technology", code="IT")
+		picked = [
+			Lesson.objects.create(subject=subject, title=f"Draft {i}", lesson_number=i, content="<p>x</p>", is_active=False)
+			for i in (1, 2)
+		]
+		other = Lesson.objects.create(subject=subject, title="Other", lesson_number=3, content="<p>x</p>", is_active=False)
+		url = reverse("admin:lessons_lesson_changelist")
+		selected = [lesson.id for lesson in picked]
+
+		response = self.client.post(url, {"action": "activate_lessons", "_selected_action": selected}, follow=True)
+		self.assertContains(response, "2 lessons activated.")
+		self.assertEqual(Lesson.objects.filter(is_active=True).count(), 2)
+		other.refresh_from_db()
+		self.assertFalse(other.is_active)
+
+		self.client.post(url, {"action": "deactivate_lessons", "_selected_action": selected}, follow=True)
+		self.assertFalse(Lesson.objects.filter(is_active=True).exists())

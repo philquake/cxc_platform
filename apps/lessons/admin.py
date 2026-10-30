@@ -92,10 +92,22 @@ def generate_quizzes(modeladmin, request, queryset):
         )
 
 
+@admin.action(description="Activate selected lessons", permissions=["change"])
+def activate_lessons(modeladmin, request, queryset):
+    count = Lesson.objects.filter(pk__in=list(queryset.values_list("pk", flat=True))).update(is_active=True)
+    modeladmin.message_user(request, f"{count} lessons activated.")
+
+
+@admin.action(description="Deactivate selected lessons", permissions=["change"])
+def deactivate_lessons(modeladmin, request, queryset):
+    count = Lesson.objects.filter(pk__in=list(queryset.values_list("pk", flat=True))).update(is_active=False)
+    modeladmin.message_user(request, f"{count} lessons deactivated.")
+
+
 @admin.register(Lesson)
 class LessonAdmin(ImportAdminMixin, admin.ModelAdmin):
     action_form = LessonQuizActionForm
-    actions = (generate_quizzes,)
+    actions = (activate_lessons, deactivate_lessons, generate_quizzes)
     import_form_class = LessonImportForm
     import_title = "Upload notes"
     import_help = (

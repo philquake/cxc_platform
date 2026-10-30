@@ -964,6 +964,17 @@ class AdminDashboardTests(TestCase):
 		self.assertNotContains(response, "stat-card")
 		self.assertNotContains(response, "Recent quiz attempts")
 
+	def test_true_false_marked_by_expected_answer_is_not_flagged(self):
+		Question.objects.create(
+			subject=self.quiz.subject, topic=self.quiz.topic, lesson=self.quiz.lesson,
+			text="Sky is blue question", format=Question.FORMAT_TRUE_FALSE, expected_answer="True",
+		)
+		self.client.force_login(self.admin_user)
+
+		response = self.client.get(reverse("admin:index"))
+
+		self.assertNotContains(response, "Sky is blue question")
+
 	def test_quiz_change_form_loads_quiz_admin_script(self):
 		self.client.force_login(self.admin_user)
 
@@ -1005,6 +1016,36 @@ class QuizXPPolicyTests(TestCase):
 		self.assertEqual(self.xp(), 45)
 		self.assertEqual(QuizAttempt.objects.filter(user=self.user).count(), 4)
 		self.assertEqual(XPTransaction.objects.filter(user=self.user).count(), 1)
+
+	def test_quiz_miss_restarts_an_existing_flashcard(self):
+		FlashcardState.objects.create(
+			user=self.user, question=self.question, reps=3, interval_days=15,
+			due_at=timezone.localdate() + timezone.timedelta(days=15),
+		)
+		self.submit(self.wrong)
+		state = FlashcardState.objects.get(user=self.user, question=self.question)
+		self.assertEqual((state.reps, state.interval_days, state.due_at), (0, 0, timezone.localdate()))
+		self.assertEqual(state.review("good"), 1)
+
+	def test_retake_without_xp_still_counts_as_a_study_day(self):
+		self.submit(self.right)
+		UserProgress.objects.filter(user=self.user).update(
+			current_streak=4, last_activity_date=timezone.localdate() - timezone.timedelta(days=1)
+		)
+		self.submit(self.wrong)  # no XP: not a new best
+		progress = UserProgress.objects.get(user=self.user)
+		self.assertEqual((progress.current_streak, progress.last_activity_date), (5, timezone.localdate()))
+		self.assertEqual(XPTransaction.objects.filter(user=self.user).count(), 1)
+
+	def test_flashcard_review_counts_as_a_study_day(self):
+		UserProgress.objects.create(
+			user=self.user, current_streak=2, last_activity_date=timezone.localdate() - timezone.timedelta(days=1)
+		)
+		response = self.client.post(
+			reverse("progress:review-flashcard"), {"question_id": self.question.id, "rating": "good"}
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(UserProgress.objects.get(user=self.user).current_streak, 3)
 
 	def test_written_answer_ignores_punctuation_and_case(self):
 		open_question = Question.objects.create(
@@ -1304,6 +1345,16 @@ class LeaderboardUsernameTests(TestCase):
 		self.assertNotContains(response, "Ada L.")
 		self.assertNotContains(response, "secret@example.com")
 
+	def test_deactivated_users_are_left_off(self):
+		banned = self.add_user("banned", 500)
+		banned.is_active = False
+		banned.save()
+		self.add_user("kept", 10)
+		self.client.force_login(self.viewer)
+		response = self.client.get(self.url)
+		self.assertContains(response, "kept")
+		self.assertNotContains(response, "banned")
+
 	def test_top_twenty_limit_ties_and_rank_beyond_list(self):
 		for i in range(22):
 			self.add_user(f"u{i:02d}", 100 - i)
@@ -1372,6 +1423,14 @@ class StudyPlanGenerationTests(TestCase):
 		self.assertFalse(StudyPlanItem.objects.filter(plan_id=first.pk).exists())
 		with self.assertRaises(ValueError):
 			generate_plan(self.user, self.subject, timezone.localdate())
+
+
+class LiveStreakTests(TestCase):
+	def test_streak_reads_zero_once_a_day_is_missed(self):
+		today = timezone.localdate()
+		for last_active, expected in ((today, 7), (today - timezone.timedelta(days=1), 7), (today - timezone.timedelta(days=3), 0), (None, 0)):
+			with self.subTest(last_active=last_active):
+				self.assertEqual(UserProgress(current_streak=7, last_activity_date=last_active).live_streak, expected)
 
 
 class LevelCurveTests(TestCase):

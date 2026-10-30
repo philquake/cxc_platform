@@ -25,7 +25,8 @@ def admin_dashboard(context):
     stats, attention, recent_attempts, chart, quick_actions = [], [], [], None, []
 
     if user.has_perm("auth.view_user"):
-        students = get_user_model().objects.filter(is_staff=False)
+        # Active only: unverified signups (often bots) stay inactive until they confirm their email.
+        students = get_user_model().objects.filter(is_staff=False, is_active=True)
         active = UserProgress.objects.filter(last_activity_date__gte=today - timedelta(days=6)).count()
         stats.append({
             "label": "Students",
@@ -55,7 +56,10 @@ def admin_dashboard(context):
         no_correct = Question.objects.filter(
             is_active=True,
             format__in=[Question.FORMAT_MULTIPLE_CHOICE, Question.FORMAT_TRUE_FALSE],
-        ).exclude(Exists(Answer.objects.filter(question=OuterRef("pk"), is_correct=True)))
+        ).exclude(Exists(Answer.objects.filter(question=OuterRef("pk"), is_correct=True))).exclude(
+            # True/false without answer rows is marked against expected_answer, so that counts as set.
+            format=Question.FORMAT_TRUE_FALSE, expected_answer__gt="",
+        )
         stats.append({
             "label": "Active questions",
             "value": answered.count(),

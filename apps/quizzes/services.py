@@ -117,11 +117,26 @@ def draw_lesson_questions(user, quiz):
 
 
 def attach_draw_counts(quizzes):
-    """Set question_count on auto-draw quizzes (they have no fixed question rows) for listings."""
+    """Set question_count on auto-draw quizzes (they have no fixed question rows) for listings, in one query."""
+    quizzes = [quiz for quiz in quizzes if quiz.auto_draw]
+    if not quizzes:
+        return
+    rows_by_lesson = {}
+    for row in Question.objects.filter(lesson_id__in={quiz.lesson_id for quiz in quizzes}, is_active=True).values(
+        "topic_id", "lesson_id", "difficulty", "format", *(f"for_{pathway}" for pathway, _ in PATHWAY_CHOICES)
+    ):
+        rows_by_lesson.setdefault(row["lesson_id"], []).append(row)
     for quiz in quizzes:
-        if quiz.auto_draw:
-            pool = eligible_questions(quiz.topic, quiz.lesson, quiz.difficulty or "medium", quiz.pathway).count()
-            quiz.question_count = min(pool, draw_size(quiz)) if pool >= MIN_DRAW else 0
+        difficulty = quiz.difficulty or "medium"
+        # Same rule as eligible_questions, applied to rows already loaded.
+        pool = sum(
+            1 for row in rows_by_lesson.get(quiz.lesson_id, [])
+            if row["topic_id"] == quiz.topic_id
+            and row["difficulty"] == difficulty
+            and row["format"] in FORMATS_BY_DIFFICULTY[difficulty]
+            and (not quiz.pathway or row[f"for_{quiz.pathway}"])
+        )
+        quiz.question_count = min(pool, draw_size(quiz)) if pool >= MIN_DRAW else 0
 
 
 def generate_lesson_quizzes(topic, lesson, counts, pathway="", allow_partial=False):

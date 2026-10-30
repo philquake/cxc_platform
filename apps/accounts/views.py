@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta
 
 from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
@@ -38,6 +39,16 @@ def _cooling_down(email):
 	return not cache.add(f"email-link:{email.lower()}", True, RESEND_COOLDOWN)
 
 STUDY_LOG_WEEKS = 12
+
+
+class ThrottledPasswordResetView(auth_views.PasswordResetView):
+	"""At most one reset email per address per RESEND_COOLDOWN, like the other emailed links."""
+
+	def form_valid(self, form):
+		if _cooling_down(form.cleaned_data["email"]):
+			# Same redirect as a real send, so it never reveals whether anything went out.
+			return redirect(self.get_success_url())
+		return super().form_valid(form)
 
 def _pending_users():
 	# Never-used signups only, so a teacher's deactivation can't be undone with a verification link.

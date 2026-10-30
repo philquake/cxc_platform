@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.db import models, transaction
+from django.db import models
 from django.utils import timezone
 
 from apps.lessons.models import Lesson
@@ -38,6 +38,13 @@ class UserProgress(models.Model):
         while remaining >= needed:
             level, remaining, needed = level + 1, remaining - needed, needed + self.LEVEL_XP_STEP
         return level, remaining, needed
+
+    @property
+    def live_streak(self):
+        """current_streak, or 0 once a whole day has passed without study (the stored value only changes on activity)."""
+        if self.last_activity_date and self.last_activity_date >= timezone.localdate() - timedelta(days=1):
+            return self.current_streak
+        return 0
 
     @property
     def level(self):
@@ -276,29 +283,6 @@ class StudyPlan(models.Model):
 
     class Meta:
         ordering = ["target_date", "id"]
-
-    def clean(self):
-        super().clean()
-        if self.is_active and self.user_id and self.subject_id and StudyPlan.objects.filter(
-            user_id=self.user_id,
-            subject_id=self.subject_id,
-            is_active=True,
-        ).exclude(pk=self.pk).exists():
-            raise ValidationError("Only one active study plan is allowed per subject.")
-
-    def save(self, *args, **kwargs):
-        if self.is_active:
-            using = kwargs.get("using")
-            with transaction.atomic(using=using):
-                if self.user_id and self.subject_id:
-                    StudyPlan.objects.using(using).filter(
-                        user_id=self.user_id,
-                        subject_id=self.subject_id,
-                        is_active=True,
-                    ).exclude(pk=self.pk).update(is_active=False)
-                super().save(*args, **kwargs)
-        else:
-            super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user} - {self.subject} study plan"

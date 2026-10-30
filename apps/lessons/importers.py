@@ -6,7 +6,6 @@ from xml.etree import ElementTree
 
 import nh3
 from django.db import transaction
-from django.utils.text import slugify
 
 from .models import Lesson
 
@@ -105,16 +104,11 @@ def import_lessons(subject, uploads, publish):
         number = max(Lesson.objects.filter(subject=subject).values_list("lesson_number", flat=True), default=0)
         # New notes go at the end of the course, so into its last unit.
         section = max(Lesson.objects.filter(subject=subject).values_list("section_number", flat=True), default=1)
-        slugs = set(Lesson.objects.filter(subject=subject).values_list("slug", flat=True))
         created = []
         for title, content in built:
             number += 1
-            base = slugify(title) or f"lesson-{number}"
-            slug, n = base, 2
-            while slug in slugs:
-                slug, n = f"{base}-{n}", n + 1
-            slugs.add(slug)
+            # Lesson.save picks a free slug from the title.
             Lesson.objects.create(subject=subject, title=title, lesson_number=number, section_number=section,
-                                  slug=slug, content=content, is_active=publish)
+                                  content=content, is_active=publish)
             created.append(f"{number}. {title}")
     return created, []

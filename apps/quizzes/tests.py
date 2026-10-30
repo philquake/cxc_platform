@@ -14,7 +14,7 @@ from apps.questions.models import Answer, Question
 from apps.subjects.models import Subject, Topic
 
 from apps.quizzes.models import Quiz, QuizQuestion
-from apps.quizzes.services import draw_lesson_questions, eligible_questions, generate_lesson_quizzes, generate_mock_exam
+from apps.quizzes.services import attach_draw_counts, draw_lesson_questions, eligible_questions, generate_lesson_quizzes, generate_mock_exam
 
 
 class QuizModelTests(TestCase):
@@ -534,6 +534,21 @@ class AutoDrawTests(TestCase):
 
 	def drawn(self, quiz, user):
 		return [qq.question for qq in draw_lesson_questions(user, quiz)]
+
+	def test_listing_counts_every_auto_draw_quiz_in_one_query(self):
+		hard = Quiz.objects.create(
+			subject=self.subject, topic=self.topic, lesson=self.lesson, title="Hard", difficulty="hard", auto_draw=True,
+		)
+		guided = Quiz.objects.create(
+			subject=self.subject, topic=self.topic, lesson=self.lesson, title="Guided", difficulty="easy",
+			pathway="guided", auto_draw=True,
+		)
+		Question.objects.filter(pk=self.questions[0].pk).update(for_guided=False)
+		quizzes = [self.quiz, hard, guided]
+		with self.assertNumQueries(1):
+			attach_draw_counts(quizzes)
+		# 6 easy questions capped at draw_size 3; no worded questions; 5 guided easy questions, default size 8.
+		self.assertEqual([quiz.question_count for quiz in quizzes], [3, 0, 5])
 
 	def test_draw_has_the_requested_size_and_unseen_questions_come_first(self):
 		attempt = QuizAttempt.objects.create(user=self.user, quiz=self.quiz, total_questions=3, total_marks=3, score=3, completed_at=timezone.now())

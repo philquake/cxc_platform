@@ -52,6 +52,7 @@ class AccountFlowTests(TestCase):
 
 	@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 	def test_password_reset_sends_link_to_registered_email(self):
+		cache.clear()
 		get_user_model().objects.create_user(
 			username="student",
 			password="A-strong-password-123",
@@ -66,6 +67,17 @@ class AccountFlowTests(TestCase):
 		self.assertRedirects(response, reverse("password_reset_done"))
 		self.assertEqual(len(mail.outbox), 1)
 		self.assertIn("password-reset/", mail.outbox[0].body)
+
+	@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+	def test_password_reset_sends_at_most_one_email_per_cooldown(self):
+		cache.clear()
+		get_user_model().objects.create_user(username="student", password="x", email="student@example.com")
+
+		for _ in range(3):
+			response = self.client.post(reverse("password_reset"), {"email": "student@example.com"})
+			self.assertRedirects(response, reverse("password_reset_done"))
+
+		self.assertEqual(len(mail.outbox), 1)
 
 	def test_account_profile_updates_name_and_email(self):
 		user = get_user_model().objects.create_user(
@@ -217,6 +229,15 @@ class ProfilePageTests(TestCase):
 		self.assertEqual(response.context["initials"], "AL")
 		self.assertEqual(response.context["days_studied"], 0)
 		self.assertContains(response, "Study log")
+
+	def test_name_saves_with_blank_email_when_others_have_none_too(self):
+		get_user_model().objects.create_user(username="other", email="")
+
+		response = self.client.post(reverse("account"), {"first_name": "Grace", "last_name": "Lee", "email": "", "display_name": ""})
+
+		self.assertRedirects(response, reverse("account"))
+		self.user.refresh_from_db()
+		self.assertEqual(self.user.first_name, "Grace")
 
 	def test_study_log_buckets_by_jamaica_day(self):
 		from datetime import date, datetime, timezone as dt_timezone

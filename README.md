@@ -22,7 +22,6 @@ CXC Platform is a Django-based learning platform for Caribbean students preparin
 - Django 6.1
 - PostgreSQL
 - django-ckeditor-5
-- django-bootstrap5
 - django-browser-reload
 - Pillow
 - psycopg

@@ -24,7 +24,7 @@
     <div class="profile-main">
         <section aria-label="Totals" class="profile-totals">
             <div><strong>{{ user_progress.total_xp }}</strong><span>XP earned</span></div>
-            <div><strong>{{ user_progress.current_streak }}</strong><span>day streak (best {{ user_progress.longest_streak }})</span></div>
+            <div><strong>{{ user_progress.live_streak }}</strong><span>day streak (best {{ user_progress.longest_streak }})</span></div>
             <div><strong>{{ lessons_done }}</strong><span>lesson{{ lessons_done|pluralize }} completed</span></div>
             <div><strong>{% if accuracy is None %}&ndash;{% else %}{{ accuracy }}%{% endif %}</strong><span>quiz accuracy over {{ quizzes_taken }} quiz{{ quizzes_taken|pluralize:"zes" }}</span></div>
         </section>

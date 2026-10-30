@@ -84,7 +84,7 @@ def _lookup(rows_cache, key, finder):
     return rows_cache[key]
 
 
-def _build_answers(question, row, line):
+def _build_answers(question, row):
     fmt = question.format
     options = [row.get(c, "").strip() for c in OPTION_COLUMNS]
     options = [o for o in options if o]
@@ -204,7 +204,7 @@ def import_questions(upload, allow_update=True):
             )
             for name, value in fields.items():
                 setattr(question, name, value)
-            answers = _build_answers(question, row, line)
+            answers = _build_answers(question, row)
             try:
                 question.full_clean()
             except ValidationError as exc:

@@ -293,3 +293,29 @@ class SubjectSlugTests(TestCase):
         Lesson.objects.create(subject=subject, title="Limits", slug="limits", content="<p>x</p>")
         url = reverse("subjects:lesson-detail", kwargs={"subject_slug": subject.slug, "lesson_slug": "limits"})
         self.assertEqual(self.client.get(url).status_code, 200)
+
+
+class MockExamActionTests(TestCase):
+    def setUp(self):
+        self.subject = Subject.objects.create(name="Mathematics", code="MATH")
+        topic = Topic.objects.create(subject=self.subject, name="Algebra", slug="algebra", exam_weight=1)
+        lesson = Lesson.objects.create(subject=self.subject, title="Algebra", slug="algebra", content="<p>x</p>")
+        Question.objects.create(subject=self.subject, topic=topic, lesson=lesson, text="2 + 2?")
+        self.client.force_login(User.objects.create_superuser("admin", "admin@example.com", "x"))
+
+    def run_action(self, **fields):
+        return self.client.post(
+            reverse("admin:subjects_subject_changelist"),
+            {"action": "generate_mock_exams", "_selected_action": [self.subject.pk], **fields},
+            follow=True,
+        )
+
+    def test_bad_settings_are_rejected_before_the_action_runs(self):
+        for fields in ({"question_count": "forty"}, {"question_count": "5000"}):
+            with self.subTest(fields=fields):
+                self.assertEqual(self.run_action(**fields).status_code, 200)
+        self.assertFalse(Quiz.objects.exists())
+
+    def test_valid_settings_create_a_mock(self):
+        self.run_action(question_count="1", time_limit_minutes="30")
+        self.assertEqual(Quiz.objects.get(is_mock=True).time_limit_minutes, 30)

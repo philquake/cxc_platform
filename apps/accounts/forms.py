@@ -32,7 +32,8 @@ class AccountProfileForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data["email"]
-        if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+        # Blank is allowed (older accounts have none) and is not a duplicate of other blank emails.
+        if email and User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError("An account with this email already exists.")
         return email
 

@@ -1,7 +1,10 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
-from .views import account, confirm_email_change, login_view, logout_view, resend_verification, signup, verify_email, verify_email_sent
+from .views import (
+    ThrottledPasswordResetView, account, confirm_email_change, login_view, logout_view, resend_verification, signup,
+    verify_email, verify_email_sent,
+)
 
 urlpatterns = [
     path("login/", login_view, name="login"),
@@ -13,7 +16,7 @@ urlpatterns = [
     path("profile/", account, name="account"),
     path(
         "password-reset/",
-        auth_views.PasswordResetView.as_view(
+        ThrottledPasswordResetView.as_view(
             template_name="accounts/password_reset_form.html",
             email_template_name="accounts/password_reset_email.html",
             subject_template_name="accounts/password_reset_subject.txt",

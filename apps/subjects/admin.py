@@ -34,6 +34,7 @@ class MockExamActionForm(ActionForm):
 
 @admin.action(description="Generate weighted mock exam for selected subjects")
 def generate_mock_exams(modeladmin, request, queryset):
+    # The admin validates MockExamActionForm before calling the action, so these values are already checked.
     question_count = int(request.POST.get("question_count") or 40)
     time_limit_minutes = int(request.POST.get("time_limit_minutes") or 120)
     topic_ids = request.POST.getlist("topics")
@@ -73,4 +74,3 @@ class SubjectAdmin(admin.ModelAdmin):
     list_display = ("name", "code", "is_active", "created_at")
     list_filter = ("is_active",)
     search_fields = ("name", "code")
-    prepopulated_fields = {}

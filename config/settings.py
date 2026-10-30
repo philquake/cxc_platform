@@ -46,7 +46,6 @@ INSTALLED_APPS = [
 
     # Third-party
     "django_ckeditor_5",
-    'django_bootstrap5',
 
     # Project apps
     "apps.subjects",

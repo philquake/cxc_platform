@@ -55,18 +55,23 @@ def _award_xp(user, topic, amount, reason, lesson_progress=None, quiz_attempt=No
 		)
 		progress, _ = UserProgress.objects.select_for_update().get_or_create(user=user)
 		if update_streak:
-			today = timezone.localdate()
-			if progress.last_activity_date == today:
-				pass
-			elif progress.last_activity_date == today - timedelta(days=1):
-				progress.current_streak += 1
-			else:
-				progress.current_streak = 1
-			progress.longest_streak = max(progress.longest_streak, progress.current_streak)
-			progress.last_activity_date = today
+			_touch_streak(progress)
 		progress.total_xp += amount
 		progress.save()
 	return xp_transaction
+
+
+def _touch_streak(progress):
+	"""Count today as a study day on a locked UserProgress row; the caller saves it."""
+	today = timezone.localdate()
+	if progress.last_activity_date == today:
+		return
+	if progress.last_activity_date == today - timedelta(days=1):
+		progress.current_streak += 1
+	else:
+		progress.current_streak = 1
+	progress.longest_streak = max(progress.longest_streak, progress.current_streak)
+	progress.last_activity_date = today
 
 
 def _topic_for_lesson(lesson):
@@ -173,7 +178,7 @@ def dashboard(request):
 			lesson.latest_quiz_attempt = latest_by_lesson.get(lesson.id)
 			if lesson.is_completed:
 				completed_count += 1
-			subject.progress_lessons = lessons
+		subject.progress_lessons = lessons
 		subject.lesson_count = len(lessons)
 		subject.completed_count = completed_count
 		subject.progress_percentage = round(
@@ -401,7 +406,8 @@ def finalize_attempt(attempt, update_streak=True):
 		],
 		update_conflicts=True,
 		unique_fields=["user", "question"],
-		update_fields=["due_at", "last_reviewed_at"],
+		# A miss restarts the card's schedule, not just its due date, so the next review lands a day out.
+		update_fields=["due_at", "last_reviewed_at", "reps", "interval_days"],
 	)
 	record_attempt(attempt)
 	# XP only for a first completion or a new best percentage, so retakes can't farm the leaderboard.
@@ -431,7 +437,7 @@ def submit_quiz(request, quiz_id):
 		subject__is_active=True,
 	)
 	# Row lock: a double click or second tab waits here, so it sees the first attempt in the check below.
-	UserProgress.objects.select_for_update().get_or_create(user=request.user)
+	progress, _ = UserProgress.objects.select_for_update().get_or_create(user=request.user)
 	# Checks for unmarked answers, not just the flag: deleting a question can leave a flagged attempt with nothing to mark.
 	if QuizAttempt.objects.filter(
 		user=request.user, quiz=quiz, awaiting_review=True, answers__marks_awarded__isnull=True
@@ -465,7 +471,7 @@ def submit_quiz(request, quiz_id):
 			matching_answers[question.id] = {
 				str(answer.id): request.POST.get(
 					f"question-{question.id}-{answer.id}", ""
-				).strip()
+				).strip()[:MAX_TEXT_ANSWER]
 				for answer in question.answers.all()
 			}
 			continue
@@ -487,6 +493,9 @@ def submit_quiz(request, quiz_id):
 		except (signing.BadSignature, TypeError, ValueError):
 			pass
 
+	# Any submitted quiz is a study day, even a retake or mock that earns no XP.
+	_touch_streak(progress)
+	progress.save(update_fields=["current_streak", "longest_streak", "last_activity_date", "updated_at"])
 	attempt = QuizAttempt.objects.create(
 		user=request.user,
 		quiz=quiz,
@@ -562,7 +571,7 @@ def submit_quiz(request, quiz_id):
 
 def _render_leaderboard(request, subject, topic, xp_filter):
 	totals = (
-		XPTransaction.objects.filter(user__is_staff=False, user__is_superuser=False, **xp_filter)
+		XPTransaction.objects.filter(user__is_active=True, user__is_staff=False, user__is_superuser=False, **xp_filter)
 		.values("user_id", "user__username")
 		.annotate(xp=Sum("amount"))
 	)
@@ -723,10 +732,14 @@ def review_flashcard(request):
 		return JsonResponse({"ok": False, "error": "Invalid rating"}, status=400)
 
 	question = get_object_or_404(Question, pk=question_id, is_active=True)
-	state, _ = FlashcardState.objects.get_or_create(
-		user=request.user,
-		question=question,
-		defaults={"due_at": timezone.localdate()},
-	)
-	due_days = state.review(rating)
+	with transaction.atomic():
+		progress, _ = UserProgress.objects.select_for_update().get_or_create(user=request.user)
+		_touch_streak(progress)
+		progress.save(update_fields=["current_streak", "longest_streak", "last_activity_date", "updated_at"])
+		state, _ = FlashcardState.objects.get_or_create(
+			user=request.user,
+			question=question,
+			defaults={"due_at": timezone.localdate()},
+		)
+		due_days = state.review(rating)
 	return JsonResponse({"ok": True, "due_days": due_days})

@@ -24,7 +24,7 @@ Owner: Phil (IT/CS teacher, Jamaica). Repo: `github.com/philquake/cxc_platform`.
 
 Required: `DJANGO_SECRET_KEY`, `DATABASE_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
 Login throttling: django-axes locks a username for 15 min after 5 failed logins (`/accounts/login/` and `/admin/`); it adds `axes_*` tables, so run `migrate` on deploy. When `DEBUG` is false, session/CSRF cookies are secure and HSTS is on (Render terminates HTTPS and sets `X-Forwarded-Proto`).
-Optional: `DEBUG`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `EMAIL_BACKEND` (defaults to console), `DEFAULT_FROM_EMAIL`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DB_SSLMODE`.
+Optional: `DEBUG`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `EMAIL_BACKEND` (defaults to console), `DEFAULT_FROM_EMAIL`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DB_SSLMODE`, `GOOGLE_SITE_VERIFICATION` (Search Console HTML-tag token; adds the meta tag to `base.html` via `apps.core.context_processors`).
 Loaded from `.env` at the repo root via django-environ. Never commit it.
 
 ## Common commands
@@ -125,7 +125,7 @@ static/css|js|admin/css|admin/js
 - Admin actions (activate/deactivate questions, generate lesson quizzes, generate mock exams) have no `allowed_permissions`, so any staff user who can view the changelist can run them. Fine while the owner is the only (super)user; add `permissions=[...]` / `has_perm("quizzes.add_quiz")` checks before giving teachers limited staff roles.
 - `complete_lesson` falls back to an inactive "General" topic (created on demand) when a subject has no active topics, only so the XP row has a topic.
 - Templates now use "compile/" consistently; the repo name and README title still say "CXC Platform".
-- `dashboard` runs several queries per subject, and the study plan view one flashcard count per plan item. Watch performance as content grows.
+- `dashboard` runs a fixed handful of queries per subject (not per lesson or question). The study plan view loads the user's flashcard due dates once (`flashcard_due_dates`) and counts per item in Python.
 - `AGENTS.md` holds separate agent-behaviour guidance ("lazy senior dev" style); keep it consistent with this file.
 - `ads.txt` is read from the repo root; the test expects `google.com` in it.
 

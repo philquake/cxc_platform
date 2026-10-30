@@ -425,6 +425,8 @@
 
 .lesson-page .lesson-body code {
     padding: 2px 6px;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
     color: var(--color-accent-ink);
     background: var(--color-panel);
     border-radius: 4px;
@@ -433,6 +435,8 @@
 .lesson-page .lesson-body pre {
     overflow-x: auto;
     padding: 16px;
+    font-size: 15px;
+    line-height: 1.55;
     background: var(--color-panel);
     border: 1px solid var(--color-panel-border);
     border-radius: var(--radius-sm);

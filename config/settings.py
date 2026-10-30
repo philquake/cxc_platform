@@ -63,6 +63,7 @@ CKEDITOR_5_CONFIGS = {
             "fontColor", "fontBackgroundColor", "|",
             "alignment", "|",
             "imageUpload", "bulletedList", "numberedList", "blockQuote", "|",
+            "code", "codeBlock", "|",
             "insertTable", "|",
             "undo", "redo",
         ],
@@ -87,6 +88,15 @@ CKEDITOR_5_CONFIGS = {
                 {"color": "#1a222d", "label": "Slate"},
             ],
             "columns": 3,
+        },
+        "codeBlock": {
+            "languages": [
+                {"language": "plaintext", "label": "Pseudocode"},
+                {"language": "c", "label": "C"},
+                {"language": "pascal", "label": "Pascal"},
+                {"language": "python", "label": "Python"},
+                {"language": "sql", "label": "SQL"},
+            ],
         },
         "table": {
             "contentToolbar": [

@@ -657,6 +657,33 @@ class ProgressFlowTests(TestCase):
 		self.client.force_login(other)
 		self.assertEqual(self.client.post(url, {"complete_item": item.pk}).status_code, 404)
 
+	def test_study_plan_counts_due_cards_without_a_query_per_item(self):
+		from django.db import connection
+		from django.test.utils import CaptureQueriesContext
+
+		today = timezone.localdate()
+		topic = self.correct_answer.question.topic
+		FlashcardState.objects.create(user=self.user, question=self.correct_answer.question, due_at=today + timezone.timedelta(days=2))
+		plan = StudyPlan.objects.create(user=self.user, subject=self.lesson.subject, target_date=today + timezone.timedelta(days=9))
+		url = reverse("progress:study-plan", args=["mathematics"])
+		self.client.force_login(self.user)
+
+		def render_plan(days):
+			for day in days:
+				StudyPlanItem.objects.create(
+					plan=plan, item_type=StudyPlanItem.FLASHCARD_REVIEW, topic=topic,
+					scheduled_date=today + timezone.timedelta(days=day), order=day,
+				)
+			with CaptureQueriesContext(connection) as queries:
+				response = self.client.get(url)
+			return response, len(queries)
+
+		_, few = render_plan([0])
+		response, many = render_plan([1, 2, 3, 4, 5])
+
+		self.assertEqual(few, many)
+		self.assertEqual([item.due_card_count for item in response.context["items"]], [0, 0, 1, 1, 1, 1])
+
 	def test_flashcard_review_rejects_unknown_rating(self):
 		self.client.force_login(self.user)
 

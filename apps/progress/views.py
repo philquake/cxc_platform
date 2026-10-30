@@ -40,7 +40,7 @@ from .models import (
 	XPTransaction,
 	percent,
 )
-from .study_plan import due_flashcard_count, generate_plan
+from .study_plan import due_flashcard_count, flashcard_due_dates, generate_plan
 
 
 def _award_xp(user, topic, amount, reason, lesson_progress=None, quiz_attempt=None, update_streak=True):
@@ -163,7 +163,7 @@ def dashboard(request):
 			lesson__is_active=True,
 		).order_by("lesson__section_number", "lesson__lesson_number", "lesson_id").values_list(
 			"topic_id", "lesson_id"
-		):
+		).distinct():  # one row per topic and lesson, not per question
 			topic = topic_by_id.get(topic_id)
 			if topic and not hasattr(topic, "mastery_lesson"):
 				topic.mastery_lesson = lesson_by_id.get(lesson_id)
@@ -271,6 +271,7 @@ def study_plan_view(request, subject_slug):
 				completed_at__isnull=False,
 			).values_list("quiz__topic_id", "completed_at")
 		)
+		due_dates = flashcard_due_dates(request.user, subject)
 		quizzes_by_topic = {}
 		for quiz in Quiz.objects.filter(
 			subject=subject,
@@ -291,11 +292,7 @@ def study_plan_view(request, subject_slug):
 					for topic_id, completed_at in quiz_attempts
 				)
 			elif item.item_type == StudyPlanItem.FLASHCARD_REVIEW:
-				item.due_card_count = due_flashcard_count(
-					request.user,
-					item.topic,
-					item.scheduled_date,
-				)
+				item.due_card_count = due_flashcard_count(due_dates, item.topic_id, item.scheduled_date)
 
 	return render(
 		request,

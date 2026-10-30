@@ -1,3 +1,4 @@
+from bisect import bisect_right
 from datetime import date, timedelta
 from math import ceil
 
@@ -184,10 +185,18 @@ def generate_plan(user, subject, target_date: date):
 	return plan
 
 
-def due_flashcard_count(user, topic, scheduled_date):
-	return FlashcardState.objects.filter(
+def flashcard_due_dates(user, subject):
+	"""Sorted due dates of the user's active cards in a subject, by topic id: one query for a whole plan."""
+	due_dates = {}
+	for topic_id, due_at in FlashcardState.objects.filter(
 		user=user,
-		question__topic=topic,
+		question__subject=subject,
 		question__is_active=True,
-		due_at__lte=scheduled_date,
-	).count()
+	).order_by("due_at").values_list("question__topic_id", "due_at"):
+		due_dates.setdefault(topic_id, []).append(due_at)
+	return due_dates
+
+
+def due_flashcard_count(due_dates, topic_id, scheduled_date):
+	"""Cards in the topic due on or before scheduled_date, from flashcard_due_dates()."""
+	return bisect_right(due_dates.get(topic_id, []), scheduled_date)

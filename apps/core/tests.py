@@ -63,7 +63,8 @@ class CoreViewTests(TestCase):
 
 	def test_search_console_tag_only_when_token_is_set(self):
 		tag = '<meta name="google-site-verification" content="abc123">'
-		self.assertNotContains(self.client.get(reverse("home")), "google-site-verification")
+		with self.settings(GOOGLE_SITE_VERIFICATION=""):
+			self.assertNotContains(self.client.get(reverse("home")), "google-site-verification")
 		with self.settings(GOOGLE_SITE_VERIFICATION="abc123"):
 			self.assertContains(self.client.get(reverse("home")), tag, html=True)
 

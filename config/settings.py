@@ -23,8 +23,8 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 # Required behind Render's HTTPS proxy so request.is_secure() and CSRF work correctly
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
-# The content value of Search Console's HTML-tag verification (URL-prefix property); blank adds no tag.
-GOOGLE_SITE_VERIFICATION = env("GOOGLE_SITE_VERIFICATION", default="")
+# The content value of Search Console's HTML-tag verification (URL-prefix property); set it blank to drop the tag.
+GOOGLE_SITE_VERIFICATION = env("GOOGLE_SITE_VERIFICATION", default="FqUC-GbcN9zVyQBOOH2eb2M4YhRqEE5uFOQ9EWCXAD0")
 if not DEBUG:
     SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000

@@ -67,6 +67,8 @@ class CoreViewTests(TestCase):
 			self.assertNotContains(self.client.get(reverse("home")), "google-site-verification")
 		with self.settings(GOOGLE_SITE_VERIFICATION="abc123"):
 			self.assertContains(self.client.get(reverse("home")), tag, html=True)
+		with self.settings(GOOGLE_SITE_VERIFICATION='<meta name="google-site-verification" content="abc123" />'):
+			self.assertContains(self.client.get(reverse("home")), tag, html=True)
 
 	def test_home_counts_only_active_lessons_and_questions(self):
 		subject = Subject.objects.create(name="Mathematics", code="MATH")

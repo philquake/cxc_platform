@@ -130,6 +130,11 @@
 .profile-error { margin: 6px 0 0; padding: 0; color: var(--color-incorrect); list-style: none; font-weight: 700; }
 .profile-error { margin-bottom: 16px; padding: 10px 12px; background: var(--color-incorrect-bg); border-radius: var(--radius-sm); }
 .profile-form .btn { width: 100%; min-height: 44px; }
+.profile-classes { margin: 0 0 16px; padding: 0; list-style: none; }
+.profile-classes li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--color-panel-border); }
+.profile-classes small { display: block; color: var(--color-text-muted); }
+.profile-form .profile-classes .btn { width: auto; min-height: 44px; }
+.profile-delete .btn { color: #fff; background: var(--color-incorrect); border-color: var(--color-incorrect); }
 .profile-note { margin: 0; padding: 12px 14px; background: var(--color-reef-bg); border-radius: var(--radius-sm); }
 
 @media (max-width: 900px) {

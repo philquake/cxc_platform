@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 
 from apps.lessons.models import Lesson
 from apps.questions.models import Question
@@ -364,3 +365,27 @@ class StudyPlanItem(models.Model):
 
     def __str__(self):
         return f"{self.plan.subject} - {self.get_item_type_display()}"
+
+JOIN_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O or 1/I, so codes read cleanly off a board
+
+
+class Classroom(models.Model):
+    """A teacher's group of students. Students join with the code; the teacher sees their progress."""
+    name = models.CharField(max_length=100)
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name="classrooms_taught")
+    students = models.ManyToManyField(User, related_name="classrooms", blank=True)
+    join_code = models.CharField(max_length=8, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name", "id"]
+
+    def save(self, *args, **kwargs):
+        while not self.join_code:
+            code = get_random_string(6, JOIN_CODE_CHARS)
+            if not Classroom.objects.filter(join_code=code).exists():
+                self.join_code = code
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name

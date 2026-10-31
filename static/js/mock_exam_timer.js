@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const countdown = timer.querySelector(".mock-exam-countdown");
         const warning = form ? form.querySelector(".mock-exam-warning") : null;
         const duration = Number(timer.dataset.timeLimitMinutes) * 60;
+        // The server keeps the start time, so a reload resumes the clock instead of resetting it.
+        const secondsLeft = timer.dataset.secondsLeft === undefined ? duration : Number(timer.dataset.secondsLeft);
         const milestones = [600, 300, 60, 30].filter(function (s) { return s < duration; });
         const announced = new Set();
         const startedAt = Date.now();
@@ -14,7 +16,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         function updateTimer() {
             const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-            const remaining = Math.max(duration - elapsed, 0);
+            const remaining = Math.max(secondsLeft - elapsed, 0);
             const minutes = Math.floor(remaining / 60);
             const seconds = remaining % 60;
             countdown.textContent = `${minutes}:${String(seconds).padStart(2, "0")}`;

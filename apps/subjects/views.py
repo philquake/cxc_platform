@@ -3,6 +3,7 @@ from django.db.models import Count, Prefetch, Q
 
 from apps.lessons.models import Lesson
 from apps.quizzes.models import Quiz
+from apps.progress.analytics import pathway_quizzes
 from apps.progress.models import LessonProgress, QuizAnswer, QuizAttempt, percent
 from apps.questions.models import Question
 from apps.quizzes.services import attach_draw_counts
@@ -150,12 +151,12 @@ def lesson_detail(request, subject_slug, lesson_slug):
         is_active=True,
     )
 
-    quizzes = list(Quiz.objects.filter(
+    quizzes = pathway_quizzes(request.user, list(Quiz.objects.filter(
         lesson=lesson,
         is_active=True,
     ).annotate(
         question_count=Count("quiz_questions", filter=Q(quiz_questions__question__is_active=True))
-    ))
+    )))
     attach_draw_counts(quizzes)
     lesson_progress = None
     if request.user.is_authenticated:

@@ -17,12 +17,22 @@ from django.db.models import Count, Q
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_POST
 from apps.core.http import safe_next_url
-from apps.progress.models import LessonProgress, QuizAnswer, QuizAttempt, UserProgress, XPTransaction
+from apps.progress.models import (
+	Classroom,
+	FlashcardState,
+	LessonProgress,
+	QuizAnswer,
+	QuizAttempt,
+	StudyPlan,
+	UserProgress,
+	XPTransaction,
+)
 from apps.subjects.models import Subject
 from .forms import AccountProfileForm, DisplayNameForm, ResendVerificationForm, SignupForm
 from .models import Profile
@@ -216,8 +226,24 @@ def confirm_email_change(request, token):
 @login_required
 def account(request):
 	profile, _ = Profile.objects.get_or_create(user=request.user)
+	action = request.POST.get("action") if request.method == "POST" else None
+	if action == "join_class":
+		classroom = Classroom.objects.filter(join_code=request.POST.get("join_code", "").strip().upper()).first()
+		if classroom is None:
+			messages.error(request, "No class has that code. Check it with your teacher.")
+		else:
+			classroom.students.add(request.user)
+			messages.success(request, f"You joined {classroom.name}. Your teacher can now see your progress.")
+		return redirect("account")
+	if action == "leave_class":
+		classroom_id = request.POST.get("classroom", "")
+		classroom = request.user.classrooms.filter(pk=classroom_id).first() if classroom_id.isdigit() else None
+		if classroom is not None:
+			classroom.students.remove(request.user)
+			messages.success(request, f"You left {classroom.name}.")
+		return redirect("account")
 	old_email = request.user.email  # the form writes the new address onto request.user while validating
-	is_password_post = request.method == "POST" and request.POST.get("action") == "password"
+	is_password_post = action == "password"
 	is_details_post = request.method == "POST" and not is_password_post
 	form = AccountProfileForm(request.POST if is_details_post else None, instance=request.user)
 	name_form = DisplayNameForm(request.POST if is_details_post else None, instance=profile)
@@ -284,8 +310,94 @@ def account(request):
 			"study_log_weeks": STUDY_LOG_WEEKS,
 			"days_studied": days_studied,
 			"recent": XPTransaction.objects.filter(user=request.user).select_related("topic")[:6],
+			"classrooms": request.user.classrooms.select_related("teacher__profile"),
 		},
 	)
+
+
+@login_required
+def download_data(request):
+	"""Everything stored about the signed-in student, as one JSON file."""
+	user = request.user
+	profile = Profile.objects.filter(user=user).first()
+	progress = UserProgress.objects.filter(user=user).first()
+	data = {
+		"account": {
+			"username": user.username,
+			"email": user.email,
+			"first_name": user.first_name,
+			"last_name": user.last_name,
+			"date_joined": user.date_joined,
+			"last_login": user.last_login,
+			"display_name": profile.display_name if profile else "",
+			"time_multiplier": str(profile.time_multiplier) if profile else "1.00",
+		},
+		"progress": {
+			"total_xp": progress.total_xp,
+			"current_streak": progress.current_streak,
+			"longest_streak": progress.longest_streak,
+			"last_activity_date": progress.last_activity_date,
+		} if progress else None,
+		"lessons": list(LessonProgress.objects.filter(user=user).values(
+			"lesson__subject__name", "lesson__title", "completed", "completed_at"
+		)),
+		"quiz_attempts": [
+			{
+				"quiz": attempt.quiz.title,
+				"score": attempt.score,
+				"total_marks": attempt.total_marks,
+				"awaiting_review": attempt.awaiting_review,
+				"time_taken_seconds": attempt.time_taken_seconds,
+				"completed_at": attempt.completed_at,
+				"answers": [
+					{
+						"question": answer.question.text,
+						"answer": answer.selected_answer.text if answer.selected_answer else answer.selected_text,
+						"marks_awarded": answer.marks_awarded,
+						"feedback": answer.feedback,
+					}
+					for answer in attempt.answers.all()
+				],
+			}
+			for attempt in QuizAttempt.objects.filter(user=user).select_related("quiz").prefetch_related(
+				"answers__question", "answers__selected_answer"
+			)
+		],
+		"xp": list(XPTransaction.objects.filter(user=user).values("topic__name", "amount", "reason", "created_at")),
+		"flashcards": list(FlashcardState.objects.filter(user=user).values(
+			"question__text", "ease", "interval_days", "due_at", "reps", "last_reviewed_at"
+		)),
+		"study_plans": [
+			{
+				"subject": plan.subject.name,
+				"target_date": plan.target_date,
+				"is_active": plan.is_active,
+				"items": list(plan.items.values("scheduled_date", "item_type", "lesson__title", "topic__name", "completed")),
+			}
+			for plan in StudyPlan.objects.filter(user=user).select_related("subject")
+		],
+		"classes": list(user.classrooms.values("name", "teacher__username")),
+	}
+	response = JsonResponse(data, json_dumps_params={"indent": 2})
+	response["Content-Disposition"] = f'attachment; filename="compile-data-{user.username}.json"'
+	return response
+
+
+@login_required
+@require_POST
+def delete_account(request):
+	user = request.user
+	if user.is_staff or user.is_superuser:
+		# Staff accounts own content and classes, so the owner removes them from the admin instead.
+		messages.error(request, "Staff accounts can't be deleted here. Ask the site owner to remove it.")
+	elif not user.check_password(request.POST.get("password", "")):
+		messages.error(request, "That password is wrong, so your account was not deleted.")
+	else:
+		logout(request)
+		user.delete()  # progress, attempts, flashcards, plans and class memberships cascade with it
+		messages.success(request, "Your account and all its data have been deleted.")
+		return redirect("home")
+	return redirect("account")
 
 
 @require_POST

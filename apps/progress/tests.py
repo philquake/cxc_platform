@@ -1,8 +1,6 @@
-import time
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.core import signing
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -14,6 +12,7 @@ from apps.quizzes.models import Quiz, QuizQuestion
 from apps.subjects.models import Subject, Topic
 
 from apps.progress.models import (
+	Classroom,
 	FlashcardState,
 	LessonProgress,
 	QuizAnswer,
@@ -25,7 +24,7 @@ from apps.progress.models import (
 	XPTransaction,
 )
 from apps.progress.study_plan import generate_plan
-from apps.progress.analytics import difficulty_breakdown, estimated_readiness, record_attempt, topic_mastery
+from apps.progress.analytics import difficulty_breakdown, estimated_readiness, pathway_for, record_attempt, topic_mastery
 
 class ProgressFlowTests(TestCase):
 	def setUp(self):
@@ -203,19 +202,26 @@ class ProgressFlowTests(TestCase):
 		)
 		QuizQuestion.objects.create(quiz=mock, question=question)
 		self.client.force_login(self.user)
+		self.client.get(reverse("quizzes:detail", args=[mock.id]))
+		session = self.client.session
+		session[f"mock-start-{mock.id}"] -= 75
+		session.save()
+		# A reload keeps the original start, so the clock can't be reset.
+		response = self.client.get(reverse("quizzes:detail", args=[mock.id]))
+		self.assertIn(response.context["quizzes"][0].seconds_left, range(30 * 60 - 80, 30 * 60 - 74))
 
 		response = self.client.post(
 			reverse("progress:submit-quiz", args=[mock.id]),
 			{
 				f"question-{question.id}": "",
 				"time_taken_seconds": "1",  # ignored: the server times the exam itself
-				"mock_started": signing.dumps([mock.id, self.user.id, int(time.time()) - 75]),
 			},
 		)
 
 		self.assertEqual(response.status_code, 302)
 		attempt = QuizAttempt.objects.get(user=self.user, quiz=mock)
 		self.assertIn(attempt.time_taken_seconds, range(75, 80))
+		self.assertNotIn("mock-start-%d" % mock.id, self.client.session)
 		self.assertFalse(attempt.answers.get().is_correct)
 		self.assertTrue(FlashcardState.objects.filter(user=self.user, question=question).exists())
 
@@ -1441,3 +1447,135 @@ class LevelCurveTests(TestCase):
 				progress = UserProgress(total_xp=total_xp)
 				self.assertEqual((progress.level, progress.level_xp, progress.level_xp_required), expected)
 		self.assertEqual(UserProgress(total_xp=1500).level_progress, 57)
+
+
+class PathwayTests(TestCase):
+	def setUp(self):
+		self.user = get_user_model().objects.create_user(username="student", password="A-strong-password-123")
+		self.subject = Subject.objects.create(name="Mathematics", code="MATH")
+		self.topic = Topic.objects.create(subject=self.subject, name="Algebra", slug="algebra")
+		self.lesson = Lesson.objects.create(subject=self.subject, title="Algebra", slug="algebra", content="<p>x</p>")
+		self.question = Question.objects.create(subject=self.subject, topic=self.topic, lesson=self.lesson, text="2 + 2?")
+		self.answer = Answer.objects.create(question=self.question, text="4", is_correct=True)
+		self.quizzes = {
+			pathway: Quiz.objects.create(
+				subject=self.subject, topic=self.topic, lesson=self.lesson, title=pathway, pathway=pathway
+			)
+			for pathway in ("guided", "adaptive", "practice")
+		}
+		for quiz in self.quizzes.values():
+			QuizQuestion.objects.create(quiz=quiz, question=self.question)
+		self.client.force_login(self.user)
+
+	def _answer(self, correct, count):
+		attempt = QuizAttempt.objects.create(
+			user=self.user, quiz=self.quizzes["guided"], total_questions=count, total_marks=count, completed_at=timezone.now()
+		)
+		QuizAnswer.objects.bulk_create([
+			QuizAnswer(attempt=attempt, question=self.question, is_correct=correct, marks_awarded=int(correct))
+			for _ in range(count)
+		])
+		record_attempt(attempt)
+
+	def _titles(self):
+		response = self.client.get(reverse("quizzes:lesson-list", args=[self.lesson.id]))
+		return [quiz.title for quiz in response.context["quizzes"]]
+
+	def test_thresholds(self):
+		self.assertEqual(pathway_for(None), "guided")
+		self.assertEqual(pathway_for({"enough_data": False, "accuracy": 1.0}), "guided")
+		self.assertEqual(pathway_for({"enough_data": True, "accuracy": 0.49}), "guided")
+		self.assertEqual(pathway_for({"enough_data": True, "accuracy": 0.5}), "adaptive")
+		self.assertEqual(pathway_for({"enough_data": True, "accuracy": 0.8}), "practice")
+
+	def test_new_student_gets_guided_then_moves_up_with_grades(self):
+		self.assertEqual(self._titles(), ["guided"])
+
+		self._answer(True, 5)
+
+		self.assertEqual(self._titles(), ["practice"])
+
+	def test_lesson_without_a_quiz_for_the_pathway_keeps_all_its_quizzes(self):
+		self.quizzes["guided"].delete()
+
+		self.assertEqual(sorted(self._titles()), ["adaptive", "practice"])
+
+	def test_untagged_quizzes_always_show(self):
+		untagged = Quiz.objects.create(subject=self.subject, topic=self.topic, lesson=self.lesson, title="untagged")
+		QuizQuestion.objects.create(quiz=untagged, question=self.question)
+
+		self.assertEqual(sorted(self._titles()), ["guided", "untagged"])
+
+
+class ClassroomTests(TestCase):
+	def setUp(self):
+		User = get_user_model()
+		self.teacher = User.objects.create_user(username="teacher", password="A-strong-password-123", is_staff=True)
+		self.student = User.objects.create_user(username="student", password="A-strong-password-123")
+		self.subject = Subject.objects.create(name="Mathematics", code="MATH")
+		Topic.objects.create(subject=self.subject, name="Algebra", slug="algebra")
+		self.classroom = Classroom.objects.create(name="5A", teacher=self.teacher)
+
+	def test_join_code_is_generated(self):
+		self.assertEqual(len(self.classroom.join_code), 6)
+
+	def test_student_joins_and_leaves_with_the_code(self):
+		self.client.force_login(self.student)
+
+		self.client.post(reverse("account"), {"action": "join_class", "join_code": self.classroom.join_code.lower()})
+		self.assertTrue(self.classroom.students.filter(pk=self.student.pk).exists())
+
+		self.client.post(reverse("account"), {"action": "leave_class", "classroom": self.classroom.pk})
+		self.assertFalse(self.classroom.students.filter(pk=self.student.pk).exists())
+
+	def test_only_the_classes_teacher_sees_its_progress(self):
+		self.classroom.students.add(self.student)
+		url = reverse("progress:class-detail", args=[self.classroom.pk])
+
+		self.client.force_login(self.teacher)
+		response = self.client.get(url)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual([s.username for s in response.context["students"]], ["student"])
+		self.assertEqual(response.context["topic_stats"][0]["guided"], 1)
+		self.assertContains(self.client.get(reverse("progress:classes")), "5A")
+
+		other = get_user_model().objects.create_user(username="other", password="x", is_staff=True)
+		self.client.force_login(other)
+		self.assertEqual(self.client.get(url).status_code, 404)
+
+		self.client.force_login(self.student)
+		self.assertEqual(self.client.get(url).status_code, 404)
+		self.assertEqual(self.client.get(reverse("progress:classes")).status_code, 404)
+
+
+class AdminAccessTests(TestCase):
+	def setUp(self):
+		self.admin = get_user_model().objects.create_superuser(username="owner", password="A-strong-password-123")
+		self.staff = get_user_model().objects.create_user(username="teacher", password="A-strong-password-123", is_staff=True)
+
+	def test_new_progress_models_have_admin_pages(self):
+		self.client.force_login(self.admin)
+		for name in ("studyplan", "flashcardstate", "topicmasterystat", "classroom"):
+			self.assertEqual(self.client.get(reverse(f"admin:progress_{name}_changelist")).status_code, 200, name)
+
+	def test_actions_need_the_matching_permission(self):
+		from django.contrib import admin
+		from django.contrib.auth.models import Permission
+		from django.test import RequestFactory
+
+		models = {Lesson: "generate_quizzes", Subject: "generate_mock_exams", Question: "activate_questions"}
+
+		def actions(model):
+			request = RequestFactory().get("/admin/")
+			request.user = get_user_model().objects.get(pk=self.staff.pk)  # fresh, so permissions aren't cached
+			return admin.site._registry[model].get_actions(request)
+
+		for codename in ("view_lesson", "view_subject", "view_question"):
+			self.staff.user_permissions.add(Permission.objects.get(codename=codename))
+		for model, action in models.items():
+			self.assertNotIn(action, actions(model))
+
+		for codename in ("add_quiz", "change_question"):
+			self.staff.user_permissions.add(Permission.objects.get(codename=codename))
+		for model, action in models.items():
+			self.assertIn(action, actions(model))

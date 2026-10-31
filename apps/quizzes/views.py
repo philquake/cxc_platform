@@ -10,6 +10,7 @@ from django.db.models import Count, Prefetch, Q
 from apps.accounts.models import Profile
 from apps.subjects.lookup import get_subject_or_404
 from apps.subjects.models import Topic
+from apps.progress.analytics import pathway_quizzes
 from apps.progress.models import QuizAttempt
 
 from .models import Quiz, QuizQuestion
@@ -58,7 +59,7 @@ def quiz_queryset(subject=None, topic=None, with_questions=False):
 
 
 def quiz_index(request):
-    quizzes = list(quiz_queryset())
+    quizzes = pathway_quizzes(request.user, list(quiz_queryset()))
     _add_latest_attempts(request, quizzes)
     return render(
         request,
@@ -70,7 +71,7 @@ def quiz_index(request):
 def subject_quizzes(request, subject_slug):
     subject = get_subject_or_404(subject_slug)
 
-    quizzes = list(quiz_queryset(subject=subject))
+    quizzes = pathway_quizzes(request.user, list(quiz_queryset(subject=subject)))
     _add_latest_attempts(request, quizzes)
     return render(
         request,
@@ -83,7 +84,7 @@ def lesson_quizzes(request, lesson_id):
     quizzes = quiz_queryset(with_questions=True).filter(lesson_id=lesson_id)
     if not quizzes.exists():
         raise Http404("Quiz not found")
-    quizzes = list(quizzes)
+    quizzes = pathway_quizzes(request.user, list(quizzes))
     _shuffle_questions(quizzes)
     _draw_auto(request, quizzes)
     _add_latest_attempts(request, quizzes)
@@ -108,6 +109,7 @@ def quiz_detail(request, quiz_id):
     _shuffle_questions([quiz])
     _draw_auto(request, [quiz])
     _add_latest_attempts(request, [quiz])
+    _start_mock(request, quiz)
     return render(
         request,
         "quizzes/quiz_list.html",
@@ -146,7 +148,7 @@ def topic_quizzes(request, subject_slug, topic_slug):
     if topic is None:
         raise Http404("Topic not found")
 
-    quizzes = list(quiz_queryset(subject=subject, topic=topic))
+    quizzes = pathway_quizzes(request.user, list(quiz_queryset(subject=subject, topic=topic)))
     _add_latest_attempts(request, quizzes)
     return render(
         request,
@@ -176,8 +178,23 @@ def _add_time_limits(request, quizzes):
             math.ceil(minutes * multiplier) if minutes else minutes
         )
         quiz.has_extra_time = bool(minutes) and quiz.effective_time_limit_minutes > minutes
-        if quiz.is_mock and request.user.is_authenticated:
-            quiz.start_token = signing.dumps([quiz.id, request.user.id, int(time.time())])
+
+
+MOCK_SITTING_MAX_AGE = 24 * 60 * 60
+
+
+def _start_mock(request, quiz):
+    """Keep the mock's start time in the session so reloading the page doesn't reset the clock."""
+    if not (quiz.is_mock and request.user.is_authenticated):
+        return
+    key = f"mock-start-{quiz.id}"
+    now = int(time.time())
+    started = request.session.get(key)
+    # A sitting older than a day was abandoned, so the next visit starts a fresh one.
+    if not started or now - started > MOCK_SITTING_MAX_AGE:
+        started = request.session[key] = now
+    if quiz.effective_time_limit_minutes:
+        quiz.seconds_left = max(quiz.effective_time_limit_minutes * 60 - (now - started), 0)
 
 
 def _shuffle_questions(quizzes):

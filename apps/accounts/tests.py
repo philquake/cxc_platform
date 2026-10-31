@@ -463,3 +463,33 @@ class EmailVerificationTests(TestCase):
 		user.email = "old@example.com"
 		user.save()
 		self.assertNotContains(self.client.get(reverse("home")), "Add your email")
+
+
+class AccountDataTests(TestCase):
+	def setUp(self):
+		self.user = get_user_model().objects.create_user(username="student", password="A-strong-password-123")
+		self.client.force_login(self.user)
+
+	def test_download_data_is_a_json_attachment_of_the_students_own_data(self):
+		response = self.client.get(reverse("account-data"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertIn("attachment", response["Content-Disposition"])
+		self.assertEqual(response.json()["account"]["username"], "student")
+
+	def test_delete_account_needs_the_right_password(self):
+		self.client.post(reverse("account-delete"), {"password": "wrong"})
+		self.assertTrue(get_user_model().objects.filter(pk=self.user.pk).exists())
+
+		response = self.client.post(reverse("account-delete"), {"password": "A-strong-password-123"})
+
+		self.assertRedirects(response, reverse("home"))
+		self.assertFalse(get_user_model().objects.filter(pk=self.user.pk).exists())
+
+	def test_staff_cannot_delete_themselves_from_the_profile_page(self):
+		self.user.is_staff = True
+		self.user.save()
+
+		self.client.post(reverse("account-delete"), {"password": "A-strong-password-123"})
+
+		self.assertTrue(get_user_model().objects.filter(pk=self.user.pk).exists())

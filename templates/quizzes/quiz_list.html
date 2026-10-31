@@ -137,12 +137,11 @@
                 </div>
                 {% if quiz.description %}<p class="quiz-card-description">{{ quiz.description }}</p>{% endif %}
                 {% if show_questions and quiz.is_mock and quiz.effective_time_limit_minutes %}
-                    <div class="mock-exam-timer" data-time-limit-minutes="{{ quiz.effective_time_limit_minutes }}">
+                    <div class="mock-exam-timer" data-time-limit-minutes="{{ quiz.effective_time_limit_minutes }}"{% if quiz.seconds_left is not None %} data-seconds-left="{{ quiz.seconds_left }}"{% endif %}>
                         <span>Time remaining</span>
                         <strong class="mock-exam-countdown" role="timer">{{ quiz.effective_time_limit_minutes }}:00</strong>
                     </div>
                     <p class="mock-exam-warning" role="status" aria-live="polite"></p>
-                    <input type="hidden" name="mock_started" value="{{ quiz.start_token }}">
                 {% endif %}
 
                 {% if show_questions %}

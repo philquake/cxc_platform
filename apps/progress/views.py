@@ -8,7 +8,7 @@ from django.core import signing
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, Max, OuterRef, Q, Subquery, Sum
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -26,16 +26,20 @@ from .analytics import (
 	estimated_readiness,
 	mastery_rows,
 	mock_time_analytics,
+	pathway_for,
+	pathway_quizzes,
 	record_attempt,
 	topic_mastery,
 )
 from .models import (
+	Classroom,
 	FlashcardState,
 	LessonProgress,
 	QuizAnswer,
 	QuizAttempt,
 	StudyPlan,
 	StudyPlanItem,
+	TopicMasteryStat,
 	UserProgress,
 	XPTransaction,
 	percent,
@@ -278,11 +282,11 @@ def study_plan_view(request, subject_slug):
 		)
 		due_dates = flashcard_due_dates(request.user, subject)
 		quizzes_by_topic = {}
-		for quiz in Quiz.objects.filter(
+		for quiz in pathway_quizzes(request.user, list(Quiz.objects.filter(
 			subject=subject,
 			is_active=True,
 			lesson__is_active=True,
-		).select_related("topic").order_by("topic_id", "id"):
+		).select_related("topic").order_by("topic_id", "id"))):
 			quizzes_by_topic.setdefault(quiz.topic_id, quiz)
 
 		for item in items:
@@ -485,13 +489,10 @@ def submit_quiz(request, quiz_id):
 
 	time_taken = None
 	if quiz.is_mock:
-		# The page signs its start time, so the recorded duration can't be made up by the browser.
-		try:
-			signed_quiz_id, signed_user_id, started = signing.loads(request.POST.get("mock_started", ""))
-			if (signed_quiz_id, signed_user_id) == (quiz.id, request.user.id):
-				time_taken = max(int(time.time() - started), 0)
-		except (signing.BadSignature, TypeError, ValueError):
-			pass
+		# The quiz page stored the start in the session, so reloading it can't reset the clock.
+		started = request.session.pop(f"mock-start-{quiz.id}", None)
+		if started:
+			time_taken = max(int(time.time()) - started, 0)
 
 	# Any submitted quiz is a study day, even a retake or mock that earns no XP.
 	_touch_streak(progress)
@@ -743,3 +744,90 @@ def review_flashcard(request):
 		)
 		due_days = state.review(rating)
 	return JsonResponse({"ok": True, "due_days": due_days})
+
+
+def _taught_classrooms(user):
+	if not user.is_staff:
+		return Classroom.objects.none()
+	return Classroom.objects.all() if user.is_superuser else Classroom.objects.filter(teacher=user)
+
+
+@login_required
+def class_list(request):
+	if not request.user.is_staff:
+		raise Http404("Not a teacher")
+	return render(request, "progress/class_list.html", {
+		"classrooms": _taught_classrooms(request.user).select_related("teacher").annotate(student_count=Count("students")),
+	})
+
+
+@login_required
+def class_detail(request, classroom_id):
+	classroom = get_object_or_404(_taught_classrooms(request.user), pk=classroom_id)
+	subjects = list(Subject.objects.filter(is_active=True))
+	subject = next((s for s in subjects if s.slug == request.GET.get("subject")), subjects[0] if subjects else None)
+	students = list(classroom.students.select_related("profile").order_by("username"))
+	student_ids = [student.id for student in students]
+	topics = list(subject.topics.filter(is_active=True)) if subject else []
+
+	progress_by_user = {p.user_id: p for p in UserProgress.objects.filter(user_id__in=student_ids)}
+	lesson_total = subject.lessons.filter(is_active=True).count() if subject else 0
+	lessons_done = dict(
+		LessonProgress.objects.filter(
+			user_id__in=student_ids, completed=True, lesson__subject=subject, lesson__is_active=True
+		).values("user_id").annotate(n=Count("id")).values_list("user_id", "n")
+	)
+	marks = {
+		row["user_id"]: row
+		for row in QuizAttempt.objects.filter(
+			user_id__in=student_ids, quiz__subject=subject, completed_at__isnull=False, awaiting_review=False
+		).values("user_id").annotate(score=Sum("score"), total=Sum("total_marks"), n=Count("id"))
+	}
+	awaiting = dict(
+		QuizAttempt.objects.filter(user_id__in=student_ids, quiz__subject=subject, awaiting_review=True)
+		.values("user_id").annotate(n=Count("id")).values_list("user_id", "n")
+	)
+	rows_by_user = {}
+	# One query for the whole class, in the same shape mastery_rows gives one student.
+	for user_id, *row in TopicMasteryStat.objects.filter(user_id__in=student_ids, topic__subject=subject).values_list(
+		"user_id", "topic_id", "topic__name", "difficulty", "weighted_total", "weighted_correct", "n", "updated_at"
+	):
+		rows_by_user.setdefault(user_id, []).append(row)
+	latest_mock = {}
+	for attempt in QuizAttempt.objects.filter(
+		user_id__in=student_ids, quiz__subject=subject, quiz__is_mock=True, quiz__is_active=True,
+		completed_at__isnull=False, awaiting_review=False, total_marks__gt=0,
+	).order_by("-completed_at", "-started_at"):
+		latest_mock.setdefault(attempt.user_id, attempt)
+
+	topic_stats = {topic.id: {"topic": topic, "accuracies": [], "guided": 0, "adaptive": 0, "practice": 0} for topic in topics}
+	for student in students:
+		profile = getattr(student, "profile", None)
+		student.name = (profile and profile.display_name) or student.get_full_name() or student.username
+		student.summary = progress_by_user.get(student.id)
+		student.lessons_done = lessons_done.get(student.id, 0)
+		row = marks.get(student.id)
+		student.quiz_count = row["n"] if row else 0
+		student.average = round(row["score"] * 100 / row["total"]) if row and row["total"] else None
+		student.awaiting = awaiting.get(student.id, 0)
+		results = topic_mastery(student, subject, rows_by_user.get(student.id, []))
+		student.readiness = estimated_readiness(topics, results, latest_mock.get(student.id))
+		known = [topic for topic in topics if results.get(topic.id, {}).get("enough_data")]
+		student.weakest = min(known, key=lambda topic: results[topic.id]["accuracy"]) if known else None
+		for topic in topics:
+			result = results.get(topic.id)
+			topic_stats[topic.id][pathway_for(result)] += 1
+			if result and result["enough_data"]:
+				topic_stats[topic.id]["accuracies"].append(result["accuracy"])
+	for stat in topic_stats.values():
+		stat["average"] = round(sum(stat["accuracies"]) * 100 / len(stat["accuracies"])) if stat["accuracies"] else None
+
+	return render(request, "progress/class_detail.html", {
+		"classroom": classroom,
+		"subjects": subjects,
+		"subject": subject,
+		"students": students,
+		"lesson_total": lesson_total,
+		"topic_stats": list(topic_stats.values()),
+	})
+

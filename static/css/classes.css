@@ -1,0 +1,26 @@
+/* Teacher class pages: class list and the class progress tables. */
+.class-list { display: grid; gap: 12px; }
+.class-card { display: grid; gap: 4px; padding: 18px 20px; color: var(--color-text); text-decoration: none; background: var(--color-panel); border: 1px solid var(--color-panel-border); border-radius: var(--radius-md); }
+.class-card:hover { border-color: var(--color-accent); }
+.class-card span { color: var(--color-text-muted); }
+
+.class-subjects { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.class-subjects a { padding: 6px 14px; color: var(--color-text); font-weight: 700; text-decoration: none; background: var(--color-panel); border: 1px solid var(--color-panel-border); border-radius: var(--radius-pill); }
+.class-subjects a[aria-current="page"] { color: var(--color-accent-ink); border-color: var(--color-accent); }
+
+.class-section { margin-bottom: 32px; }
+.class-section h2 { margin: 0 0 12px; font-size: 1.25rem; font-weight: 800; }
+.class-note { max-width: 70ch; margin: 0 0 12px; color: var(--color-text-muted); }
+.class-table-wrap { overflow-x: auto; background: var(--color-panel); border: 1px solid var(--color-panel-border); border-radius: var(--radius-md); }
+.class-table { width: 100%; border-collapse: collapse; }
+.class-table th,
+.class-table td { padding: 10px 14px; text-align: left; vertical-align: top; border-top: 1px solid var(--color-panel-border); white-space: nowrap; }
+.class-table thead th { border-top: 0; color: var(--color-text-muted); font-size: 0.85rem; font-weight: 700; }
+.class-table small { display: block; color: var(--color-text-muted); font-weight: 400; }
+.class-table td small { display: inline; }
+
+@media (max-width: 560px) {
+  .class-card { padding: 14px 16px; }
+  .class-table th,
+  .class-table td { padding: 8px 10px; font-size: 0.9rem; }
+}

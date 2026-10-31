@@ -5,7 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.4">
-<link rel="stylesheet" href="{% static 'css/profile.css' %}?v=1.2">
+<link rel="stylesheet" href="{% static 'css/profile.css' %}?v=1.3">
 {% endblock %}
 
 {% block content %}
@@ -94,6 +94,52 @@
                 {% for f in password_form %}{% include "accounts/_profile_field.html" with field=f %}{% endfor %}
                 <button type="submit" class="btn btn-primary">Change password</button>
             </form>
+        </details>
+
+        <section class="profile-form" aria-labelledby="classes-title">
+            <h3 id="classes-title">Your classes</h3>
+            {% if user.is_staff %}<p><a class="profile-link" href="{% url 'progress:classes' %}">Classes you teach</a></p>{% endif %}
+            {% if classrooms %}
+                <ul class="profile-classes">
+                    {% for classroom in classrooms %}
+                        <li>
+                            <span>{{ classroom.name }}<small>{% firstof classroom.teacher.profile.display_name classroom.teacher.get_full_name classroom.teacher.username %}</small></span>
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="leave_class">
+                                <input type="hidden" name="classroom" value="{{ classroom.id }}">
+                                <button type="submit" class="btn btn-secondary">Leave<span class="sr-only"> {{ classroom.name }}</span></button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="join_class">
+                <div class="profile-field">
+                    <label for="join-code">Class code</label>
+                    <input id="join-code" name="join_code" required maxlength="8" autocomplete="off" autocapitalize="characters" aria-describedby="join-code-help">
+                    <small id="join-code-help">From your teacher. Joining lets them see your progress.</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Join class</button>
+            </form>
+        </section>
+
+        <details class="profile-form profile-password">
+            <summary>Your data</summary>
+            <p><a class="profile-link" href="{% url 'account-data' %}" download>Download my data (JSON)</a></p>
+            {% if not user.is_staff %}
+            <form method="post" action="{% url 'account-delete' %}" class="profile-delete">
+                {% csrf_token %}
+                <p>Deleting your account removes your progress, quiz attempts, flashcards and study plans for good.</p>
+                <div class="profile-field">
+                    <label for="delete-password">Confirm with your password</label>
+                    <input type="password" id="delete-password" name="password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn">Delete my account</button>
+            </form>
+            {% endif %}
         </details>
 
         {% if profile.time_multiplier > 1 %}

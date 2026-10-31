@@ -49,7 +49,7 @@ apps/
   lessons/         Lesson (CKEditor5 content), LessonImage, `optimize_images` template filter
   questions/       Question (5 formats), Answer
   quizzes/         Quiz (practice or mock), QuizQuestion, mock exam generator service
-  progress/        XP, streaks, attempts, flashcards (SM-2), mistake bank, study plans, analytics, `admin_dashboard` templatetag (admin index stats)
+  progress/        XP, streaks, attempts, flashcards (SM-2), mistake bank, study plans, analytics, pathways, classes (teacher view), `admin_dashboard` templatetag (admin index stats)
 templates/         base.html, 404/500 + per-app folders (accounts, admin, core, legal, progress, quizzes, subjects)
 static/css|js|admin/css|admin/js
 ```
@@ -76,7 +76,7 @@ static/css|js|admin/css|admin/js
 - **Flashcards**: `FlashcardState.review()` implements SM-2 with ratings `again/hard/good/easy`. Reviews are posted via fetch from `flashcards.html`, which alerts the student if a rating fails to save.
 - **Mastery** (`progress/analytics.py`): recency-weighted accuracy, 14-day half-life, needs 5+ answers (`MIN_EVIDENCE`) before a topic counts. Totals live in `TopicMasteryStat` (user+topic+difficulty), updated by `record_attempt` at the end of `submit_quiz`, so reads never scan answer history. Anything that creates `QuizAnswer` rows directly (tests, imports) must call `record_attempt`. Totals are frozen at answer time: later topic/difficulty edits or deleted attempts don't change them. Readiness = 70% topic mastery + 30% latest mock when a mock exists.
 - **Study plan** (`progress/study_plan.py`): remaining lessons sorted by `exam_weight * (1 - accuracy)`, max 3 lessons/day, flashcard review after each lesson, mistake review for topics with misses, a quiz every 4th lesson. Picking a new exam date deletes the user's old plans for that subject (items cascade).
-- **Mock exams**: generated from the Subject admin action (`quizzes/services.py`). Questions sampled per topic by weight. Shortages are not padded from other topics.
+- **Mock exams**: generated from the Subject admin action (`quizzes/services.py`). Questions sampled per topic by weight. Shortages are not padded from other topics. The start time lives in the session (`mock-start-<quiz id>`, set on the first quiz page view, reused on reload, reset after 24h, popped on submit), so reloading resumes the timer and the recorded time can't be reset.
 - **Lesson quizzes**: the Lesson admin action calls `generate_lesson_quizzes` to make inactive Easy (MCQ), Medium (T/F, MCQ, short answer) and Hard (worded) practice quizzes from one topic+lesson, optionally one pathway. Format rules apply only here, not in `Question.clean()`. Any shortage raises unless "allow fewer" is ticked.
   - **Easy**: multiple choice only.
   - **Medium**: a mix of multiple choice, true/false and short answer.
@@ -86,6 +86,9 @@ static/css|js|admin/css|admin/js
 - **Tools** (`/tools/`, `/tools/binary-converter/`): public, ad-eligible SEO pages. The converter is all client-side (`static/js/binary_tools.js`, BigInt, textContent only): bases with fractions and working, sign-magnitude/one's/two's complement, add/subtract with overflow, ASCII, BCD, CAPE mantissa/exponent and IEEE 754, plus a Practice tab (random marked problems; each generator reuses the calculator's own helpers so answer and working can't drift apart). The page has canonical, JSON-LD (WebApplication + FAQPage) and sitemap entries; keep the FAQ text and JSON-LD in step. Tabs deep-link by hash (`#signed`, `#float`...).
 - **Search**: Postgres full-text (`SearchVector`/`SearchRank`) when available, `icontains` fallback otherwise (used in tests on SQLite). Results only include lessons/questions whose subject and lesson are active, so every result link opens.
 - **Question CSV** (`questions/importers.py`): the "Export selected questions to CSV" admin action writes the same columns the importer reads (`COLUMNS`). A blank `id` adds a question; an exported `id` updates it (needs change permission), reusing answer rows by matching text, then position, so past attempts keep their selected option. `pathways` is required on every row: `guided|adaptive|practice`, or `none`. Imports are all-or-nothing.
+- **Pathways** (`progress/analytics.py::pathway_for`, `pathway_quizzes`): students never pick one. Per topic, a student is `guided` until the topic has `MIN_EVIDENCE` answers or while recency-weighted mastery is under 50%, `adaptive` (labelled "Personalised") from 50%, `practice` from 80%, so it moves as grades rise or slip. Quiz listings, the lesson reader and study-plan quiz links drop quizzes tagged for another pathway; untagged quizzes and mocks always show, and a lesson with nothing for the student's pathway keeps all its quizzes. Direct quiz links still open.
+- **Classes** (`progress.Classroom`): staff create classes in the admin (non-superusers only see and own their own; teacher defaults to the creator). Each gets a 6-character join code; students join or leave on their profile page. Teachers see `progress:classes` / `progress:class-detail` (per-subject lessons, marked-quiz average, readiness, weakest topic, XP, last active, plus per-topic class mastery and pathway counts). Only the class's teacher or a superuser can open it.
+- **Account data**: students download everything as JSON (`account-data`) and delete their own account with their password (`account-delete`, cascades all progress). Staff can't self-delete there.
 - **Quiz page**: question order is shuffled on every render unless `Quiz.shuffle_questions` is off (prefetched as `quiz.question_list`). Hints show on non-mock quizzes.
 - **Lesson images**: `optimize_images` filter injects Cloudinary transforms into `res.cloudinary.com/.../image/upload/` URLs in lesson HTML.
 
@@ -120,9 +123,8 @@ static/css|js|admin/css|admin/js
 ## Known issues and cleanup candidates
 
 - `apps.core` is not in `INSTALLED_APPS`. It works because it has no models, but add it if you introduce any.
-- Mock exam timers restart on page reload (the start time is signed per render), so recorded mock times can be gamed. Accepted for self-practice; store the start in the session if mocks ever count for grades.
-- `StudyPlanItem` ordering and constraints changed in migration 0006; the admin for `progress` registers only `UserProgress`, `XPTransaction`, `LessonProgress`, `QuizAttempt` and `QuizAnswer`, not `StudyPlan`/`StudyPlanItem`/`FlashcardState`/`TopicMasteryStat`.
-- Admin actions (activate/deactivate questions, generate lesson quizzes, generate mock exams) have no `allowed_permissions`, so any staff user who can view the changelist can run them. Fine while the owner is the only (super)user; add `permissions=[...]` / `has_perm("quizzes.add_quiz")` checks before giving teachers limited staff roles.
+- `StudyPlanItem` ordering and constraints changed in migration 0006. `TopicMasteryStat` is read-only in the admin (only `record_attempt` writes it).
+- Admin actions check permissions: activate/deactivate questions need `change_question`; the lesson quiz and mock exam generators need `quizzes.add_quiz`.
 - `complete_lesson` falls back to an inactive "General" topic (created on demand) when a subject has no active topics, only so the XP row has a topic.
 - Templates now use "compile/" consistently; the repo name and README title still say "CXC Platform".
 - `dashboard` runs a fixed handful of queries per subject (not per lesson or question). The study plan view loads the user's flashcard due dates once (`flashcard_due_dates`) and counts per item in Python.

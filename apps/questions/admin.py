@@ -132,14 +132,14 @@ class QualityFilter(admin.SimpleListFilter):
         return queryset
 
 
-@admin.action(description="Activate selected questions")
+@admin.action(description="Activate selected questions", permissions=["change"])
 def activate_questions(modeladmin, request, queryset):
     # Plain pk list: the changelist queryset carries aggregate annotations that update() can't take.
     count = Question.objects.filter(pk__in=list(queryset.values_list("pk", flat=True))).update(is_active=True)
     modeladmin.message_user(request, f"{count} questions activated.")
 
 
-@admin.action(description="Deactivate selected questions")
+@admin.action(description="Deactivate selected questions", permissions=["change"])
 def deactivate_questions(modeladmin, request, queryset):
     count = Question.objects.filter(pk__in=list(queryset.values_list("pk", flat=True))).update(is_active=False)
     modeladmin.message_user(request, f"{count} questions deactivated.")

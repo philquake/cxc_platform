@@ -9,6 +9,9 @@ MIN_EVIDENCE = 5
 ANSWER_HALF_LIFE_DAYS = 14
 TOPIC_READINESS_WEIGHT = 0.7
 MOCK_READINESS_WEIGHT = 0.3
+# Topic mastery below GUIDED_BELOW keeps a student on guided quizzes; from PRACTICE_FROM they get exam practice.
+GUIDED_BELOW = 0.5
+PRACTICE_FROM = 0.8
 
 
 def _decay(start, end):
@@ -176,3 +179,30 @@ def estimated_readiness(topics, topic_results, mock_attempt=None):
         "confidence_percent": confidence_percent,
         "mock_attempt": mock_attempt,
     }
+
+
+def pathway_for(result):
+    """Pathway for one topic_mastery result: guided until there is enough evidence, then by recency-weighted accuracy."""
+    if not result or not result["enough_data"] or result["accuracy"] < GUIDED_BELOW:
+        return "guided"
+    return "practice" if result["accuracy"] >= PRACTICE_FROM else "adaptive"
+
+
+def pathway_quizzes(user, quizzes):
+    """Drop quizzes tagged for another pathway than the student's in that topic.
+
+    Untagged quizzes and mocks always stay, and a lesson with nothing for the student's pathway keeps all its quizzes,
+    so no lesson loses its practice. Because mastery decays, the pathway moves as grades rise or slip.
+    """
+    if not any(quiz.pathway for quiz in quizzes):
+        return quizzes
+    results = {}
+    if user.is_authenticated:
+        for subject_id in {quiz.subject_id for quiz in quizzes if quiz.pathway}:
+            results.update(topic_mastery(user, subject_id))
+
+    def fits(quiz):
+        return not quiz.pathway or quiz.pathway == pathway_for(results.get(quiz.topic_id))
+
+    lessons_with_fit = {quiz.lesson_id for quiz in quizzes if fits(quiz)}
+    return [quiz for quiz in quizzes if fits(quiz) or quiz.lesson_id not in lessons_with_fit]

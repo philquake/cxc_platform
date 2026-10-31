@@ -2,7 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from .views import (
-    ThrottledPasswordResetView, account, confirm_email_change, login_view, logout_view, resend_verification, signup,
+    ThrottledPasswordResetView, account, confirm_email_change, delete_account, download_data, login_view, logout_view, resend_verification, signup,
     verify_email, verify_email_sent,
 )
 
@@ -14,6 +14,8 @@ urlpatterns = [
     path("verify/<uidb64>/<token>/", verify_email, name="verify-email"),
     path("email/confirm/<token>/", confirm_email_change, name="confirm-email-change"),
     path("profile/", account, name="account"),
+    path("profile/data/", download_data, name="account-data"),
+    path("profile/delete/", delete_account, name="account-delete"),
     path(
         "password-reset/",
         ThrottledPasswordResetView.as_view(

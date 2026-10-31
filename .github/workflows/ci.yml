@@ -1,0 +1,46 @@
+# CI: runs automatically on GitHub whenever code is pushed to main or a pull request is opened.
+# It never deploys anything; it only tells you whether the code is healthy.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Fake values so Django can start. Tests use an in-memory SQLite database,
+    # so nothing here touches Supabase, Cloudinary or email.
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-a-real-secret
+      DATABASE_URL: sqlite:///ci
+      CLOUDINARY_CLOUD_NAME: ci
+      CLOUDINARY_API_KEY: ci
+      CLOUDINARY_API_SECRET: ci
+      EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run the tests with coverage
+        run: coverage run manage.py test
+
+      - name: Check coverage stays at or above 80%
+        run: coverage report
+
+      # Production uses WhiteNoise's strict static storage, which crashes on a missing
+      # file reference. This catches that before deploy.
+      - name: Check static files collect cleanly
+        run: python manage.py collectstatic --noinput

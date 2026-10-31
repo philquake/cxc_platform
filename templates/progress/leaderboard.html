@@ -17,7 +17,9 @@
 <p>{% if topic %}Ranked by XP earned from lessons and quizzes in {{ topic.name }}.{% else %}Ranked by total XP earned across all topics in {{ subject.name }}.{% endif %}</p>
     </header>
 
-    {% if current_user_row %}
+    {% if hidden %}
+        <div class="leaderboard-you">You're hidden from leaderboards. Change this in your <a href="{% url 'account' %}">profile settings</a>.</div>
+    {% elif current_user_row %}
         <div class="leaderboard-you">Your rank: <strong>#{{ current_user_row.rank }}</strong> with <strong>{{ current_user_row.xp }} XP</strong></div>
     {% endif %}
 

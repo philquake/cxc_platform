@@ -3,7 +3,7 @@ from django.urls import path, reverse_lazy
 
 from .views import (
     ThrottledPasswordResetView, account, confirm_email_change, delete_account, download_data, login_view, logout_view, resend_verification, signup,
-    verify_email, verify_email_sent,
+    stop_reminders, verify_email, verify_email_sent,
 )
 
 urlpatterns = [
@@ -16,6 +16,7 @@ urlpatterns = [
     path("profile/", account, name="account"),
     path("profile/data/", download_data, name="account-data"),
     path("profile/delete/", delete_account, name="account-delete"),
+    path("reminders/stop/<token>/", stop_reminders, name="stop-reminders"),
     path(
         "password-reset/",
         ThrottledPasswordResetView.as_view(

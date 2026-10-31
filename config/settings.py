@@ -163,6 +163,8 @@ DATABASES = {
 # Supabase only accepts SSL connections; set DB_SSLMODE=disable for a local Postgres without SSL.
 DATABASES["default"]["OPTIONS"] = {"sslmode": env("DB_SSLMODE", default="require")}
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+# Database cache so every worker shares the email resend cooldown; accounts migration 0006 creates the table.
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.db.DatabaseCache", "LOCATION": "django_cache"}}
 if str(DATABASES["default"].get("PORT")) == "6543":
     # Supabase's transaction pooler can't hold persistent connections or server-side cursors.
     DATABASES["default"]["CONN_MAX_AGE"] = 0
@@ -236,6 +238,9 @@ if not DEBUG and "test" not in sys.argv[:2] and EMAIL_BACKEND.endswith("console.
     # Otherwise password-reset emails only reach the server log.
     raise ImproperlyConfigured("Set EMAIL_BACKEND (and the EMAIL_* SMTP settings) when DEBUG is off.")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@cxcstudy.com")
+REMINDER_FROM_EMAIL = env("REMINDER_FROM_EMAIL", default="compile/ <tutorcole15@gmail.com>")
+# Study reminders are sent by a cron job with no request, so links need the site's address.
+SITE_URL = env("SITE_URL", default=(CSRF_TRUSTED_ORIGINS or ["http://127.0.0.1:8000"])[0]).rstrip("/")
 EMAIL_HOST = env("EMAIL_HOST", default="")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")

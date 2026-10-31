@@ -1,0 +1,11 @@
+Hi {{ user.first_name|default:user.username }},
+
+You haven't studied on compile/ yet today.
+{% if streak %}
+- Your streak is {{ streak }} day{{ streak|pluralize }}. Finish a lesson, quiz or flashcard review today to keep it.{% endif %}{% if due_cards %}
+- {{ due_cards }} flashcard{{ due_cards|pluralize }} {{ due_cards|pluralize:"is,are" }} due for review: {{ flashcards_url }}{% endif %}{% if plan_items %}
+- {{ plan_items }} study plan task{{ plan_items|pluralize }} {{ plan_items|pluralize:"is,are" }} scheduled for today.{% endif %}
+
+Pick up where you left off: {{ dashboard_url }}
+
+Don't want these emails? Stop study reminders: {{ stop_url }}

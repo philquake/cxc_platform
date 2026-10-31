@@ -19,6 +19,16 @@ class Profile(models.Model):
         validators=[MinValueValidator(Decimal("1.00")), MaxValueValidator(Decimal("3.00"))],
         help_text="Extra time on timed mock exams, e.g. 1.25 gives 25% more time. Set by staff for students with accommodations.",
     )
+    hide_from_leaderboard = models.BooleanField(
+        "Hide me from leaderboards",
+        default=False,
+        help_text="Your username and XP won't appear on any leaderboard.",
+    )
+    study_reminders = models.BooleanField(
+        "Email me study reminders",
+        default=True,
+        help_text="An evening email when you have flashcards due, study plan tasks or a streak to keep.",
+    )
     # Set at signup; the account stays inactive until the emailed link clears it.
     awaiting_verification = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

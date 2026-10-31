@@ -32,7 +32,7 @@ class MockExamActionForm(ActionForm):
         self.fields["topics"].queryset = Topic.objects.filter(is_active=True).select_related("subject")
 
 
-@admin.action(description="Generate weighted mock exam for selected subjects", permissions=["add_quiz"])
+@admin.action(description="Generate weighted mock exam for selected subjects")
 def generate_mock_exams(modeladmin, request, queryset):
     # The admin validates MockExamActionForm before calling the action, so these values are already checked.
     question_count = int(request.POST.get("question_count") or 40)
@@ -71,9 +71,6 @@ class TopicAdmin(admin.ModelAdmin):
 class SubjectAdmin(admin.ModelAdmin):
     action_form = MockExamActionForm
     actions = (generate_mock_exams,)
-
-    def has_add_quiz_permission(self, request):
-        return request.user.has_perm("quizzes.add_quiz")
     list_display = ("name", "code", "is_active", "created_at")
     list_filter = ("is_active",)
     search_fields = ("name", "code")

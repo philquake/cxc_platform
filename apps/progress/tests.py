@@ -12,7 +12,6 @@ from apps.quizzes.models import Quiz, QuizQuestion
 from apps.subjects.models import Subject, Topic
 
 from apps.progress.models import (
-	Classroom,
 	FlashcardState,
 	LessonProgress,
 	QuizAnswer,
@@ -1107,7 +1106,7 @@ class QuizXPPolicyTests(TestCase):
 		self.assertFalse(TopicMasteryStat.objects.filter(user=self.user).exists())
 		self.assertFalse(FlashcardState.objects.filter(user=self.user).exists())
 		page = self.client.get(reverse("quizzes:detail", args=[self.quiz.id]) + f"?attempt={attempt.id}")
-		self.assertContains(page, "waiting for your teacher to mark")
+		self.assertContains(page, "waiting to be marked")
 
 		answer.feedback = "Name a second difference."
 		self._mark(answer, 2)
@@ -1344,7 +1343,7 @@ class LeaderboardUsernameTests(TestCase):
 		self.add_user("blank", 80, "")
 		self.add_user("noprofile", 70)
 		self.client.force_login(self.viewer)
-		with self.assertNumQueries(5):
+		with self.assertNumQueries(6):
 			response = self.client.get(self.url)
 		for username in ("named", "blank", "noprofile"):
 			self.assertContains(response, username)
@@ -1360,6 +1359,16 @@ class LeaderboardUsernameTests(TestCase):
 		response = self.client.get(self.url)
 		self.assertContains(response, "kept")
 		self.assertNotContains(response, "banned")
+
+	def test_students_who_opt_out_are_left_off(self):
+		hidden = self.add_user("hidden", 500, "")
+		Profile.objects.filter(user=hidden).update(hide_from_leaderboard=True)
+		self.add_user("kept", 10)
+		self.client.force_login(hidden)
+		response = self.client.get(self.url)
+		self.assertEqual([r["user__username"] for r in response.context["leaderboard"]], ["kept"])
+		self.assertIsNone(response.context["current_user_row"])
+		self.assertTrue(response.context["hidden"])
 
 	def test_top_twenty_limit_ties_and_rank_beyond_list(self):
 		for i in range(22):
@@ -1507,75 +1516,77 @@ class PathwayTests(TestCase):
 		self.assertEqual(sorted(self._titles()), ["guided", "untagged"])
 
 
-class ClassroomTests(TestCase):
-	def setUp(self):
-		User = get_user_model()
-		self.teacher = User.objects.create_user(username="teacher", password="A-strong-password-123", is_staff=True)
-		self.student = User.objects.create_user(username="student", password="A-strong-password-123")
-		self.subject = Subject.objects.create(name="Mathematics", code="MATH")
-		Topic.objects.create(subject=self.subject, name="Algebra", slug="algebra")
-		self.classroom = Classroom.objects.create(name="5A", teacher=self.teacher)
-
-	def test_join_code_is_generated(self):
-		self.assertEqual(len(self.classroom.join_code), 6)
-
-	def test_student_joins_and_leaves_with_the_code(self):
-		self.client.force_login(self.student)
-
-		self.client.post(reverse("account"), {"action": "join_class", "join_code": self.classroom.join_code.lower()})
-		self.assertTrue(self.classroom.students.filter(pk=self.student.pk).exists())
-
-		self.client.post(reverse("account"), {"action": "leave_class", "classroom": self.classroom.pk})
-		self.assertFalse(self.classroom.students.filter(pk=self.student.pk).exists())
-
-	def test_only_the_classes_teacher_sees_its_progress(self):
-		self.classroom.students.add(self.student)
-		url = reverse("progress:class-detail", args=[self.classroom.pk])
-
-		self.client.force_login(self.teacher)
-		response = self.client.get(url)
-		self.assertEqual(response.status_code, 200)
-		self.assertEqual([s.username for s in response.context["students"]], ["student"])
-		self.assertEqual(response.context["topic_stats"][0]["guided"], 1)
-		self.assertContains(self.client.get(reverse("progress:classes")), "5A")
-
-		other = get_user_model().objects.create_user(username="other", password="x", is_staff=True)
-		self.client.force_login(other)
-		self.assertEqual(self.client.get(url).status_code, 404)
-
-		self.client.force_login(self.student)
-		self.assertEqual(self.client.get(url).status_code, 404)
-		self.assertEqual(self.client.get(reverse("progress:classes")).status_code, 404)
-
-
 class AdminAccessTests(TestCase):
 	def setUp(self):
 		self.admin = get_user_model().objects.create_superuser(username="owner", password="A-strong-password-123")
-		self.staff = get_user_model().objects.create_user(username="teacher", password="A-strong-password-123", is_staff=True)
 
 	def test_new_progress_models_have_admin_pages(self):
 		self.client.force_login(self.admin)
-		for name in ("studyplan", "flashcardstate", "topicmasterystat", "classroom"):
+		for name in ("studyplan", "flashcardstate", "topicmasterystat"):
 			self.assertEqual(self.client.get(reverse(f"admin:progress_{name}_changelist")).status_code, 200, name)
 
-	def test_actions_need_the_matching_permission(self):
-		from django.contrib import admin
-		from django.contrib.auth.models import Permission
-		from django.test import RequestFactory
 
-		models = {Lesson: "generate_quizzes", Subject: "generate_mock_exams", Question: "activate_questions"}
+class StudyReminderTests(TestCase):
+	def setUp(self):
+		from datetime import timedelta
 
-		def actions(model):
-			request = RequestFactory().get("/admin/")
-			request.user = get_user_model().objects.get(pk=self.staff.pk)  # fresh, so permissions aren't cached
-			return admin.site._registry[model].get_actions(request)
+		self.today = timezone.localdate()
+		self.user = get_user_model().objects.create_user(username="student", email="s@example.com", password="x")
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		topic = Topic.objects.create(subject=subject, name="Algebra", slug="algebra")
+		lesson = Lesson.objects.create(subject=subject, title="Algebra", slug="algebra", content="<p>x</p>")
+		question = Question.objects.create(subject=subject, topic=topic, lesson=lesson, text="2 + 2?")
+		FlashcardState.objects.create(user=self.user, question=question, due_at=self.today)
+		self.progress = UserProgress.objects.create(
+			user=self.user, current_streak=3, last_activity_date=self.today - timedelta(days=1)
+		)
 
-		for codename in ("view_lesson", "view_subject", "view_question"):
-			self.staff.user_permissions.add(Permission.objects.get(codename=codename))
-		for model, action in models.items():
-			self.assertNotIn(action, actions(model))
+	def run_command(self):
+		from io import StringIO
+		from django.core import mail
+		from django.core.management import call_command
 
-		for codename in ("add_quiz", "change_question"):
-			self.staff.user_permissions.add(Permission.objects.get(codename=codename))
-		for model, action in models.items():
-			self.assertIn(action, actions(model))
+		mail.outbox = []
+		call_command("send_study_reminders", stdout=StringIO())
+		return mail.outbox
+
+	def test_sends_one_reminder_from_the_owner_address_with_an_unsubscribe_link(self):
+		import re
+		from django.conf import settings
+
+		outbox = self.run_command()
+
+		self.assertEqual(len(outbox), 1)
+		self.assertEqual(outbox[0].from_email, settings.REMINDER_FROM_EMAIL)
+		self.assertIn("tutorcole15@gmail.com", outbox[0].from_email)
+		self.assertIn("3-day streak", outbox[0].subject)
+		self.assertIn("1 flashcard is due", outbox[0].body)
+		stop_path = re.search(r"https?://[^/\s]+(/accounts/reminders/stop/\S+)", outbox[0].body).group(1)
+
+		self.client.get(stop_path)
+
+		self.assertFalse(Profile.objects.get(user=self.user).study_reminders)
+		self.assertEqual(self.run_command(), [])
+
+	def test_skips_students_who_studied_today_lapsed_or_have_no_email(self):
+		from datetime import timedelta
+
+		for last_active in (self.today, self.today - timedelta(days=10)):
+			self.progress.last_activity_date = last_active
+			self.progress.save()
+			self.assertEqual(self.run_command(), [], last_active)
+
+		self.progress.last_activity_date = self.today - timedelta(days=1)
+		self.progress.save()
+		self.user.email = ""
+		self.user.save()
+		self.assertEqual(self.run_command(), [])
+
+	def test_nothing_pending_means_no_email(self):
+		from datetime import timedelta
+
+		FlashcardState.objects.update(due_at=self.today + timedelta(days=3))
+		self.progress.last_activity_date = self.today - timedelta(days=2)  # streak already broken
+		self.progress.save()
+
+		self.assertEqual(self.run_command(), [])

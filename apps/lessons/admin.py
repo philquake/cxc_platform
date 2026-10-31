@@ -58,7 +58,7 @@ class LessonQuizActionForm(ActionForm, LessonQuizSettingsForm):
     pass
 
 
-@admin.action(description="Generate Easy/Medium/Hard quizzes for selected lessons", permissions=["add_quiz"])
+@admin.action(description="Generate Easy/Medium/Hard quizzes for selected lessons")
 def generate_quizzes(modeladmin, request, queryset):
     form = LessonQuizSettingsForm(request.POST)
     if not form.is_valid():
@@ -108,9 +108,6 @@ def deactivate_lessons(modeladmin, request, queryset):
 class LessonAdmin(ImportAdminMixin, admin.ModelAdmin):
     action_form = LessonQuizActionForm
     actions = (activate_lessons, deactivate_lessons, generate_quizzes)
-
-    def has_add_quiz_permission(self, request):
-        return request.user.has_perm("quizzes.add_quiz")
     import_form_class = LessonImportForm
     import_title = "Upload notes"
     import_help = (

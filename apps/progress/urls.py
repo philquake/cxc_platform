@@ -37,9 +37,6 @@ urlpatterns = [
         views.submit_quiz,
         name="submit-quiz"),
     
-    path("classes/", views.class_list, name="classes"),
-    path("classes/<int:classroom_id>/", views.class_detail, name="class-detail"),
-
     path("mistakes/",
         views.mistake_bank,
         name="mistake-bank"),

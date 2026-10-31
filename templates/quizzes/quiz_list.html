@@ -30,7 +30,7 @@
                                     {% if answer.marks_awarded is None %}<span class="sr-only">Awaiting marking.</span>{% else %}<span class="sr-only">Incorrect.</span><span aria-hidden="true">✗</span>{% endif %} Your answer: {% if answer.selected_answer %}{{ answer.selected_answer.text }}{% elif answer.selected_text %}{{ answer.selected_text }}{% else %}No answer selected{% endif %}
                                 </p>
                                 {% if answer.marks_awarded is None %}
-                                    <p class="quiz-result-item-marks">Waiting for your teacher to mark this answer.</p>
+                                    <p class="quiz-result-item-marks">This answer is waiting to be marked.</p>
                                 {% elif answer.question.marks > 1 %}
                                     <p class="quiz-result-item-marks">{{ answer.marks_awarded }}/{{ answer.question.marks }} marks</p>
                                 {% endif %}
@@ -52,7 +52,7 @@
                     {% endfor %}
                 </div>
                 {% if result_attempt.awaiting_review %}
-                    <p>Some answers are waiting for your teacher to mark them. Your score and XP update once they are marked.</p>
+                    <p>Some answers are waiting to be marked. Your score and XP update once they are marked.</p>
                     <div class="quiz-result-actions">
                         <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Close</button>
                     </div>

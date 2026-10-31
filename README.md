@@ -1,214 +1,134 @@
-# CXC Platform
+# compile/ (CXC Platform)
 
-CXC Platform is a Django-based learning platform for Caribbean students preparing for CSEC and CAPE examinations. It provides subjects, ordered lessons, rich lesson content, image uploads, questions, quizzes, accounts, and progress tracking.
+compile/ is a free exam-prep site for Caribbean students taking CSEC Information Technology and CAPE Computer Science. Students read lessons, take practice quizzes and timed mock exams, review flashcards, and track their progress with XP, streaks, leaderboards and study plans.
+
+## Who it is for
+
+The site is open to anyone studying on their own. There are no classes, groups or teacher accounts. The owner is the only admin: they write the content and mark worded answers in the Django admin.
+
+Each student is moved between three quiz pathways (guided, personalised, exam practice) per topic, based on their recent quiz results. Students never choose a pathway and are not shown which one they are on.
 
 ## Features
 
-- Subject and lesson browsing
-- Lesson numbering and section organization
-- Rich lesson authoring with CKEditor 5
-- Inline image uploads inside lesson content
-- Reusable existing-image selection in the Django admin
-- Questions and answers linked to lessons
-- Quizzes assembled from questions
-- User accounts and lesson progress tracking
-- Password reset, password change, and account profile management
-- PostgreSQL database support
-- Static and uploaded media handling for development
+**For students**
+- Courses grouped into units, with a lesson reader, unit outline and mastery meters
+- Practice quizzes in five formats: multiple choice, true/false, short answer, matching and worded (teacher-marked) answers
+- Timed mock exams weighted by topic; the timer survives a page reload
+- Flashcards (SM-2 spaced repetition) made automatically from missed questions, and a mistake bank
+- XP, levels, daily streaks and topic/subject leaderboards, with a "Hide me from leaderboards" setting
+- Topic mastery, exam readiness and a personal study plan built from an exam date
+- Evening study reminder emails (flashcards due, today's plan, streak at risk), with one-click unsubscribe
+- Site search, a binary converter tool, and email verification at signup
+- Profile page with study log, data download (JSON) and self-service account deletion
+
+**For the admin**
+- Lesson authoring with CKEditor 5 and Cloudinary image uploads
+- Question bank with CSV import/export, analytics, quality flags and content-gap filters
+- Lesson quiz generator (Easy/Medium/Hard, optionally per pathway), auto-drawn quizzes and a mock exam generator
+- Marking queue for worded answers, with feedback shown to the student
+- Admin dashboard with site stats and an "Awaiting marking" count
 
 ## Technology
 
-- Python
-- Django 6.1
-- PostgreSQL
-- django-ckeditor-5
-- django-browser-reload
-- Pillow
-- psycopg
+- Python 3.12+ and Django 6.1
+- PostgreSQL on Supabase (tests use in-memory SQLite)
+- django-ckeditor-5, Cloudinary storage, WhiteNoise, django-axes (login throttling), nh3 (HTML sanitising)
+- Plain CSS and JavaScript, no build step
+- Deployed on Render with gunicorn
 
-## Project Structure
+## Project structure
 
 ```text
 apps/
-  accounts/   Login and signup flows
-  core/       Home page
-  lessons/    Lessons, lesson images, and lesson migrations
-  progress/   Lesson progress and quiz attempts
-  questions/  Questions and answers
-  quizzes/    Quizzes and quiz-question ordering
-  subjects/   Subject and lesson browsing
-config/       Django settings, URLs, WSGI, and ASGI
-static/       CSS and admin JavaScript
-templates/    Shared and app templates
-media/        Local uploaded media files
-manage.py     Django command-line entry point
+  accounts/   Signup, email verification, login, profile, data download, account deletion
+  core/       Home, search, tools, about, terms, privacy, sitemap, robots.txt, ads.txt
+  lessons/    Lessons, lesson images, lesson import
+  progress/   XP, streaks, attempts, flashcards, mistake bank, study plans, mastery, pathways, study reminders
+  questions/  Questions, answers, CSV import/export
+  quizzes/    Practice quizzes, mock exams, quiz generators
+  subjects/   Subjects, topics, course and lesson pages
+config/       Settings, URLs, WSGI and ASGI
+static/       CSS, JavaScript and admin assets
+templates/    Page and email templates
 ```
-
-## Requirements
-
-- Python 3.12 or newer is recommended.
-- PostgreSQL must be running and accessible.
-- The project dependencies are listed in `requirements.txt`.
 
 ## Setup
 
-### 1. Create and activate a virtual environment
+1. Create a virtual environment and install dependencies:
 
-Windows PowerShell:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
+2. Copy `.env.example` to `.env` and fill it in. Never commit `.env`. Required: `DJANGO_SECRET_KEY`, `DATABASE_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`. With `DEBUG` off you also need the `EMAIL_*` SMTP settings, `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS`.
 
-macOS/Linux:
+3. Create the tables and an admin account, then start the server:
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
+   ```bash
+   python manage.py migrate
+   python manage.py createsuperuser
+   python manage.py runserver
+   ```
 
-### 2. Install dependencies
+   Open <http://127.0.0.1:8000/>. The admin is at <http://127.0.0.1:8000/admin/>.
 
-```bash
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
+## Deploying on Render
 
-### 3. Configure environment variables
+- Build: install requirements, then `python manage.py collectstatic --noinput` and `python manage.py migrate`.
+- Start: `gunicorn config.wsgi`.
+- Set `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` to the production domain.
+- Migrations also create the database cache table used for email rate limits.
 
-Create a `.env` file in the project root. Do not commit it.
+### Study reminders
 
-```dotenv
-DJANGO_SECRET_KEY=replace-with-a-secure-secret-key
-DEBUG=true
-
-# Supabase: Project Settings > Database > Connection string > Session pooler.
-# Percent-encode special characters in the password (e.g. @ -> %40).
-DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
-# DB_SSLMODE=disable  # only for a local Postgres without SSL
-EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
-DEFAULT_FROM_EMAIL=noreply@example.com
-# For production SMTP, set EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-# and configure EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS.
-```
-
-The settings module reads these values with `django-environ`. `ALLOWED_HOSTS` is currently empty, so add your development or production hostnames before deploying. Configure a Django SMTP email backend and its environment variables in production so password-reset messages can be delivered.
-
-### 4. Apply migrations
+Add a Render **Cron Job** that runs once each evening:
 
 ```bash
-python manage.py migrate
+python manage.py send_study_reminders
 ```
 
-### 5. Create an admin user
+A schedule of `0 23 * * *` (UTC) sends at 6 pm Jamaica time. Give the cron job the same environment variables as the web service. Reminders are sent from `REMINDER_FROM_EMAIL` (default `compile/ <tutorcole15@gmail.com>`). Gmail only sends as the account you sign in with, so set `EMAIL_HOST=smtp.gmail.com`, `EMAIL_HOST_USER=tutorcole15@gmail.com` and a Gmail app password as `EMAIL_HOST_PASSWORD`. Links in the email use `SITE_URL`, which defaults to the first `CSRF_TRUSTED_ORIGINS` entry.
 
-```bash
-python manage.py createsuperuser
-```
-
-### 6. Start the development server
-
-```bash
-python manage.py runserver
-```
-
-Open <http://127.0.0.1:8000/> in a browser. The admin is available at <http://127.0.0.1:8000/admin/>.
-
-## Lesson Authoring
-
-1. Sign in to the Django admin.
-2. Open **Lessons** and create or edit a lesson.
-3. Set a unique lesson number for the subject.
-4. Set the section number and section title.
-5. Add lesson content through CKEditor.
-6. Use the CKEditor image button to upload a new image at the cursor.
-7. To reuse an existing database image, click inside the content editor, select an image under **Existing images**, and click **Insert at cursor**.
-8. Save the lesson.
-
-Lessons are displayed on the subject page grouped by section number. Sections and lessons are ordered from lowest to highest number.
-
-Uploaded images are stored under `media/lesson_images/` during development. The original seeded images for the Introduction to Information Technology lesson are also stored there.
-
-## URLs
+## Main URLs
 
 | URL | Purpose |
 | --- | --- |
-| `/` | Home page |
-| `/accounts/login/` | Sign in |
-| `/accounts/signup/` | Create an account |
-| `/subjects/` | Subject list |
-| `/subjects/<subject>/` | Subject lesson list |
-| `/subjects/<subject>/lessons/<lesson>/` | Lesson detail |
-| `/admin/` | Django administration |
-| `/ckeditor5/image_upload/` | CKEditor image upload endpoint |
+| `/` | Home |
+| `/subjects/` | Courses |
+| `/subjects/<subject>/lessons/<lesson>/` | Lesson reader |
+| `/quizzes/` | Quizzes |
+| `/progress/` | Dashboard |
+| `/progress/flashcards/` | Flashcards |
+| `/progress/mistakes/` | Mistake bank |
+| `/progress/study-plan/<subject>/` | Study plan |
+| `/progress/leaderboard/<subject>/` | Leaderboard |
+| `/accounts/profile/` | Profile and settings |
+| `/search/` | Search |
+| `/tools/` | Tools |
+| `/admin/` | Admin |
 
-## Useful Commands
+## Commands
 
 ```bash
 python manage.py check
 python manage.py makemigrations --check --dry-run
-python manage.py migrate
 python manage.py test
-python manage.py showmigrations
+python manage.py send_study_reminders
 ```
 
-To inspect lesson ordering:
+Coverage for the content apps:
 
 ```bash
-python manage.py shell -c "from apps.lessons.models import Lesson; print(list(Lesson.objects.order_by('section_number', 'lesson_number').values_list('section_number', 'lesson_number', 'title')))"
+pip install -r requirements-dev.txt
+python -m coverage run manage.py test apps.core apps.subjects apps.lessons apps.quizzes
+python -m coverage report
 ```
 
 ## Migrations
 
-Lesson migrations currently cover:
-
-- The original topic-based lesson structure
-- Migration from topics to subjects
-- The former section model and its simplification into lesson section fields
-- CKEditor content
-- Lesson image storage
-- Seeded lesson images
-- Image path normalization
-- Lesson and section numbering
-
-Do not delete applied migrations individually. If migration cleanup is needed, squash them deliberately and test the resulting migration chain against a fresh database and an existing database.
-
-## Static and Media Files
-
-Static files are served from `static/` in development. Uploaded files are stored in `MEDIA_ROOT`, configured as the project `media/` directory. Development media URLs are enabled only when `DEBUG` is true.
-
-For production, configure:
-
-- A secure `SECRET_KEY`
-- `DEBUG=false`
-- `ALLOWED_HOSTS`
-- PostgreSQL credentials
-- Static file collection and serving
-- Persistent or object storage for uploaded media
-- A production WSGI or ASGI server
-
-## Testing and Validation
-
-Run the Django system check before starting the server:
-
-```bash
-python manage.py check
-```
-
-Run the test suite with:
-
-```bash
-python manage.py test
-```
-
-Install the development requirements and enforce the 80% coverage target for `core`, `subjects`, `lessons`, and `quizzes` with:
-
-```bash
-pip install -r requirements-dev.txt
-python -m coverage run manage.py test apps.core apps.subjects apps.lessons apps.quizzes --keepdb
-python -m coverage report
-```
+Some migrations contain data changes (`questions/0002`, `quizzes/0002`, `progress/0006`). Don't delete, squash or reorder applied migrations casually; test any cleanup against both a fresh and an existing database.
 
 ## License
 

@@ -1,11 +1,8 @@
 from django.contrib import admin
-from django.contrib.auth.models import User
 from django.db import transaction
-from django.urls import reverse
 from django.utils.html import format_html, linebreaks
 
 from .models import (
-    Classroom,
     FlashcardState,
     LessonProgress,
     QuizAttempt,
@@ -185,36 +182,3 @@ class TopicMasteryStatAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
-
-
-@admin.register(Classroom)
-class ClassroomAdmin(admin.ModelAdmin):
-    list_display = ("name", "teacher", "join_code", "student_count", "progress_link")
-    search_fields = ("name", "teacher__username", "join_code")
-    filter_horizontal = ("students",)
-
-    def get_queryset(self, request):
-        queryset = super().get_queryset(request).select_related("teacher")
-        # Teachers only manage their own classes; the owner sees all of them.
-        return queryset if request.user.is_superuser else queryset.filter(teacher=request.user)
-
-    def get_readonly_fields(self, request, obj=None):
-        return ("join_code",) if request.user.is_superuser else ("join_code", "teacher")
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "teacher":
-            kwargs["queryset"] = User.objects.filter(is_staff=True)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
-    def save_model(self, request, obj, form, change):
-        if not obj.teacher_id:
-            obj.teacher = request.user
-        super().save_model(request, obj, form, change)
-
-    @admin.display(description="Students")
-    def student_count(self, obj):
-        return obj.students.count()
-
-    @admin.display(description="Progress")
-    def progress_link(self, obj):
-        return format_html('<a href="{}">View progress</a>', reverse("progress:class-detail", args=[obj.pk]))

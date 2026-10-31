@@ -24,7 +24,6 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_POST
 from apps.core.http import safe_next_url
 from apps.progress.models import (
-	Classroom,
 	FlashcardState,
 	LessonProgress,
 	QuizAnswer,
@@ -45,7 +44,6 @@ SIGNUP_REPLACE_AFTER = timedelta(minutes=3)
 
 def _cooling_down(email):
 	"""True if a link went to this address in the last RESEND_COOLDOWN seconds; otherwise starts the clock."""
-	# shortcut: default LocMemCache is per worker process, so each gunicorn worker allows its own email; use a shared cache if abuse shows up.
 	return not cache.add(f"email-link:{email.lower()}", True, RESEND_COOLDOWN)
 
 STUDY_LOG_WEEKS = 12
@@ -226,24 +224,8 @@ def confirm_email_change(request, token):
 @login_required
 def account(request):
 	profile, _ = Profile.objects.get_or_create(user=request.user)
-	action = request.POST.get("action") if request.method == "POST" else None
-	if action == "join_class":
-		classroom = Classroom.objects.filter(join_code=request.POST.get("join_code", "").strip().upper()).first()
-		if classroom is None:
-			messages.error(request, "No class has that code. Check it with your teacher.")
-		else:
-			classroom.students.add(request.user)
-			messages.success(request, f"You joined {classroom.name}. Your teacher can now see your progress.")
-		return redirect("account")
-	if action == "leave_class":
-		classroom_id = request.POST.get("classroom", "")
-		classroom = request.user.classrooms.filter(pk=classroom_id).first() if classroom_id.isdigit() else None
-		if classroom is not None:
-			classroom.students.remove(request.user)
-			messages.success(request, f"You left {classroom.name}.")
-		return redirect("account")
 	old_email = request.user.email  # the form writes the new address onto request.user while validating
-	is_password_post = action == "password"
+	is_password_post = request.method == "POST" and request.POST.get("action") == "password"
 	is_details_post = request.method == "POST" and not is_password_post
 	form = AccountProfileForm(request.POST if is_details_post else None, instance=request.user)
 	name_form = DisplayNameForm(request.POST if is_details_post else None, instance=profile)
@@ -310,7 +292,6 @@ def account(request):
 			"study_log_weeks": STUDY_LOG_WEEKS,
 			"days_studied": days_studied,
 			"recent": XPTransaction.objects.filter(user=request.user).select_related("topic")[:6],
-			"classrooms": request.user.classrooms.select_related("teacher__profile"),
 		},
 	)
 
@@ -331,6 +312,8 @@ def download_data(request):
 			"last_login": user.last_login,
 			"display_name": profile.display_name if profile else "",
 			"time_multiplier": str(profile.time_multiplier) if profile else "1.00",
+			"hide_from_leaderboard": profile.hide_from_leaderboard if profile else False,
+			"study_reminders": profile.study_reminders if profile else True,
 		},
 		"progress": {
 			"total_xp": progress.total_xp,
@@ -376,7 +359,6 @@ def download_data(request):
 			}
 			for plan in StudyPlan.objects.filter(user=user).select_related("subject")
 		],
-		"classes": list(user.classrooms.values("name", "teacher__username")),
 	}
 	response = JsonResponse(data, json_dumps_params={"indent": 2})
 	response["Content-Disposition"] = f'attachment; filename="compile-data-{user.username}.json"'
@@ -398,6 +380,19 @@ def delete_account(request):
 		messages.success(request, "Your account and all its data have been deleted.")
 		return redirect("home")
 	return redirect("account")
+
+
+def stop_reminders(request, token):
+	"""One-click unsubscribe from the link in every study reminder; works signed out."""
+	try:
+		user_id = signing.loads(token, salt="study-reminders")
+	except signing.BadSignature:
+		messages.error(request, "That unsubscribe link is broken. Turn reminders off in your profile settings instead.")
+	else:
+		if User.objects.filter(pk=user_id).exists():  # older accounts may have no profile row yet
+			Profile.objects.update_or_create(user_id=user_id, defaults={"study_reminders": False})
+		messages.success(request, "You won't get study reminders any more. Turn them back on in your profile settings.")
+	return redirect("home")
 
 
 @require_POST

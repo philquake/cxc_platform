@@ -1,0 +1,1 @@
+{% if streak %}Keep your {{ streak }}-day streak going{% elif due_cards %}{{ due_cards }} flashcard{{ due_cards|pluralize }} due on compile/{% else %}Today's study plan is waiting{% endif %}

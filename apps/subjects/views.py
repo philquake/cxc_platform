@@ -101,7 +101,7 @@ def subject_detail(request, slug):
     subject = get_subject_or_404(slug, Subject.objects.prefetch_related(
         Prefetch(
             "lessons",
-            queryset=Lesson.objects.filter(is_active=True).order_by(
+            queryset=Lesson.objects.filter(is_active=True).defer("content").order_by(
                 "section_number", "lesson_number", "title"
             ),
             to_attr="active_lessons",
@@ -170,7 +170,7 @@ def lesson_detail(request, subject_slug, lesson_slug):
             quiz.latest_attempt = latest_attempts.get(quiz.id)
 
     ordered = list(
-        Lesson.objects.filter(subject=subject, is_active=True).order_by(
+        Lesson.objects.filter(subject=subject, is_active=True).defer("content").order_by(
             "section_number", "lesson_number", "title"
         )
     )

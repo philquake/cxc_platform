@@ -1,5 +1,6 @@
 from django.db import connection
-from django.db.models import Count, Q
+from django.db.models import Count, OuterRef, Q, Subquery
+from django.db.models.functions import Coalesce
 from django.shortcuts import render
 
 from apps.lessons.models import Lesson
@@ -7,15 +8,24 @@ from apps.questions.models import Question
 from apps.subjects.models import Subject
 
 try:
-    from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+    from django.contrib.postgres.search import SearchQuery, SearchRank
 except ImportError:  # pragma: no cover
-    SearchQuery = SearchRank = SearchVector = None
+    SearchQuery = SearchRank = None
+
+from .search import SEARCH_CONFIG, lesson_search_vector, question_search_vector
 
 
 def home(request):
+    # Subqueries, not two Counts: joining lessons and questions together multiplies the rows (lessons x questions).
+    def count_of(model):
+        return Coalesce(Subquery(
+            model.objects.filter(subject=OuterRef("pk"), is_active=True)
+            .order_by().values("subject").annotate(n=Count("pk")).values("n")
+        ), 0)
+
     subjects = Subject.objects.filter(is_active=True).annotate(
-        lesson_count=Count("lessons", filter=Q(lessons__is_active=True), distinct=True),
-        question_count=Count("questions", filter=Q(questions__is_active=True), distinct=True),
+        lesson_count=count_of(Lesson),
+        question_count=count_of(Question),
     )
 
     return render(
@@ -37,20 +47,17 @@ def search(request):
         # Only content whose lesson page is public, so every result link works.
         lessons = Lesson.objects.filter(is_active=True, subject__is_active=True)
         questions = Question.objects.filter(is_active=True, subject__is_active=True, lesson__is_active=True)
-        if connection.vendor == "postgresql" and SearchVector is not None:
-            search_query = SearchQuery(query_text)
+        if connection.vendor == "postgresql" and SearchQuery is not None:
+            search_query = SearchQuery(query_text, config=SEARCH_CONFIG)
+            # Match with @@ on the same vector the GIN indexes cover (lessons/0005, questions/0006); rank only the hits.
+            lesson_vector = lesson_search_vector()
             lessons = lessons.annotate(
-                rank=SearchRank(
-                    SearchVector("title", weight="A") + SearchVector("content", weight="B"),
-                    search_query,
-                )
-            ).filter(rank__gt=0).select_related("subject").order_by("-rank")[:20]
+                search=lesson_vector, rank=SearchRank(lesson_vector, search_query)
+            ).filter(search=search_query).select_related("subject").order_by("-rank")[:20]
+            question_vector = question_search_vector()
             questions = questions.annotate(
-                rank=SearchRank(
-                    SearchVector("text", weight="A") + SearchVector("explanation", weight="B"),
-                    search_query,
-                )
-            ).filter(rank__gt=0).select_related("subject", "topic", "lesson").order_by("-rank")[:20]
+                search=question_vector, rank=SearchRank(question_vector, search_query)
+            ).filter(search=search_query).select_related("subject", "topic", "lesson").order_by("-rank")[:20]
         else:
             lessons = lessons.filter(
                 Q(title__icontains=query_text) | Q(content__icontains=query_text),

@@ -493,3 +493,28 @@ class AccountDataTests(TestCase):
 		self.client.post(reverse("account-delete"), {"password": "A-strong-password-123"})
 
 		self.assertTrue(get_user_model().objects.filter(pk=self.user.pk).exists())
+
+
+class SignupCapAndUnsubscribeTests(TestCase):
+	def test_signup_stops_sending_mail_once_the_hourly_cap_is_used(self):
+		cache.clear()
+		data = {
+			"first_name": "New", "last_name": "Student", "password1": "A-strong-password-123",
+			"password2": "A-strong-password-123",
+		}
+		with mock.patch("apps.accounts.views.SIGNUPS_PER_HOUR", 1):
+			self.client.post(reverse("signup"), {**data, "username": "first", "email": "first@example.com"})
+			response = self.client.post(reverse("signup"), {**data, "username": "second", "email": "second@example.com"})
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "a lot of signups")
+		self.assertFalse(get_user_model().objects.filter(username="second").exists())
+		self.assertEqual(len(mail.outbox), 1)
+
+	def test_a_broken_unsubscribe_link_changes_nothing(self):
+		user = get_user_model().objects.create_user(username="student", password="A-strong-password-123")
+		Profile.objects.create(user=user)
+
+		self.client.get(reverse("stop-reminders", args=["not-a-real-token"]))
+
+		self.assertTrue(Profile.objects.get(user=user).study_reminders)

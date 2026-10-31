@@ -16,6 +16,7 @@ from .models import (
 	QuizAnswer,
 	StudyPlan,
 	StudyPlanItem,
+	UserProgress,
 )
 
 MAX_LESSONS_PER_DAY = 3
@@ -171,6 +172,8 @@ def generate_plan(user, subject, target_date: date):
 		day_offset += 1
 
 	with transaction.atomic():
+		# Row lock: a double click waits here, so its delete sees the first request's plan instead of leaving two.
+		UserProgress.objects.select_for_update().get_or_create(user=user)
 		# Replaced plans are never shown again, so delete them (items cascade).
 		StudyPlan.objects.filter(user=user, subject=subject).delete()
 		plan = StudyPlan.objects.create(

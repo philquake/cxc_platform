@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.core import signing
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Count, Max, OuterRef, Q, Subquery, Sum
+from django.db.models import Count, Max, OuterRef, Prefetch, Q, Subquery, Sum
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -128,7 +128,9 @@ def dashboard(request):
 			latest_by_lesson.setdefault(attempt.quiz.lesson_id, attempt)
 
 	subjects = list(
-		Subject.objects.filter(is_active=True).prefetch_related("lessons", "topics")
+		Subject.objects.filter(is_active=True).prefetch_related(
+			Prefetch("lessons", queryset=Lesson.objects.defer("content")), "topics"
+		)
 	)
 	today = timezone.localdate()
 	due_flashcards_by_subject = {
@@ -583,8 +585,8 @@ def _render_leaderboard(request, subject, topic, xp_filter):
 		mine = totals.filter(user_id=request.user.id).order_by().first()
 		if mine:
 			# Same order as the list: more XP first, then lower user id.
-			ahead = totals.filter(xp__gt=mine["xp"]).count() + totals.filter(
-				xp=mine["xp"], user_id__lt=mine["user_id"]
+			ahead = totals.filter(
+				Q(xp__gt=mine["xp"]) | Q(xp=mine["xp"], user_id__lt=mine["user_id"])
 			).count()
 			current_user_row = {**mine, "rank": ahead + 1}
 	return render(

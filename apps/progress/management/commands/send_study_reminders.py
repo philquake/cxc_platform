@@ -3,7 +3,9 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core import signing
+from django.core.cache import cache
 from django.core.mail import send_mail
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -20,6 +22,8 @@ class Command(BaseCommand):
 	help = "Email students who haven't studied today about due flashcards, today's study plan and their streak. Run once each evening."
 
 	def handle(self, *args, **options):
+		# Piggybacks on this daily job so expired login sessions don't pile up in the database.
+		call_command("clearsessions")
 		today = timezone.localdate()
 		students = UserProgress.objects.filter(
 			last_activity_date__gte=today - timedelta(days=ACTIVE_WITHIN_DAYS),
@@ -38,6 +42,9 @@ class Command(BaseCommand):
 			).exclude(item_type=StudyPlanItem.QUIZ).count()
 			streak = progress.current_streak if progress.last_activity_date == today - timedelta(days=1) else 0
 			if not (due_cards or plan_items or streak):
+				continue
+			# Shared cache, so a second run the same evening (a retry, a manual re-run) doesn't email anyone twice.
+			if not cache.add(f"reminder:{user.pk}:{today}", True, 24 * 60 * 60):
 				continue
 			context = {
 				"user": user,

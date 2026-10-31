@@ -120,18 +120,20 @@ MIDDLEWARE = [
     'axes.middleware.AxesMiddleware',  # keep last
 ]
 
-# Brute-force protection for /accounts/login/ and /admin/login/: 5 failures lock that username for 15 minutes.
-# Locking by username only (not IP) because a school shares one IP and the proxy chain on Render is unverified;
-# switch to [["ip_address", "username"]] with AXES_IPWARE_PROXY_COUNT once the real client IP is trustworthy.
+# Brute-force protection for /accounts/login/ and /admin/login/: 5 failures lock that IP + username for 15 minutes.
+# Per IP too, so a stranger can't lock the admin (or a student) out by failing logins for their username.
+# Render's proxy appends the client IP to X-Forwarded-For; AXES_PROXY_COUNT is how many proxies sit in front of
+# the app (check the header in a real request if Cloudflare adds another hop).
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesStandaloneBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = timedelta(minutes=15)
-AXES_LOCKOUT_PARAMETERS = ["username"]
+AXES_LOCKOUT_PARAMETERS = [["ip_address", "username"]]
 AXES_RESET_ON_SUCCESS = True
-SILENCED_SYSTEM_CHECKS = ['axes.W006']  # username-only lockout is deliberate, see above
+AXES_IPWARE_PROXY_COUNT = env.int("AXES_PROXY_COUNT", default=1)
+AXES_IPWARE_META_PRECEDENCE_ORDER = ["HTTP_X_FORWARDED_FOR", "REMOTE_ADDR"]
 
 ROOT_URLCONF = 'config.urls'
 

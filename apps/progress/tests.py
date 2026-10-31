@@ -1568,6 +1568,10 @@ class StudyReminderTests(TestCase):
 		self.assertFalse(Profile.objects.get(user=self.user).study_reminders)
 		self.assertEqual(self.run_command(), [])
 
+	def test_a_second_run_the_same_evening_sends_nothing(self):
+		self.assertEqual(len(self.run_command()), 1)
+		self.assertEqual(self.run_command(), [])
+
 	def test_skips_students_who_studied_today_lapsed_or_have_no_email(self):
 		from datetime import timedelta
 

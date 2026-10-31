@@ -46,6 +46,16 @@ def _cooling_down(email):
 	"""True if a link went to this address in the last RESEND_COOLDOWN seconds; otherwise starts the clock."""
 	return not cache.add(f"email-link:{email.lower()}", True, RESEND_COOLDOWN)
 
+SIGNUPS_PER_HOUR = 100  # sitewide, so a script can't burn the mail quota that password resets share
+
+
+def _signup_cap_reached():
+	"""Counts this signup against the hour's allowance; True once it is used up."""
+	key = f"signups:{timezone.now():%Y%m%d%H}"
+	cache.add(key, 0, 3600)
+	return cache.incr(key) > SIGNUPS_PER_HOUR
+
+
 STUDY_LOG_WEEKS = 12
 
 
@@ -106,7 +116,9 @@ def signup(request):
 				taken |= Q(**{f"{field}__iexact": request.POST[field].strip()})
 		_pending_users().filter(taken, profile__created_at__lt=timezone.now() - SIGNUP_REPLACE_AFTER).delete()
 	form = SignupForm(request.POST or None)
-	if request.method == "POST" and form.is_valid():
+	if request.method == "POST" and form.is_valid() and _signup_cap_reached():
+		form.add_error(None, "We're getting a lot of signups right now. Please try again in a little while.")
+	elif request.method == "POST" and form.is_valid():
 		try:
 			# Rolled back if the email fails, so the student can simply sign up again.
 			with transaction.atomic():
@@ -370,13 +382,13 @@ def download_data(request):
 def delete_account(request):
 	user = request.user
 	if user.is_staff or user.is_superuser:
-		# Staff accounts own content and classes, so the owner removes them from the admin instead.
+		# Staff accounts own content, so the owner removes them from the admin instead.
 		messages.error(request, "Staff accounts can't be deleted here. Ask the site owner to remove it.")
 	elif not user.check_password(request.POST.get("password", "")):
 		messages.error(request, "That password is wrong, so your account was not deleted.")
 	else:
 		logout(request)
-		user.delete()  # progress, attempts, flashcards, plans and class memberships cascade with it
+		user.delete()  # progress, attempts, flashcards and plans cascade with it
 		messages.success(request, "Your account and all its data have been deleted.")
 		return redirect("home")
 	return redirect("account")

@@ -166,7 +166,12 @@ DATABASES = {
 DATABASES["default"]["OPTIONS"] = {"sslmode": env("DB_SSLMODE", default="require")}
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 # Database cache so every worker shares the email resend cooldown; accounts migration 0006 creates the table.
-CACHES = {"default": {"BACKEND": "django.core.cache.backends.db.DatabaseCache", "LOCATION": "django_cache"}}
+# MAX_ENTRIES is raised from Django's 300: past it the cache drops rows, which would forget cooldowns and the reminder guard.
+CACHES = {"default": {
+    "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+    "LOCATION": "django_cache",
+    "OPTIONS": {"MAX_ENTRIES": 100000},
+}}
 if str(DATABASES["default"].get("PORT")) == "6543":
     # Supabase's transaction pooler can't hold persistent connections or server-side cursors.
     DATABASES["default"]["CONN_MAX_AGE"] = 0
@@ -175,8 +180,9 @@ else:
     DATABASES["default"]["CONN_MAX_AGE"] = 600
 
 if "test" in sys.argv[:2]:
-    # Never create test databases on the shared Supabase server.
-    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
+    # Never create test databases on the shared Supabase server. CI sets TEST_DATABASE_URL to a throwaway
+    # Postgres so row locks and full-text search run for real; otherwise tests use in-memory SQLite.
+    DATABASES = {"default": env.db("TEST_DATABASE_URL", default="sqlite:///:memory:")}
 
 
 # Password validation

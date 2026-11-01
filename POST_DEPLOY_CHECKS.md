@@ -1,10 +1,10 @@
-# Post-deploy checks for the audit fixes (commit 2a44a25)
+# Post-deploy checks
 
-Do these after deploying. Each step says what you should see.
+Do these after each deploy. Each step says what you should see.
 
 ## 1. Deploy and migrate
 1. Push `main` and let Render deploy.
-2. Run `python manage.py migrate` (Render shell). It should apply `lessons.0005_search_index` and `questions.0006_search_index`.
+2. The build command already runs `migrate`. In the Render build log, check for `Applying lessons.0005_search_index` and `Applying questions.0006_search_index` (or `No migrations to apply` if they went in earlier).
 3. In the Supabase SQL editor run:
    `select indexname from pg_indexes where indexname in ('lesson_search_gin','question_search_gin');`
    You should see both names.
@@ -31,6 +31,7 @@ Do these after deploying. Each step says what you should see.
 ## 6. Reminders
 1. In the Render shell run `python manage.py send_study_reminders` twice.
 2. The second run should say `Sent 0 study reminders.` and the first should send the real ones.
+3. In the Render dashboard, confirm the daily `send_study_reminders` cron job still exists.
 
 ## 7. Study plan
 1. On a study plan page, double-click "Create plan". You should end up with one plan.

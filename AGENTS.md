@@ -28,3 +28,22 @@ Take the first option that fully works:
 - A shortcut with a known limit gets a code comment in this form: `shortcut: <the limit>, <when to upgrade>`.
 
 Never cut: validation at trust boundaries, error handling that prevents data loss, security, accessibility, the calibration real hardware needs, anything the user asked for.
+
+# Hand routine work to GitHub Copilot
+
+To save Claude usage, send these jobs to the Copilot CLI instead of doing them yourself:
+- Writing commits (staging, commit messages, splitting into commits)
+- Applying a list of fixes or edits the user has already decided on
+- Small mechanical changes: renames, copy/CSS tweaks, formatting
+- Plain git or tooling questions
+
+Keep everything else yourself: design, debugging, security, payments, auth, audits and reviews.
+
+How:
+1. If `~/.claude/copilot-limit-$(date +%Y-%m)` exists, Copilot's free allowance is used up this month: do the work yourself.
+2. If `copilot` is not on PATH, do the work yourself and tell the user once.
+3. Otherwise run, in the project folder, passing the project rules the job needs (commit messages start with feat:/fix:/chore:/bug:/remove:/refactor:/test: and have no co-author trailer):
+   `copilot -p "<task + rules>" --allow-tool 'shell(git)' --allow-tool 'write'`
+   Don't read files or the diff first; let Copilot do that.
+4. If it fails on a usage/quota/rate limit (non-zero exit, or output mentions limit, quota or premium requests), run `touch ~/.claude/copilot-limit-$(date +%Y-%m)`, then do the work yourself and say Copilot hit its limit.
+5. On success, check briefly (`git status`, `git log -1 --stat`), not the whole diff, and report in a line or two.

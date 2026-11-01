@@ -2,6 +2,8 @@
 
 Guidance for working in this repo. Read this first, then change code.
 
+@AGENTS.md
+
 ## What this is
 
 **compile/** (older branding: "CXCStudy") is an exam-prep platform for Caribbean CSEC IT and CAPE Computer Science students. Students read lessons, take quizzes and mock exams, review flashcards, and track progress with XP, streaks, leaderboards and study plans.

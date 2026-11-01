@@ -1022,6 +1022,27 @@ class QuizXPPolicyTests(TestCase):
 		self.assertEqual(QuizAttempt.objects.filter(user=self.user).count(), 4)
 		self.assertEqual(XPTransaction.objects.filter(user=self.user).count(), 1)
 
+	def test_climbing_one_question_at_a_time_pays_only_the_gain(self):
+		questions = [self.question]
+		for n in range(3):
+			question = Question.objects.create(
+				subject=self.question.subject, topic=self.question.topic, lesson=self.question.lesson, text=f"Extra {n}"
+			)
+			Answer.objects.create(question=question, text="yes", is_correct=True)
+			QuizQuestion.objects.create(quiz=self.quiz, question=question)
+			questions.append(question)
+		url = reverse("progress:submit-quiz", args=[self.quiz.id])
+
+		def submit(right_count):
+			self.client.post(url, {
+				f"question-{q.id}": q.answers.get(is_correct=True).id for q in questions[:right_count]
+			})
+
+		submit(1)  # 25%: 25 + 5
+		self.assertEqual(self.xp(), 30)
+		submit(4)  # 100% pays 45 in total, not another 45
+		self.assertEqual(self.xp(), 45)
+
 	def test_quiz_miss_restarts_an_existing_flashcard(self):
 		FlashcardState.objects.create(
 			user=self.user, question=self.question, reps=3, interval_days=15,
@@ -1594,3 +1615,12 @@ class StudyReminderTests(TestCase):
 		self.progress.save()
 
 		self.assertEqual(self.run_command(), [])
+
+
+class AnswerMatchingTests(TestCase):
+	def test_edge_punctuation_is_ignored_but_signs_and_points_are_not(self):
+		from .views import _matches_expected
+		self.assertTrue(_matches_expected("central processing unit.", "Central Processing Unit"))
+		self.assertFalse(_matches_expected("5", "-5"))
+		self.assertFalse(_matches_expected("105", "10.5"))
+		self.assertFalse(_matches_expected("C", "C++"))

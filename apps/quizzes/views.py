@@ -37,7 +37,7 @@ def quiz_queryset(subject=None, topic=None, with_questions=False):
         "lesson__subject",
         "subject",
         "topic",
-    )
+    ).defer("lesson__content")  # listings never show the lesson body
     if not with_questions:
         # Listings only show a count; questions and answers load in quiz_detail.
         question_filter = Q(quiz_questions__question__is_active=True)

@@ -70,7 +70,7 @@ def generate_plan(user, subject, target_date: date):
 		raise ValueError("Target date must be in the future.")
 
 	lessons = list(
-		Lesson.objects.filter(subject=subject, is_active=True).order_by(
+		Lesson.objects.filter(subject=subject, is_active=True).defer("content").order_by(
 			"section_number", "lesson_number", "id"
 		)
 	)

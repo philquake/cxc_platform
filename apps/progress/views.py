@@ -1,5 +1,4 @@
 from types import SimpleNamespace
-import re
 import time
 from datetime import date, timedelta
 
@@ -262,7 +261,7 @@ def study_plan_view(request, subject_slug):
 
 	if plan is not None:
 		items = list(
-			plan.items.select_related("lesson", "topic").order_by(
+			plan.items.select_related("lesson", "topic").defer("lesson__content").order_by(
 				"scheduled_date", "order"
 			)
 		)
@@ -335,8 +334,8 @@ def _matches_expected(answer, expected):
 
 
 def _normalize_answer_text(value):
-	# Punctuation is ignored so "Central Processing Unit." matches "Central Processing Unit".
-	return " ".join(re.sub(r"[^\w\s]", "", (value or "").lower()).split())
+	# Only edge punctuation is ignored, so "Central Processing Unit." matches but "-5" never matches "5" or "10.5" "105".
+	return " ".join((value or "").lower().split()).strip(" .,;:!?\"'")
 
 
 @login_required
@@ -417,11 +416,13 @@ def finalize_attempt(attempt, update_streak=True):
 	# XP only for a first completion or a new best percentage, so retakes can't farm the leaderboard.
 	# A zero score earns nothing, so blank submissions can't farm it either.
 	quiz = attempt.quiz
-	if quiz.topic_id and attempt.score > 0 and attempt.percentage > previous_best:
+	# Only the gain over the earlier best is paid, so climbing one question at a time can't add up to more than a clean run.
+	xp = 25 + attempt.percentage // 5 - (25 + previous_best // 5 if previous_best > 0 else 0)
+	if quiz.topic_id and attempt.score > 0 and attempt.percentage > previous_best and xp > 0:
 		_award_xp(
 			attempt.user,
 			quiz.topic,
-			25 + attempt.percentage // 5,
+			xp,
 			f"Completed quiz: {attempt.percentage}%",
 			quiz_attempt=attempt,
 			update_streak=update_streak,

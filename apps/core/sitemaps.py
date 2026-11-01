@@ -37,7 +37,7 @@ class LessonSitemap(Sitemap):
     priority = 0.7
 
     def items(self):
-        return Lesson.objects.filter(is_active=True, subject__is_active=True).select_related("subject")
+        return Lesson.objects.filter(is_active=True, subject__is_active=True).select_related("subject").defer("content")
 
     def location(self, item):
         return reverse("subjects:lesson-detail", kwargs={"subject_slug": item.subject.slug, "lesson_slug": item.slug})

@@ -45,7 +45,7 @@ def search(request):
 
     if query_text:
         # Only content whose lesson page is public, so every result link works.
-        lessons = Lesson.objects.filter(is_active=True, subject__is_active=True)
+        lessons = Lesson.objects.filter(is_active=True, subject__is_active=True).defer("content")
         questions = Question.objects.filter(is_active=True, subject__is_active=True, lesson__is_active=True)
         if connection.vendor == "postgresql" and SearchQuery is not None:
             search_query = SearchQuery(query_text, config=SEARCH_CONFIG)

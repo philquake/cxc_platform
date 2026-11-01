@@ -117,7 +117,7 @@ class QuizAnswerAdmin(admin.ModelAdmin):
         return format_html(
             "<strong>{}</strong>{}",
             obj.question.expected_answer.replace("|", " / "),
-            linebreaks(obj.question.mark_scheme),
+            linebreaks(obj.question.mark_scheme, autoescape=True),
         )
 
     @admin.display(description="Out of")

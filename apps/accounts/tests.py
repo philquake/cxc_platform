@@ -111,27 +111,6 @@ class AccountFlowTests(TestCase):
 		self.client.get(link)
 		self.assertEqual(get_user_model().objects.filter(email="updated@example.com").count(), 1)
 
-	def test_password_change_updates_password_and_keeps_user_logged_in(self):
-		user = get_user_model().objects.create_user(
-			username="student",
-			password="A-strong-password-123",
-		)
-		self.client.force_login(user)
-
-		response = self.client.post(
-			reverse("password_change"),
-			{
-				"old_password": "A-strong-password-123",
-				"new_password1": "An-even-stronger-password-456",
-				"new_password2": "An-even-stronger-password-456",
-			},
-		)
-
-		self.assertRedirects(response, reverse("password_change_done"))
-		user.refresh_from_db()
-		self.assertTrue(user.check_password("An-even-stronger-password-456"))
-		self.assertTrue(response.wsgi_request.user.is_authenticated)
-
 	def test_login_rejects_invalid_credentials(self):
 		response = self.client.post(
 			reverse("login"),

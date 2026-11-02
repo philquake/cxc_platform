@@ -288,8 +288,8 @@ body :is(.btn, .btn-accent, .btn-ghost, .btn-primary-lg, .btn-outline-lg, .btn-o
 @keyframes message-in { from { opacity: 0; transform: translateY(-6px); } }
 
 @media (hover: hover) and (pointer: fine) {
-  .course-card, a.content-card, .lesson-link { transition: transform 200ms var(--ease-out), background var(--transition-fast), border-color var(--transition-fast); }
-  .course-card:hover, a.content-card:hover, .lesson-link:hover { transform: translateY(-2px); }
+  .course-card, a.content-card { transition: transform 200ms var(--ease-out), background var(--transition-fast), border-color var(--transition-fast); }
+  .course-card:hover, a.content-card:hover { transform: translateY(-2px); }
 }
 
 /* ---------- page motion: content rises in on load, pages cross-fade ---------- */

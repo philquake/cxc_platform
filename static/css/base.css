@@ -182,7 +182,6 @@ p {
   outline-offset: 3px;
 }
 
-
 .messages {
   list-style: none;
   width: min(100% - 40px, 1120px);
@@ -226,12 +225,6 @@ p {
   text-decoration: none;
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-}
-
-.btn-large {
-  min-height: 52px;
-  padding: 12px 26px;
-  font-size: 17px;
 }
 
 .btn-primary {

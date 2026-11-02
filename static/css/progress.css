@@ -11,17 +11,6 @@
     display: none;
 }
 
-.progress-chevron {
-    display: inline-block;
-    color: var(--color-text-muted);
-    font-size: 1.25rem;
-    transition: transform var(--transition-fast);
-}
-
-.progress-subject[open] .progress-chevron {
-    transform: rotate(180deg);
-}
-
 .progress-track {
     overflow: hidden;
     background: var(--color-bg-inset);
@@ -255,16 +244,6 @@
     border-color: var(--color-accent-dim);
 }
 
-.progress-lesson-status {
-    color: var(--color-text-muted);
-    font-size: 1.25rem;
-    text-align: center;
-}
-
-.progress-lesson.is-complete .progress-lesson-status {
-    color: var(--color-reef);
-}
-
 .progress-lesson-copy strong {
     display: block;
     color: var(--color-white);
@@ -273,10 +252,6 @@
 .progress-lesson-copy small {
     color: var(--color-text-muted);
     font-size: 14px;
-}
-
-.progress-lesson-arrow {
-    color: var(--color-text-muted);
 }
 
 /* score trend */
@@ -357,16 +332,10 @@
         grid-template-columns: 24px minmax(0, 1fr);
     }
 
-    .progress-lesson-arrow {
-        display: none;
-    }
-
     .progress-score-trend {
         padding: 18px;
     }
 }
-
-
 
 .progress-header p,
 .progress-summary,
@@ -572,26 +541,6 @@
     border-top: 1px solid var(--color-panel-border);
 }
 
-.mistake-bank-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 38px;
-    padding: 8px 13px;
-    color: var(--color-accent-ink);
-    background: var(--color-panel);
-    border: 1px solid var(--color-accent-dim);
-    border-radius: var(--radius-sm);
-    font-family: var(--font-body);
-    font-size: 13px;
-    text-decoration: none;
-}
-
-.mistake-bank-link:hover {
-    color: var(--color-on-accent);
-    background: var(--color-accent);
-    border-color: var(--color-accent);
-}
-
 .progress-suggested-next {
     display: grid;
     grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr);
@@ -610,47 +559,16 @@
     font-size: 16px;
 }
 
-.progress-suggested-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
-}
-
-.progress-suggested-actions > div {
-    display: grid;
-    justify-items: start;
-    gap: 7px;
-}
-
-.progress-suggested-actions .content-card-label {
-    font-size: 10px;
-}
-
-.progress-suggested-actions p {
-    margin: 0;
-    color: var(--color-muted);
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-.progress-suggested-actions a {
-    color: var(--color-accent-ink);
-    font-size: 14px;
-    font-weight: 700;
-}
-
 .progress-lesson:focus-visible,
 .progress-topic-links a:focus-visible,
-.progress-weak-topic-links a:focus-visible,
-.mistake-bank-link:focus-visible {
+.progress-weak-topic-links a:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 3px;
 }
 
 @media (max-width: 560px) {
 
-    .progress-suggested-next,
-    .progress-suggested-actions {
+    .progress-suggested-next {
         grid-template-columns: minmax(0, 1fr);
     }
 }
@@ -767,21 +685,6 @@
 .study-plan-item.is-complete {
     border-color: rgba(228, 161, 106, 0.6);
     background: var(--color-sky-bg);
-}
-
-.study-plan-item .progress-lesson-status {
-    flex: 0 0 24px;
-    height: 24px;
-    line-height: 24px;
-    border: 1px solid var(--color-panel-border);
-    border-radius: 50%;
-    font-size: 14px;
-}
-
-.study-plan-item.is-complete .progress-lesson-status {
-    color: var(--color-on-accent);
-    background: var(--color-accent);
-    border-color: var(--color-accent);
 }
 
 .study-plan-item .progress-lesson-copy strong {

@@ -12,7 +12,7 @@ from apps.quizzes.models import QuizQuestion
 from apps.subjects.models import Topic
 
 from .importers import export_csv, import_questions, sample_csv
-from .models import PATHWAY_CHOICES, Answer, Question
+from .models import PATHWAY_CHOICES, Answer, Question, QuestionReport
 
 
 class QuestionImportForm(forms.Form):
@@ -307,3 +307,18 @@ class QuestionAdmin(ImportAdminMixin, admin.ModelAdmin):
             rows,
             total,
         )
+
+
+@admin.action(description="Mark selected reports resolved")
+def resolve_reports(modeladmin, request, queryset):
+    queryset.update(resolved=True)
+
+
+@admin.register(QuestionReport)
+class QuestionReportAdmin(admin.ModelAdmin):
+    list_display = ("question", "user", "note", "resolved", "created_at")
+    list_filter = ("resolved",)
+    list_editable = ("resolved",)
+    search_fields = ("note", "question__text")
+    raw_id_fields = ("question", "user")
+    actions = [resolve_reports]

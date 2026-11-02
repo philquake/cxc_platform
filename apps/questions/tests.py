@@ -8,7 +8,7 @@ from apps.progress.models import QuizAnswer, QuizAttempt
 from apps.quizzes.models import Quiz
 from apps.subjects.models import Subject, Topic
 
-from .models import Answer, Question
+from .models import Answer, Question, QuestionReport
 
 
 class QuestionAnalyticsAdminTests(TestCase):
@@ -319,3 +319,44 @@ class QuestionAdminFilterTests(TestCase):
 		self.assertFalse(Question.objects.filter(is_active=True).exists())
 		self.client.post(url, {"action": "activate_questions", "_selected_action": [self.ram.id]})
 		self.assertEqual(list(Question.objects.filter(is_active=True)), [self.ram])
+
+
+
+class QuestionReportTests(TestCase):
+	def setUp(self):
+		subject = Subject.objects.create(name="Mathematics", code="MATH")
+		topic = Topic.objects.create(subject=subject, name="Algebra", slug="algebra")
+		lesson = Lesson.objects.create(subject=subject, title="Algebra", slug="algebra", content="Algebra")
+		self.question = Question.objects.create(subject=subject, topic=topic, lesson=lesson, text="2 + 2?")
+		self.quiz = Quiz.objects.create(subject=subject, topic=topic, lesson=lesson, title="Quiz")
+		self.student = get_user_model().objects.create_user(username="student", password="A-strong-password-123")
+		self.url = reverse("questions:report", args=[self.question.id])
+
+	def answer_question(self):
+		attempt = QuizAttempt.objects.create(
+			user=self.student, quiz=self.quiz, total_questions=1, total_marks=1, completed_at=timezone.now()
+		)
+		QuizAnswer.objects.create(attempt=attempt, question=self.question, is_correct=False, marks_awarded=0)
+
+	def test_student_who_answered_can_report_and_resend_updates_it(self):
+		self.answer_question()
+		self.client.force_login(self.student)
+
+		self.assertEqual(self.client.post(self.url, {"note": "Typo"}).status_code, 200)
+		self.client.post(self.url, {"note": "Wrong answer key"})
+
+		report = QuestionReport.objects.get()
+		self.assertEqual(report.note, "Wrong answer key")
+
+	def test_student_who_never_answered_is_refused(self):
+		self.client.force_login(self.student)
+
+		self.assertEqual(self.client.post(self.url, {"note": "x"}).status_code, 403)
+		self.assertFalse(QuestionReport.objects.exists())
+
+	def test_report_needs_post_and_login(self):
+		self.answer_question()
+
+		self.assertEqual(self.client.post(self.url).status_code, 302)
+		self.client.force_login(self.student)
+		self.assertEqual(self.client.get(self.url).status_code, 405)

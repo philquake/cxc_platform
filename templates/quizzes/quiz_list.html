@@ -46,7 +46,14 @@
                                 {% if answer.question.mark_scheme and answer.marks_awarded is not None %}
                                     <p class="quiz-result-item-explanation">Mark scheme: {{ answer.question.mark_scheme|linebreaksbr }}</p>
                                 {% endif %}
-                                <p class="quiz-result-item-report"><a href="mailto:tutorcole15@gmail.com?subject=Mistake%20in%20a%20quiz%20question&amp;body={{ answer.question.text|truncatechars:120|urlencode }}">Report a mistake in this question</a></p>
+                                <details class="quiz-result-item-report">
+                                    <summary>Report a mistake in this question</summary>
+                                    <form data-report-form action="{% url 'questions:report' answer.question.id %}" method="post">
+                                        {% csrf_token %}
+                                        <input type="text" name="note" maxlength="500" placeholder="What is wrong? (optional)" aria-label="What is wrong with this question?">
+                                        <button type="submit" class="btn btn-ghost">Send report</button>
+                                    </form>
+                                </details>
                             </div>
                         {% endif %}
                     {% endfor %}
@@ -80,6 +87,16 @@
                 {% endif %}
             </div>
         </dialog>
+        <script>
+        document.querySelectorAll('[data-report-form]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                fetch(form.action, {method: 'POST', body: new FormData(form), credentials: 'same-origin'})
+                    .then(function (r) { form.textContent = r.ok ? 'Thanks, your report was sent.' : 'Could not send the report.'; })
+                    .catch(function () { form.textContent = 'Could not send the report.'; });
+            });
+        });
+        </script>
         <script>
             document.addEventListener("DOMContentLoaded", function () {
                 const resultDialog = document.getElementById("quiz-result-dialog");

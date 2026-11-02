@@ -19,6 +19,7 @@ urlpatterns = [
     path('', include('apps.core.urls')),
     path('subjects/', include('apps.subjects.urls')),
     path('quizzes/', include('apps.quizzes.urls')),
+    path('questions/', include('apps.questions.urls')),
 ]
 
 if settings.DEBUG:

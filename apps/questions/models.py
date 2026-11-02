@@ -124,3 +124,20 @@ class Answer(models.Model):
 
     def __str__(self):
         return self.text
+
+
+class QuestionReport(models.Model):
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE, related_name="question_reports")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="reports")
+    note = models.CharField(max_length=500, blank=True)
+    resolved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["resolved", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "question"], name="one_report_per_user_question"),
+        ]
+
+    def __str__(self):
+        return f"Report on question {self.question_id} by {self.user}"

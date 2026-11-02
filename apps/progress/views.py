@@ -152,6 +152,9 @@ def dashboard(request):
 	for subject in subjects:
 		subject.due_flashcard_count = due_flashcards_by_subject.get(subject.id, 0)
 		subject.active_study_plan = active_plans_by_subject.get(subject.id)
+		subject.exam_days_left = (
+			(subject.active_study_plan.target_date - today).days if subject.active_study_plan else None
+		)
 		lessons = [lesson for lesson in subject.lessons.all() if lesson.is_active]
 		subject_answers = mastery_rows(request.user, subject)
 		topic_results = topic_mastery(request.user, subject, subject_answers)

@@ -84,7 +84,7 @@
                         <div class="progress-next-item">
                             <h4>Study plan</h4>
                             {% if subject.active_study_plan %}
-                                <p>Your plan is active.</p>
+                                <p>{% if subject.exam_days_left is None or subject.exam_days_left < 0 %}Your plan is active.{% elif subject.exam_days_left == 0 %}Your exam is today.{% else %}{{ subject.exam_days_left }} day{{ subject.exam_days_left|pluralize }} to your exam.{% endif %}</p>
                                 <a class="btn btn-primary" href="{% url 'progress:study-plan' subject.slug %}">Continue your active plan</a>
                             {% else %}
                                 <p>No active plan yet. Set your exam date to build a schedule.</p>

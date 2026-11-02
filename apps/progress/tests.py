@@ -302,6 +302,18 @@ class ProgressFlowTests(TestCase):
 		)
 		self.assertContains(response, reverse("progress:mistake-bank"))
 
+	def test_dashboard_shows_days_to_exam(self):
+		self.client.force_login(self.user)
+		StudyPlan.objects.create(
+			user=self.user,
+			subject=self.lesson.subject,
+			target_date=timezone.localdate() + timezone.timedelta(days=12),
+		)
+
+		response = self.client.get(reverse("progress:dashboard"))
+
+		self.assertContains(response, "12 days to your exam.")
+
 	def test_dashboard_level_ring_and_streak_flame(self):
 		self.client.force_login(self.user)
 		progress, _ = UserProgress.objects.get_or_create(user=self.user)

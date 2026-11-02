@@ -14,7 +14,7 @@ from apps.questions.models import Answer, Question
 from apps.subjects.models import Subject, Topic
 
 from apps.quizzes.models import Quiz, QuizQuestion
-from apps.quizzes.services import attach_draw_counts, draw_lesson_questions, eligible_questions, generate_lesson_quizzes, generate_mock_exam
+from apps.quizzes.services import attach_draw_counts, draw_lesson_questions, generate_lesson_quizzes, generate_mock_exam
 
 
 class QuizModelTests(TestCase):

@@ -192,7 +192,7 @@ class ProgressFlowTests(TestCase):
 			lesson=self.lesson,
 			text="Mock question",
 		)
-		correct = Answer.objects.create(question=question, text="yes", is_correct=True)
+		Answer.objects.create(question=question, text="yes", is_correct=True)
 		mock = Quiz.objects.create(
 			subject=self.quiz.subject,
 			title="Subject paper",

@@ -2,14 +2,14 @@
 {% load static %}
 
 {% block title %}Free study tools for CSEC and CAPE | compile/{% endblock %}
-{% block description %}Free calculators for CSEC IT and CAPE Computer Science students, with the working shown.{% endblock %}
+{% block description %}Free tools for CSEC IT and CAPE Computer Science students: a binary converter, a SQL sandbox and spreadsheet formula practice, with the working shown.{% endblock %}
 {% block og_title %}Free study tools for CSEC and CAPE | compile/{% endblock %}
-{% block og_description %}Free calculators for CSEC IT and CAPE Computer Science students, with the working shown.{% endblock %}
+{% block og_description %}A binary converter, a SQL sandbox and spreadsheet formula practice, with the working shown.{% endblock %}
 {% block adsense %}{% include "_adsense.html" %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.5">
-<link rel="stylesheet" href="{% static 'css/binary_tools.css' %}?v=1.4">
+<link rel="stylesheet" href="{% static 'css/binary_tools.css' %}?v=1.7">
 {% endblock %}
 
 {% block seo %}<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">{% endblock %}
@@ -17,36 +17,61 @@
 {% block content %}
 <div class="learn-band learn-band-compact">
     <div class="learn-wrap">
-        <h1>Free tools that show the working</h1>
-        <p>Check your own answers and learn the method, for CSEC IT and CAPE Computer Science.</p>
+        <h1>Tools that show the working</h1>
+        <p>Check your own answers and learn the method. Free, no sign-up, for CSEC IT and CAPE Computer Science.</p>
     </div>
 </div>
 
 <div class="learn-wrap learn-body">
-    <a class="tool-feature" href="{% url 'binary-converter' %}">
-        <div class="tool-feature-text">
-            <h2>Binary converter</h2>
-            <p>Number bases, two's complement, binary arithmetic, ASCII, BCD and floating point, with every step shown.</p>
+    <div class="tool-grid">
+        <div class="tool-card tool-card-wide">
+            <figure class="tool-specimen" aria-hidden="true">
+                <figcaption>Number bases</figcaption>
+                <code class="tool-big">1011.101<sub>2</sub></code>
+                <code class="tool-out">= 11.625<sub>10</sub></code>
+                <code class="tool-dim">1×8 + 0×4 + 1×2 + 1×1 + 1×½ + 0×¼ + 1×⅛</code>
+            </figure>
+            <div class="tool-body">
+                <h2><a class="tool-link" href="{% url 'binary-converter' %}">Binary converter</a></h2>
+                <p>Convert between bases, then see every division, carry and sign bit that got you there.</p>
+                <ul class="tool-chips">
+                    <li><a href="{% url 'binary-converter' %}#base">Number bases</a></li>
+                    <li><a href="{% url 'binary-converter' %}#signed">Two's complement</a></li>
+                    <li><a href="{% url 'binary-converter' %}#arith">Binary arithmetic</a></li>
+                    <li><a href="{% url 'binary-converter' %}#text">ASCII</a></li>
+                    <li><a href="{% url 'binary-converter' %}#bcd">BCD</a></li>
+                    <li><a href="{% url 'binary-converter' %}#float">Floating point</a></li>
+                    <li><a href="{% url 'binary-converter' %}#practice">Practice</a></li>
+                </ul>
+                <span class="tool-go" aria-hidden="true">Open the converter</span>
+            </div>
         </div>
-        <p class="tool-feature-sample" aria-hidden="true">1011.101<sub>2</sub> = 11.625<sub>10</sub></p>
-        <span class="btn-accent">Open the converter</span>
-    </a>
 
-    <h2 class="tool-list-title">More practice tools</h2>
-    <ul class="tool-list">
-        <li><a href="{% url 'sql-practice' %}"><strong>SQL practice sandbox</strong>Run real SELECT queries on a sample school database and check your answers against set challenges.</a></li>
-        <li><a href="{% url 'spreadsheet-practice' %}"><strong>Spreadsheet formula practice</strong>Write SUM, IF, COUNTIF, VLOOKUP and more on a sample sheet, marked as you type.</a></li>
-    </ul>
+        <div class="tool-card">
+            <figure class="tool-specimen" aria-hidden="true">
+                <figcaption>SQL</figcaption>
+                <code class="tool-big tool-sql">SELECT first_name<br>FROM students<br>WHERE form = 5;</code>
+                <code class="tool-out">Ava · Jamal · Shanice</code>
+            </figure>
+            <div class="tool-body">
+                <h2><a class="tool-link" href="{% url 'sql-practice' %}">SQL sandbox</a></h2>
+                <p>Run real queries on a school database. Nine challenges, from WHERE to JOIN and HAVING, each marked on its rows.</p>
+                <span class="tool-go" aria-hidden="true">Start querying</span>
+            </div>
+        </div>
 
-    <h2 class="tool-list-title">What the converter does</h2>
-    <ul class="tool-list">
-        <li><a href="{% url 'binary-converter' %}#base"><strong>Number bases</strong>Binary, octal, decimal and hex, fractions included, with the division and multiplication tables.</a></li>
-        <li><a href="{% url 'binary-converter' %}#signed"><strong>Signed numbers</strong>Sign and magnitude, one's complement and two's complement at any width.</a></li>
-        <li><a href="{% url 'binary-converter' %}#arith"><strong>Binary arithmetic</strong>Addition and subtraction with the carry row and an overflow check.</a></li>
-        <li><a href="{% url 'binary-converter' %}#text"><strong>Text and ASCII</strong>Characters to codes in binary, hex or decimal, and back.</a></li>
-        <li><a href="{% url 'binary-converter' %}#bcd"><strong>BCD</strong>Each decimal digit in its own four bits, compared with pure binary.</a></li>
-        <li><a href="{% url 'binary-converter' %}#float"><strong>Floating point</strong>CAPE mantissa and exponent, and IEEE 754 single and double.</a></li>
-        <li><a href="{% url 'binary-converter' %}#practice"><strong>Practice</strong>Random problems on all of the above, marked, with the working shown when you miss one.</a></li>
-    </ul>
+        <div class="tool-card">
+            <figure class="tool-specimen" aria-hidden="true">
+                <figcaption>Spreadsheet</figcaption>
+                <code class="tool-big tool-sql">=SUMIF(C2:C7,"&gt;3",<br>B2:B7)</code>
+                <code class="tool-out">= 20</code>
+            </figure>
+            <div class="tool-body">
+                <h2><a class="tool-link" href="{% url 'spreadsheet-practice' %}">Spreadsheet formulas</a></h2>
+                <p>Write the formula for a highlighted cell. It is checked on your data and on changed data, so typing the answer in will not pass.</p>
+                <span class="tool-go" aria-hidden="true">Write a formula</span>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

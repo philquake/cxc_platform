@@ -1481,6 +1481,44 @@ class LiveStreakTests(TestCase):
 				self.assertEqual(UserProgress(current_streak=7, last_activity_date=last_active).live_streak, expected)
 
 
+class StreakFreezeTests(TestCase):
+	def setUp(self):
+		self.today = timezone.localdate()
+		self.user = get_user_model().objects.create_user("freezer", password="x")
+
+	def touch(self, **fields):
+		from .views import _touch_streak
+		progress = UserProgress.objects.create(user=self.user, current_streak=5, **fields)
+		_touch_streak(progress)
+		return progress
+
+	def test_one_missed_day_is_forgiven_then_not_again_for_a_week(self):
+		progress = self.touch(last_activity_date=self.today - timezone.timedelta(days=2))
+		self.assertEqual((progress.current_streak, progress.freeze_used_on), (6, self.today - timezone.timedelta(days=1)))
+		self.assertEqual(UserProgress(current_streak=6, last_activity_date=self.today - timezone.timedelta(days=2), freeze_used_on=self.today - timezone.timedelta(days=4)).live_streak, 0)
+
+	def test_used_freeze_or_longer_gap_resets(self):
+		recent = self.touch(last_activity_date=self.today - timezone.timedelta(days=2), freeze_used_on=self.today - timezone.timedelta(days=5))
+		self.assertEqual(recent.current_streak, 1)
+
+	def test_live_streak_counts_forgiven_day(self):
+		progress = UserProgress(current_streak=5, last_activity_date=self.today - timezone.timedelta(days=2))
+		self.assertEqual(progress.live_streak, 5)
+		progress.last_activity_date = self.today - timezone.timedelta(days=3)
+		self.assertEqual(progress.live_streak, 0)
+
+
+class BadgeTests(TestCase):
+	def test_streak_and_flashcard_badges_show_on_dashboard(self):
+		from .views import earned_badges
+		user = get_user_model().objects.create_user("badger", password="x")
+		progress = UserProgress.objects.create(user=user, longest_streak=7)
+		self.assertEqual({label: earned for label, _, earned in earned_badges(user, progress)},
+			{"7-day streak": True, "30-day streak": False, "First mastered lesson": False, "100 flashcards": False})
+		self.client.force_login(user)
+		self.assertContains(self.client.get(reverse("progress:dashboard")), "7-day streak")
+
+
 class LevelCurveTests(TestCase):
 	def test_each_level_needs_100_more_xp_than_the_last(self):
 		cases = {0: (1, 0, 500), 499: (1, 499, 500), 500: (2, 0, 600), 1099: (2, 599, 600), 1100: (3, 0, 700), 1500: (3, 400, 700)}

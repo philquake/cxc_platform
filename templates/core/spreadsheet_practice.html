@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Spreadsheet Formula Practice for CSEC IT | compile/{% endblock %}
+{% block description %}Free spreadsheet formula practice: write SUM, AVERAGE, IF, COUNTIF, SUMIF, ROUND and VLOOKUP on a sample sheet and get each answer checked, for CSEC IT.{% endblock %}
+{% block og_title %}Spreadsheet Formula Practice for CSEC IT | compile/{% endblock %}
+{% block og_description %}Write spreadsheet formulas on a sample sheet and get each one marked.{% endblock %}
+{% block adsense %}{% include "_adsense.html" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.5">
+<link rel="stylesheet" href="{% static 'css/binary_tools.css' %}?v=1.5">
+{% endblock %}
+
+{% block seo %}
+<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Spreadsheet formula practice","applicationCategory":"EducationalApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Write spreadsheet formulas on a sample sheet and have each one checked, for CSEC IT."}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="learn-band learn-band-compact">
+    <div class="learn-wrap">
+        <h1>Spreadsheet formula practice</h1>
+        <p>Write the formula for the highlighted cell. It is checked on your data and on changed data, so typing the answer in does not pass.</p>
+    </div>
+</div>
+
+<div class="learn-wrap learn-body bin-tool">
+    <noscript><p class="bin-note">The practice sheet needs JavaScript.</p></noscript>
+    <section class="bin-panel">
+        <h2>Challenge</h2>
+        <p id="ss-prompt" class="bin-prompt" aria-live="polite"></p>
+        <div class="bin-table-wrap"><table class="bin-table ss-grid" id="ss-grid"></table></div>
+        <div class="bin-row">
+            <label>Formula for <span id="ss-target"></span><input id="ss-in" type="text" autocomplete="off" spellcheck="false" placeholder="=SUM(B2:B7)"></label>
+            <button type="button" id="ss-check" class="btn-accent">Check</button>
+            <button type="button" id="ss-hint" class="bin-quiet">Show a solution</button>
+            <button type="button" id="ss-next" class="bin-quiet">Next challenge</button>
+        </div>
+        <div id="ss-result" class="bin-out" aria-live="polite"></div>
+        <p id="ss-score" class="bin-score"></p>
+    </section>
+
+    <article class="bin-guide">
+        <h2>Functions you can use</h2>
+        <p><code>SUM</code>, <code>AVERAGE</code>, <code>MIN</code>, <code>MAX</code>, <code>COUNT</code>, <code>COUNTA</code>, <code>COUNTIF</code>, <code>SUMIF</code>, <code>IF</code>, <code>AND</code>, <code>OR</code>, <code>ROUND</code>, <code>ABS</code> and <code>VLOOKUP</code>, with the operators <code>+ - * / ^ &amp;</code> and comparisons. Use <code>$</code> for absolute references, as in <code>$B$2</code>.</p>
+        <details><summary>Relative and absolute references</summary><p>Copying <code>=B2*C2</code> down one row gives <code>=B3*C3</code>. A reference written <code>$C$1</code> does not move when copied.</p></details>
+        <details><summary>COUNTIF and SUMIF</summary><p><code>=COUNTIF(B2:B7,"&gt;5")</code> counts cells matching a condition. <code>=SUMIF(C2:C7,"&gt;3",B2:B7)</code> adds the cells in the last range where the first range matches.</p></details>
+        <p class="bin-cta">Want to practise this? <a href="{% url 'subjects:list' %}">Work through the lessons and quizzes</a>.</p>
+    </article>
+</div>
+<script src="{% static 'js/spreadsheet_practice.js' %}?v=1.0" defer></script>
+{% endblock %}

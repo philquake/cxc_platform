@@ -45,6 +45,17 @@ class CoreViewTests(TestCase):
 		for path in ("draft", "secret", "hidden", "/quizzes/", "/progress/", "/accounts/"):
 			self.assertNotIn(path, body)
 
+	def test_practice_tools_are_public_linked_and_in_the_sitemap(self):
+		sitemap = self.client.get("/sitemap.xml").content.decode()
+		hub = self.client.get(reverse("tools"))
+		for name in ("sql-practice", "spreadsheet-practice"):
+			with self.subTest(name=name):
+				response = self.client.get(reverse(name))
+				self.assertEqual(response.status_code, 200)
+				self.assertContains(response, f'<link rel="canonical" href="http://testserver{reverse(name)}">')
+				self.assertContains(hub, reverse(name))
+				self.assertIn(f"<loc>http://testserver{reverse(name)}</loc>", sitemap)
+
 	def test_binary_converter_is_public_and_in_the_sitemap(self):
 		response = self.client.get(reverse("binary-converter"))
 

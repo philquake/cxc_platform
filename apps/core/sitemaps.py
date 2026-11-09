@@ -12,7 +12,7 @@ class StaticPagesSitemap(Sitemap):
     priority = 0.5
 
     def items(self):
-        return ["home", "subjects:list", "tools", "binary-converter", "about", "terms", "privacy"]
+        return ["home", "subjects:list", "tools", "binary-converter", "sql-practice", "spreadsheet-practice", "about", "terms", "privacy"]
 
     def location(self, item):
         return reverse(item)

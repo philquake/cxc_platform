@@ -1,6 +1,6 @@
 from django.urls import path
 from pathlib import Path
-from .views import about, binary_converter, home, privacy, search, terms, tools_index
+from .views import about, binary_converter, home, privacy, search, spreadsheet_practice, sql_practice, terms, tools_index
 from django.http import FileResponse, HttpResponse
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -22,6 +22,8 @@ urlpatterns = [
     path("search/", search, name="search"),
     path("tools/", tools_index, name="tools"),
     path("tools/binary-converter/", binary_converter, name="binary-converter"),
+    path("tools/sql-practice/", sql_practice, name="sql-practice"),
+    path("tools/spreadsheet-practice/", spreadsheet_practice, name="spreadsheet-practice"),
     path("about/", about, name="about"),
     path("terms/", terms, name="terms"),
     path("privacy/", privacy, name="privacy"),

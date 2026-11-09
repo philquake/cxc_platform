@@ -26,6 +26,7 @@ class UserProgress(models.Model):
     current_streak = models.PositiveIntegerField(default=0)
     longest_streak = models.PositiveIntegerField(default=0)
     last_activity_date = models.DateField(null=True, blank=True)
+    freeze_used_on = models.DateField(null=True, blank=True)  # the missed day a free streak freeze covered
     updated_at = models.DateTimeField(auto_now=True)
 
     # Level 1 to 2 takes FIRST_LEVEL_XP; each later level takes LEVEL_XP_STEP more than the one before.
@@ -39,10 +40,22 @@ class UserProgress(models.Model):
             level, remaining, needed = level + 1, remaining - needed, needed + self.LEVEL_XP_STEP
         return level, remaining, needed
 
+    FREEZE_GAP_DAYS = 7  # one free missed day per week
+
+    def freeze_ready(self, today=None):
+        """True if a single missed day (yesterday) would be covered for free."""
+        missed = (today or timezone.localdate()) - timedelta(days=1)
+        return self.freeze_used_on is None or (missed - self.freeze_used_on).days >= self.FREEZE_GAP_DAYS
+
     @property
     def live_streak(self):
-        """current_streak, or 0 once a whole day has passed without study (the stored value only changes on activity)."""
-        if self.last_activity_date and self.last_activity_date >= timezone.localdate() - timedelta(days=1):
+        """current_streak, or 0 once a whole day has passed without study (the stored value only changes on activity).
+
+        Exactly one missed day is forgiven when the weekly freeze is ready."""
+        today = timezone.localdate()
+        if self.last_activity_date and self.last_activity_date >= today - timedelta(days=1):
+            return self.current_streak
+        if self.last_activity_date == today - timedelta(days=2) and self.freeze_ready(today):
             return self.current_streak
         return 0
 

@@ -6,7 +6,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/progress.css' %}?v=9.1">
 <link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.5">
-<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.6">
+<link rel="stylesheet" href="{% static 'css/progress_learn.css' %}?v=1.7">
 {% endblock %}
 
 {% block content %}
@@ -43,8 +43,17 @@
                 <svg class="streak-flame{% if studied_today %} is-lit{% endif %}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 3.5 4.5 5.5 4.5 10a4.5 4.5 0 0 1-9 0c0-2 1-3.5 2-4.5 0 1.5.8 2.5 1.8 2.5C10.5 7.5 11 4.5 12 2z"/></svg>
                 {{ user_progress.live_streak }} day{{ user_progress.live_streak|pluralize }}
             </strong></div>
-            <small>longest: {{ user_progress.longest_streak }} days{% if not studied_today %}. Study today to keep it going.{% endif %}</small>
+            <small>longest: {{ user_progress.longest_streak }} days{% if not studied_today %}. Study today to keep it going.{% endif %}<br>Streak freeze: {% if freeze_ready %}ready, one missed day a week is forgiven{% else %}used, back next week{% endif %}.</small>
         </div>
+    </section>
+
+    <section class="progress-badges" aria-label="Badges">
+        <h2>Badges</h2>
+        <ul>
+            {% for label, text, earned in badges %}
+                <li class="{% if earned %}is-earned{% endif %}" title="{{ text }}"><strong>{{ label }}</strong><span>{% if earned %}Earned{% else %}{{ text }}{% endif %}</span></li>
+            {% endfor %}
+        </ul>
     </section>
 
     {% if not user_progress.total_xp %}

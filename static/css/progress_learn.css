@@ -194,3 +194,12 @@
   .readiness-gauge strong { margin-top: -22px; font-size: 1.25rem; }
   .readiness-gauge.is-unknown strong { margin-top: 8px; font-size: 1rem; }
 }
+
+/* ---------- badges ---------- */
+.progress-badges h2 { margin: 24px 0 12px; font-size: 1.125rem; font-weight: 800; }
+.progress-badges ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.progress-badges li { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; color: var(--color-text-muted); background: var(--color-bg-inset); border-radius: var(--radius-sm); opacity: 0.75; }
+.progress-badges li.is-earned { color: var(--color-accent-ink); background: var(--color-panel); border: 2px solid var(--color-accent); opacity: 1; }
+.progress-badges strong { color: var(--color-text); }
+.progress-badges span { font-size: 0.875rem; }
+@media (max-width: 560px) { .progress-badges ul { grid-template-columns: 1fr 1fr; } }

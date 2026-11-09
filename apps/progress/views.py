@@ -69,6 +69,10 @@ def _touch_streak(progress):
 		return
 	if progress.last_activity_date == today - timedelta(days=1):
 		progress.current_streak += 1
+	elif progress.last_activity_date == today - timedelta(days=2) and progress.freeze_ready(today):
+		# One missed day a week is forgiven; the streak carries on without counting it.
+		progress.current_streak += 1
+		progress.freeze_used_on = today - timedelta(days=1)
 	else:
 		progress.current_streak = 1
 	progress.longest_streak = max(progress.longest_streak, progress.current_streak)
@@ -94,6 +98,29 @@ def _topic_for_lesson(lesson):
 		defaults={"name": "General", "is_active": False},
 	)
 	return topic
+
+
+BADGES = (
+	("streak7", "7-day streak", "Study seven days in a row."),
+	("streak30", "30-day streak", "Study thirty days in a row."),
+	("mastered", "First mastered lesson", "Reach Mastered on any lesson."),
+	("cards100", "100 flashcards", "Review a hundred different flashcards."),
+)
+
+
+def earned_badges(user, progress):
+	"""[(label, description, earned)] worked out from existing data, so nothing is stored and nothing can drift."""
+	from apps.subjects.views import _lesson_mastery
+
+	lessons = list(Lesson.objects.filter(is_active=True, quizzes__attempts__user=user).distinct().defer("content"))
+	_lesson_mastery(user, lessons)
+	earned = {
+		"streak7": progress.longest_streak >= 7,
+		"streak30": progress.longest_streak >= 30,
+		"mastered": any(lesson.mastery_step >= 4 for lesson in lessons),
+		"cards100": FlashcardState.objects.filter(user=user, last_reviewed_at__isnull=False).count() >= 100,
+	}
+	return [(label, text, earned[code]) for code, label, text in BADGES]
 
 
 @login_required
@@ -218,6 +245,8 @@ def dashboard(request):
 		{
 			"subjects": subjects,
 			"user_progress": user_progress,
+			"badges": earned_badges(request.user, user_progress),
+			"freeze_ready": user_progress.freeze_ready(),
 			"studied_today": user_progress.last_activity_date == timezone.localdate(),
 			"score_trend": score_trend,
 		},
@@ -500,7 +529,7 @@ def submit_quiz(request, quiz_id):
 
 	# Any submitted quiz is a study day, even a retake or mock that earns no XP.
 	_touch_streak(progress)
-	progress.save(update_fields=["current_streak", "longest_streak", "last_activity_date", "updated_at"])
+	progress.save(update_fields=["current_streak", "longest_streak", "last_activity_date", "freeze_used_on", "updated_at"])
 	attempt = QuizAttempt.objects.create(
 		user=request.user,
 		quiz=quiz,
@@ -742,7 +771,7 @@ def review_flashcard(request):
 	with transaction.atomic():
 		progress, _ = UserProgress.objects.select_for_update().get_or_create(user=request.user)
 		_touch_streak(progress)
-		progress.save(update_fields=["current_streak", "longest_streak", "last_activity_date", "updated_at"])
+		progress.save(update_fields=["current_streak", "longest_streak", "last_activity_date", "freeze_used_on", "updated_at"])
 		state, _ = FlashcardState.objects.get_or_create(
 			user=request.user,
 			question=question,

@@ -88,6 +88,14 @@ def binary_converter(request):
     return render(request, "core/binary_converter.html")
 
 
+def sql_practice(request):
+    return render(request, "core/sql_practice.html")
+
+
+def spreadsheet_practice(request):
+    return render(request, "core/spreadsheet_practice.html")
+
+
 def about(request):
     return render(request, "core/about.html")
 

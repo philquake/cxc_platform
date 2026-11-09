@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}SQL Practice Sandbox for CSEC IT and CAPE | compile/{% endblock %}
+{% block description %}Free SQL practice sandbox: run SELECT queries on a sample school database and check your answers against exam-style challenges for CSEC IT and CAPE Computer Science.{% endblock %}
+{% block og_title %}SQL Practice Sandbox for CSEC IT and CAPE | compile/{% endblock %}
+{% block og_description %}Write real SQL on a sample database and get each challenge marked.{% endblock %}
+{% block adsense %}{% include "_adsense.html" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/learn.css' %}?v=1.5">
+<link rel="stylesheet" href="{% static 'css/binary_tools.css' %}?v=1.5">
+{% endblock %}
+
+{% block seo %}
+<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"SQL practice sandbox","applicationCategory":"EducationalApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Run SQL queries on a sample school database and check them against CSEC IT and CAPE style challenges."}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="learn-band learn-band-compact">
+    <div class="learn-wrap">
+        <h1>SQL practice sandbox</h1>
+        <p>Write real SQL on a sample school database. Nothing is saved and nothing can break.</p>
+    </div>
+</div>
+
+<div class="learn-wrap learn-body bin-tool">
+    <noscript><p class="bin-note">The sandbox needs JavaScript.</p></noscript>
+    <section class="bin-panel">
+        <h2>Challenge</h2>
+        <p id="sql-prompt" class="bin-prompt" aria-live="polite">Loading the database…</p>
+        <label class="bin-wide">Your query
+            <textarea id="sql-in" rows="5" spellcheck="false" autocomplete="off">SELECT * FROM students;</textarea>
+        </label>
+        <div class="bin-row">
+            <button type="button" id="sql-run" class="btn-accent">Run query</button>
+            <button type="button" id="sql-check" class="bin-quiet">Check my answer</button>
+            <button type="button" id="sql-hint" class="bin-quiet">Show a solution</button>
+            <button type="button" id="sql-next" class="bin-quiet">Next challenge</button>
+            <button type="button" id="sql-reset" class="bin-quiet">Reset database</button>
+        </div>
+        <div id="sql-result" class="bin-out" aria-live="polite"></div>
+        <p id="sql-score" class="bin-score"></p>
+    </section>
+
+    <article class="bin-guide">
+        <h2>The sample database</h2>
+        <p><code>students</code> (student_id, first_name, last_name, form, parish, age) and <code>results</code> (result_id, student_id, subject, score, term). Run <code>SELECT * FROM students;</code> to look around. You can also try INSERT, UPDATE and DELETE: use <em>Reset database</em> to start again.</p>
+        <h2>Common SQL for the exam</h2>
+        <details><summary>SELECT, WHERE and ORDER BY</summary><p><code>SELECT first_name FROM students WHERE form = 5 ORDER BY last_name;</code> picks columns, filters rows, then sorts them.</p></details>
+        <details><summary>Aggregates and GROUP BY</summary><p><code>SELECT subject, AVG(score) FROM results GROUP BY subject;</code> gives one row per subject. Use HAVING to filter groups.</p></details>
+        <details><summary>JOIN</summary><p><code>SELECT first_name, score FROM students JOIN results ON students.student_id = results.student_id;</code> matches rows through the key they share.</p></details>
+        <p class="bin-cta">Want to practise this? <a href="{% url 'subjects:list' %}">Work through the lessons and quizzes</a>.</p>
+    </article>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js" defer></script>
+<script src="{% static 'js/sql_practice.js' %}?v=1.0" defer></script>
+{% endblock %}
